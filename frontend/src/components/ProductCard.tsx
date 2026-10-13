@@ -1,23 +1,27 @@
 import React from 'react';
 import type { RankedCandidate } from '../types';
-import { CheckCircle2, AlertCircle, ExternalLink, ShieldCheck, Tag } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ExternalLink, ShieldCheck, Tag, Loader2 } from 'lucide-react';
 
 interface ProductCardProps {
   product: RankedCandidate;
   isSelected: boolean;
+  isLoading?: boolean;
   onSelect: (product: RankedCandidate) => void;
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
   product,
   isSelected,
+  isLoading = false,
   onSelect
 }) => {
   return (
     <div
       className={`rounded-xl border transition-all duration-200 p-5 flex flex-col justify-between ${
         isSelected
-          ? 'border-blue-500 bg-slate-900/90 shadow-lg shadow-blue-500/10 ring-1 ring-blue-500'
+          ? isLoading
+            ? 'border-blue-400 bg-slate-900/90 shadow-lg shadow-blue-500/20 ring-1 ring-blue-400 animate-pulse'
+            : 'border-blue-500 bg-slate-900/90 shadow-lg shadow-blue-500/10 ring-1 ring-blue-500'
           : 'border-slate-800 bg-slate-900/50 hover:border-slate-700'
       }`}
     >
@@ -81,13 +85,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         <button
           onClick={() => onSelect(product)}
-          className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all ${
+          disabled={isLoading && isSelected}
+          className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
             isSelected
               ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
               : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
           }`}
         >
-          {isSelected ? 'Selected Candidate' : 'Select for Policy Check'}
+          {isLoading && isSelected ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              <span>Evaluating Policy...</span>
+            </>
+          ) : isSelected ? (
+            'Selected Candidate'
+          ) : (
+            'Select for Policy Check'
+          )}
         </button>
       </div>
     </div>

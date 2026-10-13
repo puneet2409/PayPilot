@@ -1,4 +1,5 @@
 import json
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -68,3 +69,23 @@ def get_session_audit_timeline(session_id: str, db: Session = Depends(get_db)):
             for e in events
         ]
     )
+
+@router.post("/orders/{order_id}/cancel")
+def cancel_order(order_id: str, db: Session = Depends(get_db)):
+    order = db.query(Order).filter(Order.id == order_id).first()
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
+    if order.status in ("PAID", "CANCELLED"):
+        raise HTTPException(status_code=400, detail=f"Cannot cancel order in {order.status} state")
+    previous_status = order.status
+    order.status = "CANCELLED"
+    order.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    AuditService.record_event(
+        db=db,
+        event_type="ORDER_CANCELLED",
+        session_id=order.session_id,
+        order_id=order.id,
+        details={"previous_status": previous_status}
+    )
+    return {"order_id": order.id, "status": "CANCELLED"}

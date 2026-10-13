@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Send, Sparkles, DollarSign, Loader2 } from 'lucide-react';
+import { Send, Sparkles, DollarSign, Loader2, RotateCcw } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatPanelProps {
   onSendMessage: (msg: string, budget?: number) => void;
@@ -37,17 +38,20 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [budgetInput, setBudgetInput] = useState<string>('100');
+  const [lastMessage, setLastMessage] = useState<{msg: string, budget?: number} | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || isLoading) return;
     const numBudget = budgetInput ? parseFloat(budgetInput) : undefined;
+    setLastMessage({ msg: inputMessage.trim(), budget: numBudget });
     onSendMessage(inputMessage.trim(), numBudget);
   };
 
   const handleSelectPreset = (preset: typeof PRESET_GOALS[0]) => {
     setInputMessage(preset.query);
     setBudgetInput(preset.budget.toString());
+    setLastMessage({ msg: preset.query, budget: preset.budget });
     onSendMessage(preset.query, preset.budget);
   };
 
@@ -86,8 +90,29 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
         {/* Agent Reply Box */}
         {agentReply && (
           <div className="mb-4 p-3.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-slate-200 leading-relaxed">
-            <span className="font-semibold text-blue-400 block mb-1">PayPilot Agent:</span>
-            {agentReply}
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-semibold text-blue-400">PayPilot Agent:</span>
+              {agentReply.startsWith('Search error:') && lastMessage && (
+                <button
+                  type="button"
+                  onClick={() => onSendMessage(lastMessage.msg, lastMessage.budget)}
+                  disabled={isLoading}
+                  className="px-2 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-[11px] font-medium flex items-center gap-1 transition-all disabled:opacity-50"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Retry</span>
+                </button>
+              )}
+            </div>
+            <ReactMarkdown
+              components={{
+                strong: ({children}) => <span className="font-semibold text-blue-300">{children}</span>,
+                em: ({children}) => <span className="italic text-slate-300">{children}</span>,
+                p: ({children}) => <span>{children}</span>,
+              }}
+            >
+              {agentReply}
+            </ReactMarkdown>
           </div>
         )}
       </div>

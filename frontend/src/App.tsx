@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { api } from './api/client';
 import type { RankedCandidate, PolicyEvaluateResponse, CheckoutCaptureResponse, AuditTimelineEvent } from './types';
 import { ChatPanel } from './components/ChatPanel';
@@ -22,19 +22,24 @@ export const App: React.FC = () => {
   const [showApprovalStep, setShowApprovalStep] = useState(false);
   const [currentBudget, setCurrentBudget] = useState<number>(100);
 
+  const isPayPalConfigured = Boolean(
+    import.meta.env.VITE_PAYPAL_CLIENT_ID &&
+    import.meta.env.VITE_PAYPAL_CLIENT_ID !== 'your_paypal_sandbox_client_id_here'
+  );
+
   // Refresh audit events whenever session changes or actions occur
-  const refreshAuditEvents = async () => {
+  const refreshAuditEvents = useCallback(async () => {
     try {
       const events = await api.getSessionTimeline(sessionId);
       setAuditEvents(events);
     } catch (e) {
       console.error('Failed to load audit events', e);
     }
-  };
+  }, [sessionId]);
 
   useEffect(() => {
     refreshAuditEvents();
-  }, [sessionId]);
+  }, [refreshAuditEvents]);
 
   const handleSendMessage = async (message: string, budget?: number) => {
     const activeBudget = budget || currentBudget;
@@ -123,8 +128,8 @@ export const App: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="text-slate-300 font-medium">PayPal Sandbox Live</span>
+            <span className={`w-2 h-2 rounded-full ${isPayPalConfigured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
+            <span className="text-slate-300 font-medium">{isPayPalConfigured ? 'PayPal Sandbox Live' : 'PayPal Simulated'}</span>
           </div>
           <div className="text-[11px] text-slate-400 font-mono hidden md:block">
             Session: <span className="text-slate-200">{sessionId}</span>
@@ -170,6 +175,7 @@ export const App: React.FC = () => {
                     key={cand.product_id}
                     product={cand}
                     isSelected={selectedCandidate?.product_id === cand.product_id}
+                    isLoading={isLoadingPolicy && selectedCandidate?.product_id === cand.product_id}
                     onSelect={(p) => handleSelectCandidate(p)}
                   />
                 ))}
@@ -192,6 +198,7 @@ export const App: React.FC = () => {
               quote={policyResult.quote}
               itemTitle={policyResult.item_title}
               sku={policyResult.sku}
+              sessionId={sessionId}
               onPaymentSuccess={handlePaymentSuccess}
             />
           ) : (

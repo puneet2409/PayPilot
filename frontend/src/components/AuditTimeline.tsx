@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import type { AuditTimelineEvent } from '../types';
 import { Activity, CheckCircle, AlertTriangle, ArrowRight, ShieldCheck, CreditCard } from 'lucide-react';
 
@@ -7,6 +7,12 @@ interface AuditTimelineProps {
 }
 
 export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [events]);
+
   if (events.length === 0) {
     return (
       <div className="text-center py-8 text-xs text-slate-500">
@@ -57,6 +63,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
           </div>
         </div>
       ))}
+      <div ref={endRef} />
     </div>
   );
 };

@@ -3,6 +3,7 @@ from typing import Optional
 
 class CheckoutCreateRequest(BaseModel):
     quote_id: str
+    session_id: str
     idempotency_key: Optional[str] = None
 
 class CheckoutCreateResponse(BaseModel):

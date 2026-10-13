@@ -47,12 +47,13 @@ export const api = {
 
   async createCheckout(
     quoteId: string,
+    sessionId: string,
     idempotencyKey?: string
   ): Promise<CheckoutCreateResponse> {
     const res = await fetch(`${API_BASE}/api/v1/checkout/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ quote_id: quoteId, idempotency_key: idempotencyKey })
+      body: JSON.stringify({ quote_id: quoteId, session_id: sessionId, idempotency_key: idempotencyKey })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

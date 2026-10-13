@@ -25,9 +25,10 @@ wheels/
 venv/
 ENV/
 env/
+# SQLite databases
+*.db
 *.sqlite
 *.sqlite3
-*.db
 
 # Node / Frontend
 node_modules/

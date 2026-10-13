@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
     DATABASE_URL: str = "sqlite:///./paypilot.db"
     FRONTEND_ORIGIN: str = "http://localhost:5173"
-    SESSION_SIGNING_SECRET: str = "paypilot_default_secret_key_2026"
+    SESSION_SIGNING_SECRET: str = ""
 
     # PayPal Configuration
     PAYPAL_ENV: str = "sandbox"

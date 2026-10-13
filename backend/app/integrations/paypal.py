@@ -136,7 +136,9 @@ class PayPalClient:
     async def capture_order(
         self,
         paypal_order_id: str,
-        idempotency_key: Optional[str] = None
+        idempotency_key: Optional[str] = None,
+        amount: float = 0.0,
+        currency: str = "USD"
     ) -> Dict[str, Any]:
         """
         Captures authorized payment for the PayPal Order.
@@ -157,7 +159,7 @@ class PayPalClient:
                                 {
                                     "id": capture_id,
                                     "status": "COMPLETED",
-                                    "amount": {"currency_code": "USD", "value": "89.99"},
+                                    "amount": {"currency_code": currency, "value": f"{amount:.2f}"},
                                     "final_capture": True,
                                     "create_time": datetime.now(timezone.utc).isoformat()
                                 }

@@ -45,8 +45,9 @@ class RankingEngine:
             # V: verified feature ratio
             total_reqs = len(intent.must_have) or 1
             v_score = len(verified) / total_reqs
-            # P: price / budget value score (closer to budget without exceeding, or best deal)
-            p_score = max(0.0, 1.0 - (min_price / budget)) if budget > 0 else 0.5
+            # P: price / budget value score (closer to budget = better value signal)
+            p_score = (min_price / budget) if budget > 0 else 0.5
+            p_score = min(1.0, p_score)
             # R: retailer evidence (more offers = higher confidence)
             r_score = min(1.0, len(offers) * 0.5)
             # D: data completeness
@@ -72,7 +73,7 @@ class RankingEngine:
                 title=item.title,
                 brand=item.brand,
                 price=min_price,
-                currency="USD",
+                currency=offers[0].currency if offers else "USD",
                 rank=1,
                 score=round(composite_score, 2),
                 explanation=explanation,

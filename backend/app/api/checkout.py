@@ -1,5 +1,6 @@
 import uuid
 import json
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -27,7 +28,14 @@ async def create_checkout_order(
             detail="Quote is expired, invalid, or already consumed. Please re-evaluate purchase policy."
         )
 
-    # 2. Check Idempotency / Existing Order
+    # 2. Quote Ownership Validation
+    if quote.session_id != request.session_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Quote does not belong to this session"
+        )
+
+    # 3. Check Idempotency / Existing Order
     idemp_key = request.idempotency_key or f"idemp_{uuid.uuid4().hex[:12]}"
     existing_order = db.query(Order).filter(Order.idempotency_key == idemp_key).first()
     if existing_order:
@@ -39,7 +47,7 @@ async def create_checkout_order(
             currency=existing_order.currency
         )
 
-    # 3. Create PayPal Sandbox Order
+    # 4. Create PayPal Sandbox Order
     try:
         paypal_res = await paypal_client.create_order(
             amount=quote.amount,
@@ -53,7 +61,7 @@ async def create_checkout_order(
     paypal_order_id = paypal_res.get("id")
     local_order_id = f"order_{uuid.uuid4().hex[:10]}"
 
-    # 4. Consume Quote and Persist Order
+    # 5. Consume Quote and Persist Order
     QuoteService.consume_quote(db, quote.id)
 
     order = Order(
@@ -71,7 +79,7 @@ async def create_checkout_order(
     db.commit()
     db.refresh(order)
 
-    # 5. Audit Logging
+    # 6. Audit Logging
     AuditService.record_event(
         db=db,
         event_type="PAYPAL_ORDER_CREATED",
@@ -120,10 +128,13 @@ async def capture_checkout_order(
     try:
         capture_res = await paypal_client.capture_order(
             paypal_order_id=order.paypal_order_id,
-            idempotency_key=request.idempotency_key
+            idempotency_key=request.idempotency_key,
+            amount=order.amount,
+            currency=order.currency
         )
     except Exception as e:
         order.status = "FAILED"
+        order.updated_at = datetime.now(timezone.utc)
         db.commit()
         AuditService.record_event(
             db=db,
@@ -138,6 +149,7 @@ async def capture_checkout_order(
     # Verify capture status
     if paypal_status != "COMPLETED":
         order.status = "RECONCILIATION_REQUIRED"
+        order.updated_at = datetime.now(timezone.utc)
         db.commit()
         raise HTTPException(status_code=400, detail=f"Payment capture returned unverified status: {paypal_status}")
 
@@ -152,6 +164,7 @@ async def capture_checkout_order(
 
     # Update Order to PAID
     order.status = "PAID"
+    order.updated_at = datetime.now(timezone.utc)
 
     payment = Payment(
         id=f"pay_{uuid.uuid4().hex[:10]}",

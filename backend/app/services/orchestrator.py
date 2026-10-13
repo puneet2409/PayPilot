@@ -1,5 +1,6 @@
 import re
 import json
+import asyncio
 import logging
 from typing import Optional
 from app.config import settings
@@ -103,21 +104,30 @@ class AgentOrchestrator:
                 budget = 100.0
 
         # Extract Category
-        cat = "wireless headset"
-        if "mouse" in message.lower():
+        cat = None  # falls back to raw message in handle_turn
+        msg_lower = message.lower()
+        if "mouse" in msg_lower or "mice" in msg_lower:
             cat = "wireless mouse"
-        elif "dock" in message.lower() or "hub" in message.lower():
+        elif "dock" in msg_lower or "hub" in msg_lower or "docking" in msg_lower:
             cat = "usb-c dock"
-        elif "headset" in message.lower() or "headphone" in message.lower():
+        elif "headset" in msg_lower or "headphone" in msg_lower or "earphone" in msg_lower or "earbuds" in msg_lower:
             cat = "wireless headset"
+        elif "keyboard" in msg_lower:
+            cat = "keyboard"
+        elif "monitor" in msg_lower or "display" in msg_lower:
+            cat = "monitor"
+        elif "webcam" in msg_lower or "camera" in msg_lower:
+            cat = "webcam"
+        elif "speaker" in msg_lower:
+            cat = "speaker"
 
         # Extract Must-Haves
         must_haves = []
-        if "multipoint" in message.lower():
+        if "multipoint" in msg_lower:
             must_haves.append("multipoint Bluetooth")
-        if "microphone" in message.lower() or "mic" in message.lower():
+        if "microphone" in msg_lower or "mic" in msg_lower:
             must_haves.append("built-in microphone")
-        if "noise cancelling" in message.lower() or "anc" in message.lower():
+        if "noise cancelling" in msg_lower or "anc" in msg_lower:
             must_haves.append("active noise cancelling")
 
         return AgentIntent(
@@ -125,7 +135,7 @@ class AgentOrchestrator:
             budget=budget,
             currency="USD",
             must_have=must_haves,
-            avoid=["refurbished"] if "refurbished" in message.lower() else []
+            avoid=["refurbished"] if "refurbished" in msg_lower else []
         )
 
     async def _generate_llm_synthesis(
@@ -142,7 +152,8 @@ class AgentOrchestrator:
             f"Explanation: {ranked[0].explanation}\n\n"
             f"Provide a concise, helpful 2-sentence recommendation to the user."
         )
-        response = self._client.models.generate_content(
+        response = await asyncio.to_thread(
+            self._client.models.generate_content,
             model=self.model_name,
             contents=prompt
         )

@@ -3,7 +3,7 @@ import logging
 from typing import List, Tuple
 from sqlalchemy.orm import Session
 from app.models.catalogue import DemoProduct
-from app.schemas.policy import PolicyCheckItem, PolicyEvaluateResponse
+from app.schemas.policy import PolicyCheckItem
 
 logger = logging.getLogger(__name__)
 
