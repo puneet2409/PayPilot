@@ -1,5 +1,6 @@
 import httpx
 import logging
+import math
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timezone
 from app.config import settings
@@ -7,12 +8,21 @@ from app.schemas.discovery import ProductItem, OfferItem
 
 logger = logging.getLogger(__name__)
 
+# Common filler words stripped from queries before matching the local
+# fallback catalogue.
+FALLBACK_STOPWORDS = frozenset({
+    "find", "for", "and", "with", "under", "over", "the", "want", "need",
+    "looking", "good", "great", "best", "budget", "max", "upto", "please",
+    "buy", "get", "than", "about", "new", "has", "have", "you", "your",
+})
+
 # Fallback realistic catalog data when Channel3 key is unset or network error occurs
 MOCK_CHANNEL3_DATA: List[Dict[str, Any]] = [
     {
         "product_id": "ch3_headset_q45",
         "title": "Anker Soundcore Space Q45 Wireless Noise Cancelling Headphones",
         "brand": "Anker",
+        "category": "wireless headset",
         "demo_sku": "HEADSET-DEMO-01",
         "image_url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80",
         "offers": [
@@ -44,6 +54,7 @@ MOCK_CHANNEL3_DATA: List[Dict[str, Any]] = [
         "product_id": "ch3_headset_tune760",
         "title": "JBL Tune 760NC Wireless Over-Ear Active Noise Cancelling Headphones",
         "brand": "JBL",
+        "category": "wireless headset",
         "demo_sku": "HEADSET-DEMO-02",
         "image_url": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&q=80",
         "offers": [
@@ -67,6 +78,7 @@ MOCK_CHANNEL3_DATA: List[Dict[str, Any]] = [
         "product_id": "ch3_dock_anker575",
         "title": "Anker 575 USB-C Docking Station (13-in-1 Triple Display)",
         "brand": "Anker",
+        "category": "usb-c dock",
         "demo_sku": "DOCK-DEMO-01",
         "image_url": "https://images.unsplash.com/photo-1544717305-2782549b5136?w=500&q=80",
         "offers": [
@@ -90,6 +102,7 @@ MOCK_CHANNEL3_DATA: List[Dict[str, Any]] = [
         "product_id": "ch3_mouse_mxmaster3s",
         "title": "Logitech MX Master 3S Performance Wireless Mouse",
         "brand": "Logitech",
+        "category": "wireless mouse",
         "demo_sku": "MOUSE-DEMO-01",
         "image_url": "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&q=80",
         "offers": [
@@ -185,29 +198,41 @@ class Channel3Client:
         return items
 
     def _fallback_filter(self, query: str, max_price: Optional[float], limit: int) -> List[ProductItem]:
-        q_tokens = [t.lower() for t in query.split() if len(t) > 2]
+        q_tokens = [
+            t.lower().strip("$,.") for t in query.split() if len(t) > 2
+        ]
+        q_tokens = [t for t in q_tokens if t and t not in FALLBACK_STOPWORDS]
+        # Short queries must match every keyword; longer ones a solid majority —
+        # this keeps unrelated catalogue items out of narrow queries.
+        if len(q_tokens) <= 2:
+            min_score = len(q_tokens)
+        else:
+            min_score = max(1, math.ceil(len(q_tokens) * 0.6))
         matches = []
         for item in MOCK_CHANNEL3_DATA:
-            text = f"{item['title']} {item.get('brand', '')} {item.get('attributes', {})}".lower()
-            # If query has keywords, match against title/attrs
+            text = (
+                f"{item['title']} {item.get('brand', '')} {item.get('category', '')} "
+                f"{item.get('attributes', {})}"
+            ).lower()
             score = sum(1 for t in q_tokens if t in text) if q_tokens else 1
-            if score > 0 or not q_tokens:
-                offers = [OfferItem(**o) for o in item["offers"]]
-                # Filter by max_price if specified
-                if max_price:
-                    min_price = min(o.price for o in offers) if offers else 0
-                    if min_price > max_price:
-                        continue
-                matches.append(ProductItem(
-                    product_id=item["product_id"],
-                    title=item["title"],
-                    brand=item.get("brand"),
-                    source="channel3_verified",
-                    offers=offers,
-                    attributes=item.get("attributes", {}),
-                    image_url=item.get("image_url"),
-                    demo_sku=item.get("demo_sku")
-                ))
+            if q_tokens and score < min_score:
+                continue
+            offers = [OfferItem(**o) for o in item["offers"]]
+            # Filter by max_price if specified
+            if max_price:
+                min_price = min(o.price for o in offers) if offers else 0
+                if min_price > max_price:
+                    continue
+            matches.append(ProductItem(
+                product_id=item["product_id"],
+                title=item["title"],
+                brand=item.get("brand"),
+                source="demo_catalogue",
+                offers=offers,
+                attributes=item.get("attributes", {}),
+                image_url=item.get("image_url"),
+                demo_sku=item.get("demo_sku")
+            ))
         return matches[:limit]
 
 channel3_client = Channel3Client()

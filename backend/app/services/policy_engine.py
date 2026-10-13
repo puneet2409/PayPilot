@@ -102,7 +102,7 @@ class PolicyEngine:
 
         # 6. Feature Requirements Check
         for req in required_features:
-            norm_req = req.lower().replace(" ", "_")
+            norm_req = req.lower().replace("-", "_").replace(" ", "_")
             found = False
             for k, v in product_attrs.items():
                 if norm_req in k.lower() and bool(v):

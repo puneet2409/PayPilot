@@ -62,3 +62,17 @@ def test_policy_required_feature_unverified(test_db):
     )
     assert passed is False
     assert "missing" in reason.lower() or "unverified" in reason.lower()
+
+def test_policy_feature_hyphen_normalization(test_db):
+    """'built-in microphone' must match the built_in_microphone attribute."""
+    passed, checks, product, reason = PolicyEngine.evaluate(
+        db=test_db,
+        demo_sku="HEADSET-DEMO-01",
+        max_total=100.00,
+        required_features=["built-in microphone"]
+    )
+    assert passed is True, reason
+    assert any(
+        c.rule == "feature_req_built_in_microphone" and c.passed
+        for c in checks
+    )

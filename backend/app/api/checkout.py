@@ -59,6 +59,11 @@ async def create_checkout_order(
         raise HTTPException(status_code=502, detail=f"PayPal API error: {str(e)}")
 
     paypal_order_id = paypal_res.get("id")
+    if not paypal_order_id:
+        raise HTTPException(
+            status_code=502,
+            detail="PayPal returned a response without an order id. No quote was consumed."
+        )
     local_order_id = f"order_{uuid.uuid4().hex[:10]}"
 
     # 5. Consume Quote and Persist Order

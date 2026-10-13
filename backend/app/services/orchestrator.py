@@ -1,5 +1,4 @@
 import re
-import json
 import asyncio
 import logging
 from typing import Optional
@@ -41,12 +40,14 @@ class AgentOrchestrator:
         request: AgentTurnRequest
     ) -> AgentTurnResponse:
         intent = self._extract_intent(request.message, request.user_budget)
-        
-        # 1. Product Search via Channel3 Discovery
+
+        # 1. Product Search via Channel3 Discovery.
+        # The budget is deliberately NOT applied as a discovery filter: the
+        # agent surfaces what the market offers, and the deterministic policy
+        # engine is the component that enforces the spending ceiling.
         query = intent.category or request.message
         candidates = await channel3_client.search(
             query=query,
-            max_price=intent.budget,
             limit=8,
             user_id=session_id
         )
@@ -72,6 +73,11 @@ class AgentOrchestrator:
             f"**{top_choice.title}** (${top_choice.price:.2f}). {top_choice.explanation}\n\n"
             f"You can review the candidate comparison and evaluate our purchase policy to generate a locked quote."
         )
+        if not top_choice.within_budget:
+            reply += (
+                f"\n\nHeads up: every matching option is above your ${intent.budget:.2f} ceiling. "
+                f"I can show you the market, but the deterministic policy engine will block any quote until the budget is raised."
+            )
 
         # If LLM is available, generate richer synthesis
         if self._client:
@@ -94,7 +100,7 @@ class AgentOrchestrator:
         # Extract budget from message (e.g. under $100, <$150, max 120)
         budget = explicit_budget
         if not budget:
-            budget_match = re.search(r'(?:under|\$|<|budget of|max|upto)\s*\$?(\d+(?:\.\d{2})?)', message, re.IGNORECASE)
+            budget_match = re.search(r'(?:under|\$|<|budget of|max|upto)\s*\$?(\d+(?:\.\d+)?)', message, re.IGNORECASE)
             if budget_match:
                 try:
                     budget = float(budget_match.group(1))

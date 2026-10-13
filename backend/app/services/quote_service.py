@@ -57,9 +57,12 @@ class QuoteService:
 
     @staticmethod
     def consume_quote(db: Session, quote_id: str) -> bool:
-        quote = db.query(Quote).filter(Quote.id == quote_id).first()
-        if quote and quote.status == "ACTIVE":
-            quote.status = "CONSUMED"
-            db.commit()
-            return True
-        return False
+        # Single atomic transition so concurrent checkouts cannot both
+        # consume the same quote.
+        consumed = (
+            db.query(Quote)
+            .filter(Quote.id == quote_id, Quote.status == "ACTIVE")
+            .update({"status": "CONSUMED"})
+        )
+        db.commit()
+        return consumed > 0

@@ -9,7 +9,7 @@ Retrieves products from Channel3 with normalized schema.
 ```json
 {
   "query": "wireless headset for work",
-  "max_price": "100.00",
+  "max_price": 100.00,
   "currency": "USD",
   "requirements": ["multipoint Bluetooth", "built-in microphone"],
   "limit": 10
@@ -74,28 +74,34 @@ Executes deterministic validation rules and creates an authoritative quote.
   "eligible": true,
   "policy_version": "v1",
   "currency": "USD",
-  "max_total": "100.00",
+  "max_total": 100.00,
+  "item_price": 89.99,
+  "sku": "HEADSET-DEMO-01",
+  "item_title": "Anker Soundcore Space Q45 Wireless Noise Cancelling Headphones",
   "checks": [
-    { "rule": "budget_limit", "passed": true, "detail": "Price 89.99 <= Budget 100.00" },
-    { "rule": "demo_catalogue_active", "passed": true, "detail": "SKU active" },
-    { "rule": "buyer_approval_required", "passed": true, "detail": "Consent gate active" }
+    { "rule": "demo_catalogue_active", "passed": true, "detail": "Product is active and in-stock" },
+    { "rule": "currency_match", "passed": true, "detail": "Currency matches (USD)" },
+    { "rule": "budget_limit", "passed": true, "detail": "Price $89.99 is within ceiling $100.00" },
+    { "rule": "buyer_approval_required", "passed": true, "detail": "Explicit human PayPal authorization gate enforced" }
   ],
   "quote": {
     "id": "quote_abc123",
-    "amount": "89.99",
+    "amount": 89.99,
     "currency": "USD",
     "expires_at": "2026-10-12T12:10:00Z"
-  }
+  },
+  "reason": "All purchase policies passed"
 }
 ```
 
 ## 4. PayPal Checkout Lifecycle
 ### `POST /api/v1/checkout/create`
-Creates a PayPal Sandbox order matching the authoritative quote.
+Creates a PayPal Sandbox order matching the authoritative quote. The quote must belong to `session_id` and is consumed exactly once.
 **Request**:
 ```json
 {
   "quote_id": "quote_abc123",
+  "session_id": "sess_default",
   "idempotency_key": "idemp_order_123"
 }
 ```
@@ -105,7 +111,7 @@ Creates a PayPal Sandbox order matching the authoritative quote.
   "order_id": "order_local_123",
   "paypal_order_id": "9B12345678901234",
   "status": "AWAITING_APPROVAL",
-  "amount": "89.99",
+  "amount": 89.99,
   "currency": "USD"
 }
 ```
@@ -126,7 +132,7 @@ Captures buyer-approved order with PayPal and verifies result.
   "payment": {
     "provider": "paypal_sandbox",
     "capture_id": "CAP_123456789",
-    "amount": "89.99",
+    "amount": 89.99,
     "currency": "USD"
   }
 }
@@ -138,7 +144,8 @@ Returns service readiness:
 ```json
 {
   "status": "ok",
-  "env": "development",
-  "version": "1.0.0"
+  "app_env": "development",
+  "paypal_env": "sandbox",
+  "ai_provider": "gemini"
 }
 ```

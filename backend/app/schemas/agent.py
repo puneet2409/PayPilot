@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional, Dict, Any
+from typing import List, Optional
 
 class AgentIntent(BaseModel):
     category: Optional[str] = None
@@ -20,6 +20,7 @@ class RankedCandidate(BaseModel):
     explanation: str
     verified_features: List[str] = []
     unverified_features: List[str] = []
+    within_budget: bool = True
     buy_url: Optional[str] = None
     merchant: Optional[str] = None
     image_url: Optional[str] = None

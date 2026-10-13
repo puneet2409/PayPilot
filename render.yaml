@@ -29,8 +29,6 @@ services:
         value: gemini
       - key: GEMINI_API_KEY
         sync: false
-      - key: SESSION_SIGNING_SECRET
-        generateValue: true
 
   # Vite React Static Site
   - type: web

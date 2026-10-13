@@ -1,3 +1,9 @@
+import os
+
+# Point the suite at a dedicated scratch database before any app module
+# (and therefore the engine) is imported, so tests never touch the dev DB.
+os.environ["DATABASE_URL"] = "sqlite:///./paypilot_test.db"
+
 import pytest
 from fastapi.testclient import TestClient
 import app.models  # noqa
@@ -24,4 +30,3 @@ def db_session():
 def client():
     with TestClient(app) as test_client:
         yield test_client
-

@@ -29,6 +29,7 @@ export interface RankedCandidate {
   explanation: string;
   verified_features: string[];
   unverified_features: string[];
+  within_budget?: boolean;
   buy_url?: string;
   merchant?: string;
   image_url?: string;

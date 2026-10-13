@@ -36,6 +36,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 <ShieldCheck className="w-3 h-3" /> Store SKU
               </span>
             )}
+            {product.within_budget === false && (
+              <span className="px-2 py-0.5 text-xs font-medium rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" /> Over budget
+              </span>
+            )}
           </div>
           <div className="text-right">
             <div className="text-xl font-bold text-white">${product.price.toFixed(2)}</div>

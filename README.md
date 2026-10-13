@@ -49,6 +49,7 @@ PayPilot separates **discovery reasoning** from **financial execution**. Even if
 * **Authoritative Server Pricing:** Item amounts are derived from the server database, never accepted from client payloads.
 * **Quote Expiration:** Quotes expire after 10 minutes. Stale price changes trigger re-evaluation.
 * **Consent Gate:** Autonomous checkout without human PayPal approval is blocked at the API level.
+* **Honest Discovery:** Over-budget candidates stay visible as market intelligence (clearly flagged), but only the deterministic policy engine decides whether a quote can be issued — try the *"Headset under \$50 (Test Policy Block)"* preset in the UI.
 
 ---
 
@@ -106,13 +107,24 @@ PayPilot includes a production blueprint `render.yaml` supporting:
 ```
 tests/test_api_endpoints.py::test_health_check PASSED
 tests/test_api_endpoints.py::test_discovery_search PASSED
+tests/test_api_endpoints.py::test_fallback_discovery_relevance PASSED
+tests/test_api_endpoints.py::test_agent_turn_top_pick_within_budget PASSED
+tests/test_api_endpoints.py::test_agent_turn_over_budget_top_pick_flagged PASSED
 tests/test_api_endpoints.py::test_policy_evaluation_success_and_quote PASSED
 tests/test_api_endpoints.py::test_policy_evaluation_budget_exceeded PASSED
 tests/test_api_endpoints.py::test_end_to_end_checkout_and_capture PASSED
+tests/test_api_endpoints.py::test_checkout_quote_ownership_validation PASSED
+tests/test_api_endpoints.py::test_checkout_expired_quote PASSED
+tests/test_api_endpoints.py::test_capture_idempotency PASSED
+tests/test_api_endpoints.py::test_catalogue_listing PASSED
+tests/test_api_endpoints.py::test_order_cancellation PASSED
 tests/test_policy_engine.py::test_policy_budget_pass PASSED
 tests/test_policy_engine.py::test_policy_budget_exceeded PASSED
 tests/test_policy_engine.py::test_policy_inactive_sku PASSED
 tests/test_policy_engine.py::test_policy_required_feature_unverified PASSED
+tests/test_policy_engine.py::test_policy_feature_hyphen_normalization PASSED
+tests/test_ranking.py::test_ranking_flags_and_demotes_over_budget_candidates PASSED
+tests/test_ranking.py::test_ranking_within_budget_default_true PASSED
 ```
 
 ---

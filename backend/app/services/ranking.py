@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import List
 from app.schemas.discovery import ProductItem
 from app.schemas.agent import RankedCandidate, AgentIntent
 
@@ -18,9 +18,7 @@ class RankingEngine:
             best_merchant = offers[0].merchant if offers else "Retailer"
             buy_url = offers[0].buy_url if offers else None
 
-            # Hard Constraint Check: If price > budget, eliminate or severely penalize
-            if min_price > budget:
-                continue
+            within_budget = min_price <= budget
 
             # Verified feature coverage
             attrs = item.attributes or {}
@@ -28,7 +26,7 @@ class RankingEngine:
             unverified = []
 
             for req in intent.must_have:
-                norm_req = req.lower().replace(" ", "_")
+                norm_req = req.lower().replace("-", "_").replace(" ", "_")
                 found = False
                 for k, v in attrs.items():
                     if norm_req in k.lower() and bool(v):
@@ -62,10 +60,22 @@ class RankingEngine:
                 0.10 * d_score
             )
 
+            # Over-budget offers stay visible as market intelligence but rank
+            # below every affordable option; the deterministic policy engine
+            # is what blocks the purchase at quote time.
+            if not within_budget:
+                composite_score *= 0.25
+
+            budget_note = (
+                ""
+                if within_budget
+                else f" Exceeds the ${budget:.2f} ceiling — the policy engine will refuse to issue a quote."
+            )
             explanation = (
                 f"Offered at ${min_price:.2f} by {best_merchant}. "
                 f"Verified: {', '.join(verified) if verified else 'Standard specs'}. "
                 f"{'Pending confirmation: ' + ', '.join(unverified) if unverified else 'All requirements satisfied.'}"
+                f"{budget_note}"
             )
 
             ranked.append(RankedCandidate(
@@ -82,7 +92,8 @@ class RankingEngine:
                 buy_url=buy_url,
                 merchant=best_merchant,
                 image_url=item.image_url,
-                demo_sku=item.demo_sku
+                demo_sku=item.demo_sku,
+                within_budget=within_budget
             ))
 
         # Sort by composite score descending

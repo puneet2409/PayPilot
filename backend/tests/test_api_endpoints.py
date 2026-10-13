@@ -1,90 +1,128 @@
-import pytest
 from datetime import datetime, timezone, timedelta
-from fastapi.testclient import TestClient
-from app.main import app
 
-def test_health_check():
-    with TestClient(app) as client:
-        res = client.get("/health")
-        assert res.status_code == 200
-        data = res.json()
-        assert data["status"] == "ok"
+def test_health_check(client):
+    res = client.get("/health")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "ok"
 
-def test_discovery_search():
-    with TestClient(app) as client:
-        res = client.post("/api/v1/discovery/search", json={
-            "query": "wireless headset",
-            "max_price": 100.0,
-            "limit": 5
-        })
-        assert res.status_code == 200
-        data = res.json()
-        assert "search_id" in data
-        assert len(data["results"]) > 0
+def test_discovery_search(client):
+    res = client.post("/api/v1/discovery/search", json={
+        "query": "wireless headset",
+        "max_price": 100.0,
+        "limit": 5
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert "search_id" in data
+    assert len(data["results"]) > 0
 
-def test_policy_evaluation_success_and_quote():
-    with TestClient(app) as client:
-        res = client.post("/api/v1/policies/evaluate", json={
-            "session_id": "test_session_1",
-            "demo_sku": "HEADSET-DEMO-01",
-            "max_total": 100.0,
-            "currency": "USD"
-        })
-        assert res.status_code == 200
-        data = res.json()
-        assert data["eligible"] is True
-        assert data["quote"] is not None
-        assert data["quote"]["amount"] == 89.99
+def test_fallback_discovery_relevance(client):
+    """Fallback catalogue must not leak unrelated items into narrow queries."""
+    res = client.post("/api/v1/discovery/search", json={
+        "query": "quiet wireless mouse",
+        "limit": 10
+    })
+    assert res.status_code == 200
+    titles = [r["title"] for r in res.json()["results"]]
+    assert titles, "expected at least one mouse match"
+    assert all("Mouse" in t for t in titles)
 
-def test_policy_evaluation_budget_exceeded():
-    with TestClient(app) as client:
-        res = client.post("/api/v1/policies/evaluate", json={
-            "session_id": "test_session_2",
-            "demo_sku": "HEADSET-DEMO-01",
-            "max_total": 50.0, # Below 89.99
-            "currency": "USD"
-        })
-        assert res.status_code == 200
-        data = res.json()
-        assert data["eligible"] is False
-        assert data["quote"] is None
+    res2 = client.post("/api/v1/discovery/search", json={
+        "query": "wireless headset",
+        "limit": 10
+    })
+    titles2 = [r["title"] for r in res2.json()["results"]]
+    assert len(titles2) == 2
+    assert all("Mouse" not in t and "Dock" not in t for t in titles2)
 
-def test_end_to_end_checkout_and_capture():
-    with TestClient(app) as client:
-        # 1. Evaluate policy and get quote
-        eval_res = client.post("/api/v1/policies/evaluate", json={
-            "session_id": "test_sess_e2e",
-            "demo_sku": "HEADSET-DEMO-01",
-            "max_total": 100.0
-        })
-        assert eval_res.status_code == 200
-        quote_id = eval_res.json()["quote"]["id"]
+def test_agent_turn_top_pick_within_budget(client):
+    res = client.post("/api/v1/agent/sessions/sess_ok/turn", json={
+        "message": "Find a wireless headset under $100 with multipoint Bluetooth and a good mic",
+        "user_budget": 100.0
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["recommendations"], "expected recommendations"
+    top = data["recommendations"][0]
+    assert top["within_budget"] is True
+    assert top["demo_sku"] == "HEADSET-DEMO-01"
+    feats = [f.lower() for f in top["verified_features"]]
+    assert any("multipoint" in f for f in feats)
+    assert any("microphone" in f for f in feats)
 
-        # 2. Create Order
-        create_res = client.post("/api/v1/checkout/create", json={
-            "quote_id": quote_id,
-            "session_id": "test_sess_e2e"
-        })
-        assert create_res.status_code == 200
-        order_data = create_res.json()
-        order_id = order_data["order_id"]
-        assert order_data["status"] == "AWAITING_APPROVAL"
-        assert "paypal_order_id" in order_data
+def test_agent_turn_over_budget_top_pick_flagged(client):
+    """Discovery surfaces candidates above budget; the policy engine blocks them."""
+    res = client.post("/api/v1/agent/sessions/sess_flag/turn", json={
+        "message": "Find a wireless headset under $50 with active noise cancelling",
+        "user_budget": 50.0
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["recommendations"], "over-budget candidates should still be visible"
+    assert data["recommendations"][0]["within_budget"] is False
+    assert "budget" in data["reply_text"].lower()
 
-        # 3. Capture Order
-        capture_res = client.post(f"/api/v1/checkout/{order_id}/capture", json={})
-        assert capture_res.status_code == 200
-        capture_data = capture_res.json()
-        assert capture_data["status"] == "PAID"
-        assert capture_data["payment"]["provider"] == "paypal_sandbox"
+def test_policy_evaluation_success_and_quote(client):
+    res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": "test_session_1",
+        "demo_sku": "HEADSET-DEMO-01",
+        "max_total": 100.0,
+        "currency": "USD"
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["eligible"] is True
+    assert data["quote"] is not None
+    assert data["quote"]["amount"] == 89.99
 
-        # 4. Fetch Order and Audit Timeline
-        timeline_res = client.get(f"/api/v1/orders/{order_id}/timeline")
-        assert timeline_res.status_code == 200
-        timeline_data = timeline_res.json()
-        event_types = [e["event_type"] for e in timeline_data["events"]]
-        assert "PAYPAL_ORDER_CREATED" in event_types
-        assert "PAYMENT_CAPTURED" in event_types
+def test_policy_evaluation_budget_exceeded(client):
+    res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": "test_session_2",
+        "demo_sku": "HEADSET-DEMO-01",
+        "max_total": 50.0, # Below 89.99
+        "currency": "USD"
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert data["eligible"] is False
+    assert data["quote"] is None
+
+def test_end_to_end_checkout_and_capture(client):
+    # 1. Evaluate policy and get quote
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": "test_sess_e2e",
+        "demo_sku": "HEADSET-DEMO-01",
+        "max_total": 100.0
+    })
+    assert eval_res.status_code == 200
+    quote_id = eval_res.json()["quote"]["id"]
+
+    # 2. Create Order
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": "test_sess_e2e"
+    })
+    assert create_res.status_code == 200
+    order_data = create_res.json()
+    order_id = order_data["order_id"]
+    assert order_data["status"] == "AWAITING_APPROVAL"
+    assert "paypal_order_id" in order_data
+
+    # 3. Capture Order
+    capture_res = client.post(f"/api/v1/checkout/{order_id}/capture", json={})
+    assert capture_res.status_code == 200
+    capture_data = capture_res.json()
+    assert capture_data["status"] == "PAID"
+    assert capture_data["payment"]["provider"] == "paypal_sandbox"
+
+    # 4. Fetch Order and Audit Timeline
+    timeline_res = client.get(f"/api/v1/orders/{order_id}/timeline")
+    assert timeline_res.status_code == 200
+    timeline_data = timeline_res.json()
+    event_types = [e["event_type"] for e in timeline_data["events"]]
+    assert "PAYPAL_ORDER_CREATED" in event_types
+    assert "PAYMENT_CAPTURED" in event_types
 
 
 def test_checkout_quote_ownership_validation(client, db_session):

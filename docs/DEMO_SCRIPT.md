@@ -23,8 +23,9 @@
 2. Show the **Purchase Policy Checklist**: active status ✓, currency match ✓, budget limit ✓, feature verification ✓
 3. A **locked quote** is generated with a 10-minute TTL
 4. Now try the preset **"Headset under $50 (Test Policy Block)"**
-5. Observe: Policy engine **rejects** the purchase — price exceeds the $50 ceiling
-6. Point out: The quote is NOT created. The AI cannot bypass the deterministic rules.
+5. Observe: candidates still appear — the top one carries an **"Over budget"** badge and the agent warns you in its reply
+6. The auto-selected candidate is policy-evaluated and the Policy panel shows **REJECTED** — price exceeds the $50 ceiling
+7. Point out: The quote is NOT created. The AI cannot bypass the deterministic rules.
 
 ### 3. Consent-First PayPal Checkout
 1. Go back to "Headset under $100"
