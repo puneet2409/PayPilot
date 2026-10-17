@@ -28,6 +28,7 @@ export const App: React.FC = () => {
   const [showApprovalStep, setShowApprovalStep] = useState(false);
   const [currentBudget, setCurrentBudget] = useState<number>(100);
   const [paypalBackendConfigured, setPaypalBackendConfigured] = useState<boolean | null>(null);
+  const [channel3Configured, setChannel3Configured] = useState<boolean | null>(null);
   const policyRequestVersion = useRef(0);
 
   const isPayPalClientConfigured = Boolean(
@@ -54,10 +55,18 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     api.getHealth()
-      .then((health) => setPaypalBackendConfigured(
-        typeof health.paypal_configured === 'boolean' ? health.paypal_configured : null
-      ))
-      .catch(() => setPaypalBackendConfigured(null));
+      .then((health) => {
+        setPaypalBackendConfigured(
+          typeof health.paypal_configured === 'boolean' ? health.paypal_configured : null
+        );
+        setChannel3Configured(
+          typeof health.channel3_configured === 'boolean' ? health.channel3_configured : null
+        );
+      })
+      .catch(() => {
+        setPaypalBackendConfigured(null);
+        setChannel3Configured(null);
+      });
     api.getOrCreateSession()
       .then(setSession)
       .catch((err: unknown) => {
@@ -185,7 +194,13 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
+            <span className={`w-2 h-2 rounded-full ${channel3Configured ? 'bg-sky-400 animate-pulse' : 'bg-slate-400'}`}></span>
+            <span className="text-slate-300 font-medium">
+              {channel3Configured ? 'Channel3 Live (25k+ Retailers)' : 'Channel3 Catalog Cache'}
+            </span>
+          </div>
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
             <span className={`w-2 h-2 rounded-full ${isPayPalConfigured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
             <span className="text-slate-300 font-medium">{paypalStatus}</span>
@@ -234,11 +249,11 @@ export const App: React.FC = () => {
               <div className="flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4 text-blue-400" />
                 <h3 className="text-sm font-semibold text-white">
-                  Product Candidates ({candidates.length})
+                  Channel3 Multi-Retailer Discovery ({candidates.length})
                 </h3>
               </div>
               <span className="text-xs text-slate-400">
-                Sorted by Evidence & Policy Fit
+                {candidates.reduce((sum, c) => sum + (c.offers?.length || 1), 0)} offers ranked by policy fit
               </span>
             </div>
 

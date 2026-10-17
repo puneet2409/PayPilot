@@ -32,6 +32,7 @@ export interface RankedCandidate {
   within_budget?: boolean;
   buy_url?: string;
   merchant?: string;
+  offers?: OfferItem[];
   image_url?: string;
   demo_sku?: string;
   source: string;

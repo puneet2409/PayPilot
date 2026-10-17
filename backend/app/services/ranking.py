@@ -112,6 +112,7 @@ class RankingEngine:
                 unverified_features=unverified,
                 buy_url=buy_url,
                 merchant=best_merchant,
+                offers=offers,
                 image_url=item.image_url,
                 demo_sku=item.demo_sku,
                 source=item.source,

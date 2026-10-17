@@ -231,3 +231,13 @@ def test_order_cancellation(client):
     # Cannot cancel again
     cancel_res2 = client.post(f"/api/v1/orders/{order_id}/cancel")
     assert cancel_res2.status_code == 409
+
+
+def test_channel3_sku_matching():
+    """Verify that Channel3 results matching store products automatically link to demo SKUs."""
+    from app.integrations.channel3 import Channel3Client
+    assert Channel3Client._match_demo_sku("Anker Soundcore Space Q45 Wireless", "Anker") == "HEADSET-DEMO-01"
+    assert Channel3Client._match_demo_sku("JBL Tune 760NC Noise Cancelling", "JBL") == "HEADSET-DEMO-02"
+    assert Channel3Client._match_demo_sku("Logitech MX Master 3S Wireless Mouse", "Logitech") == "MOUSE-DEMO-01"
+    assert Channel3Client._match_demo_sku("Anker 575 USB-C Docking Station", "Anker") == "DOCK-DEMO-01"
+    assert Channel3Client._match_demo_sku("Sony WH-1000XM5 Wireless Headphones", "Sony") is None

@@ -87,6 +87,24 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             </div>
           ))}
         </div>
+
+        {/* Multi-retailer offers from Channel3 */}
+        {product.offers && product.offers.length > 1 && (
+          <div className="mt-3.5 p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
+            <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
+              <span>Channel3 Retailer Comparison</span>
+              <span className="text-[10px] text-sky-400 font-mono font-medium">{product.offers.length} live offers</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {product.offers.map((off, oidx) => (
+                <div key={oidx} className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-[11px]">
+                  <span className="text-slate-400 font-medium">{off.merchant}:</span>
+                  <span className="font-semibold text-emerald-400">${off.price.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between gap-3">
@@ -102,28 +120,40 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </a>
         )}
 
-        <button
-          onClick={() => onSelect(product)}
-          disabled={!product.demo_sku || (isLoading && isSelected)}
-          className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
-            isSelected
-              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-              : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
-          }`}
-        >
-          {isLoading && isSelected ? (
-            <>
-              <Loader2 className="w-3 h-3 animate-spin" />
-              <span>Evaluating Policy...</span>
-            </>
-          ) : !product.demo_sku ? (
-            'Retailer comparison only'
-          ) : isSelected ? (
-            'Selected Candidate'
-          ) : (
-            'Select for Policy Check'
-          )}
-        </button>
+        {product.demo_sku ? (
+          <button
+            onClick={() => onSelect(product)}
+            disabled={isLoading && isSelected}
+            className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
+              isSelected
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+            }`}
+          >
+            {isLoading && isSelected ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Evaluating Policy...</span>
+              </>
+            ) : isSelected ? (
+              'Selected Candidate'
+            ) : (
+              'Select for Policy Check'
+            )}
+          </button>
+        ) : product.buy_url ? (
+          <a
+            href={product.buy_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-3.5 py-2 rounded-lg text-xs font-semibold bg-sky-600/20 hover:bg-sky-600/30 text-sky-300 border border-sky-500/30 transition-all flex items-center gap-1.5"
+          >
+            <span>Buy on {product.merchant || 'Retailer'}</span>
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        ) : (
+          <span className="text-xs text-slate-500 italic py-1">Retailer comparison</span>
+        )}
       </div>
     </div>
   );

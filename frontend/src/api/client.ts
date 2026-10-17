@@ -32,7 +32,7 @@ function authHeaders(json = false): Record<string, string> {
 }
 
 export const api = {
-  async getHealth(): Promise<{ paypal_configured?: boolean }> {
+  async getHealth(): Promise<{ paypal_configured?: boolean; channel3_configured?: boolean; ai_provider?: string }> {
     const res = await fetch(`${API_BASE}/health`);
     if (!res.ok) throw new Error(`Health check failed: ${res.statusText}`);
     return res.json();

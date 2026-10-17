@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
-from typing import Literal
+from typing import List, Optional, Literal
+from app.schemas.discovery import OfferItem
 
 class AgentIntent(BaseModel):
     category: Optional[str] = Field(default=None, max_length=100)
@@ -24,6 +24,7 @@ class RankedCandidate(BaseModel):
     within_budget: bool = True
     buy_url: Optional[str] = None
     merchant: Optional[str] = None
+    offers: List[OfferItem] = Field(default_factory=list)
     image_url: Optional[str] = None
     demo_sku: Optional[str] = None
     source: str = "channel3"

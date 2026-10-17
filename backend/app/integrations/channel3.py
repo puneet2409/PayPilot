@@ -125,6 +125,29 @@ class Channel3Client:
         self.api_key = api_key or settings.CHANNEL3_API_KEY
         self.base_url = base_url or settings.CHANNEL3_BASE_URL
 
+    @property
+    def is_configured(self) -> bool:
+        return bool(self.api_key and self.api_key != "your_channel3_api_key_here")
+
+    @staticmethod
+    def _match_demo_sku(title: str, brand: Optional[str]) -> Optional[str]:
+        text = f"{brand or ''} {title}".lower()
+        # Map known product lines to store demo SKUs for PayPal Sandbox checkout
+        sku_patterns = [
+            ("HEADSET-DEMO-01", ["q45"]),
+            ("HEADSET-DEMO-01", ["space", "soundcore"]),
+            ("HEADSET-DEMO-02", ["760"]),
+            ("HEADSET-DEMO-02", ["tune", "jbl"]),
+            ("DOCK-DEMO-01", ["575"]),
+            ("DOCK-DEMO-01", ["anker", "dock"]),
+            ("MOUSE-DEMO-01", ["mx master"]),
+            ("MOUSE-DEMO-01", ["mx", "3s"]),
+        ]
+        for sku, tokens in sku_patterns:
+            if all(tok in text for tok in tokens):
+                return sku
+        return None
+
     async def search(
         self,
         query: str,
@@ -133,11 +156,11 @@ class Channel3Client:
         user_id: str = "sess_paypilot_demo"
     ) -> List[ProductItem]:
         """
-        Executes search via Channel3 API. Live results are kept separate from
-        purchasable demo-store items. When Channel3 is unavailable, demo-store
-        items provide a clearly labelled, self-contained walkthrough path.
+        Executes search via Channel3 API using agentic mode across 25,000+ retailers.
+        When Channel3 is unavailable, the bundled demo catalogue provides a
+        clearly labelled, self-contained walkthrough path.
         """
-        if not self.api_key or self.api_key == "your_channel3_api_key_here":
+        if not self.is_configured:
             logger.info("Channel3 API key not configured. Using normalized demo discovery catalogue.")
             return self._fallback_filter(query, max_price, limit)
 
@@ -148,7 +171,12 @@ class Channel3Client:
         }
         payload = {
             "query": query,
-            "limit": limit
+            "limit": limit,
+            "config": {
+                "mode": "agentic",
+                "country": "US",
+                "currency": "USD"
+            }
         }
         if max_price is not None:
             payload["filters"] = {
@@ -179,27 +207,49 @@ class Channel3Client:
 
     def _normalize_channel3_response(self, data: Dict[str, Any]) -> List[ProductItem]:
         items: List[ProductItem] = []
-        raw_products = data.get("results") or data.get("products") or []
+        raw_products = data.get("results") or data.get("products") or data.get("items") or []
+        if isinstance(data, list):
+            raw_products = data
+
         for p in raw_products:
             offers_list = []
             for o in p.get("offers", []):
+                raw_price = o.get("price")
+                if isinstance(raw_price, dict):
+                    price_val = float(raw_price.get("amount") or raw_price.get("value") or 0.0)
+                    curr_val = raw_price.get("currency") or "USD"
+                else:
+                    price_val = float(raw_price or 0.0)
+                    curr_val = o.get("currency", "USD")
+
                 offers_list.append(OfferItem(
-                    merchant=o.get("merchant", "Retailer"),
-                    price=float(o.get("price", 0.0)),
-                    currency=o.get("currency", "USD"),
-                    availability=o.get("availability", "InStock"),
+                    merchant=o.get("merchant") or o.get("seller") or o.get("store") or "Retailer",
+                    price=price_val,
+                    currency=curr_val,
+                    availability=o.get("availability") or "InStock",
                     buy_url=o.get("buy_url") or o.get("url"),
                     observed_at=o.get("observed_at") or datetime.now(timezone.utc).isoformat()
                 ))
-            
+
+            # Extract image url (singular or array)
+            image_url = p.get("image_url") or p.get("image")
+            if not image_url and p.get("images"):
+                image_url = p["images"][0] if isinstance(p["images"], list) else p["images"]
+
+            title = p.get("title", "Untitled Product")
+            brand = p.get("brand")
+            attributes = p.get("attributes") or p.get("specs") or p.get("specifications") or {}
+            demo_sku = p.get("demo_sku") or self._match_demo_sku(title, brand)
+
             items.append(ProductItem(
-                product_id=str(p.get("id") or p.get("product_id")),
-                title=p.get("title", "Untitled Product"),
-                brand=p.get("brand"),
+                product_id=str(p.get("id") or p.get("product_id") or p.get("sku") or "ch3_item"),
+                title=title,
+                brand=brand,
                 source="channel3",
                 offers=offers_list,
-                attributes=p.get("attributes", {}),
-                image_url=p.get("image_url") or p.get("image")
+                attributes=attributes,
+                image_url=image_url,
+                demo_sku=demo_sku
             ))
         return items
 
