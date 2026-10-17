@@ -284,3 +284,92 @@ def test_session_orders_listing(client, db_session):
     assert orders2[0]["status"] == "PAID"
     assert orders2[0]["capture_id"] is not None
 
+
+def test_paypal_webhook_reconciliation(client, db_session):
+    """Verify asynchronous PayPal webhook processes capture events and updates order state."""
+    session_id = client.test_session_id
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": session_id,
+        "demo_sku": "HEADSET-DEMO-02",
+        "max_total": 100.0
+    })
+    assert eval_res.status_code == 200
+    quote_id = eval_res.json()["quote"]["id"]
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": session_id
+    })
+    assert create_res.status_code == 200
+    order_data = create_res.json()
+    order_id = order_data["order_id"]
+    paypal_order_id = order_data["paypal_order_id"]
+
+    # Post asynchronous webhook
+    wh_payload = {
+        "id": "WH-TEST-EVENT-001",
+        "event_type": "PAYMENT.CAPTURE.COMPLETED",
+        "resource_type": "capture",
+        "resource": {
+            "id": "CAP-WH-TEST-999",
+            "status": "COMPLETED",
+            "amount": {"value": "79.95", "currency_code": "USD"},
+            "supplementary_data": {
+                "related_ids": {"order_id": paypal_order_id}
+            }
+        }
+    }
+    wh_res = client.post("/api/v1/webhooks/paypal", json=wh_payload)
+    assert wh_res.status_code == 200
+    res_json = wh_res.json()
+    assert res_json["status"] == "received"
+    assert res_json["matched_order_id"] == order_id
+
+    # Verify order state transitioned to PAID
+    order_res = client.get(f"/api/v1/orders/{order_id}")
+    assert order_res.status_code == 200
+    assert order_res.json()["status"] == "PAID"
+    assert order_res.json()["payment"]["capture_id"] == "CAP-WH-TEST-999"
+
+
+def test_analytics_dashboard_endpoint(client, db_session):
+    """Verify analytics endpoint generates AG Studio data model sources, metrics, and relationships."""
+    session_id = client.test_session_id
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": session_id,
+        "demo_sku": "HEADSET-DEMO-01",
+        "max_total": 100.0
+    })
+    quote_id = eval_res.json()["quote"]["id"]
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": session_id
+    })
+    order_id = create_res.json()["order_id"]
+    client.post(f"/api/v1/checkout/{order_id}/capture", json={})
+
+    # Fetch AG Studio dashboard data
+    dash_res = client.get(f"/api/v1/analytics/sessions/{session_id}/dashboard")
+    assert dash_res.status_code == 200
+    data = dash_res.json()
+
+    assert "description" in data
+    assert "sources" in data
+    assert "orders" in data["sources"]
+    assert "transactions" in data["sources"]
+    assert "customers" in data["sources"]
+    assert len(data["sources"]["orders"]) == 1
+    assert len(data["sources"]["transactions"]) == 1
+
+    # Check metrics
+    metrics = data["metrics"]
+    assert metrics["total_issued_amount"] == 89.99
+    assert metrics["total_paid_amount"] == 89.99
+    assert metrics["collection_rate_percent"] == 100.0
+    assert metrics["paid_orders"] == 1
+
+    # Check relationships & expressions
+    assert len(data["relationships"]) == 2
+    assert len(data["expressions"]) == 1
+    assert data["expressions"][0]["name"] == "collection_rate"
+
+

@@ -396,6 +396,7 @@ export const App: React.FC = () => {
             ) : (
               <OrdersLedger
                 orders={orders}
+                sessionId={sessionId}
                 onCancelOrder={handleCancelOrder}
                 onRefresh={refreshOrders}
               />

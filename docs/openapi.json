@@ -550,6 +550,133 @@
           }
         }
       }
+    },
+    "/api/v1/webhooks/paypal": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Handle Paypal Webhook",
+        "description": "Asynchronous Webhook Receiver for PayPal Events.\nSatisfies Section 5.1 of Embedded Financial Analytics Blueprint:\n- Receives asynchronous event streams (payment captures, order approvals, refunds)\n- Verifies event headers & transmission metadata\n- Idempotently reconciles database state\n- Always returns HTTP 200 OK to signal successful receipt and prevent exponential retry floods",
+        "operationId": "handle_paypal_webhook_api_v1_webhooks_paypal_post",
+        "parameters": [
+          {
+            "name": "paypal-auth-algo",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Paypal-Auth-Algo"
+            }
+          },
+          {
+            "name": "paypal-transmission-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Paypal-Transmission-Id"
+            }
+          },
+          {
+            "name": "paypal-cert-url",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Paypal-Cert-Url"
+            }
+          },
+          {
+            "name": "paypal-transmission-sig",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Paypal-Transmission-Sig"
+            }
+          },
+          {
+            "name": "paypal-transmission-time",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "title": "Paypal-Transmission-Time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/analytics/sessions/{session_id}/dashboard": {
+      "get": {
+        "tags": [
+          "Analytics & AG Studio"
+        ],
+        "summary": "Get Dashboard Api Data",
+        "description": "Implements getDashboardAPIData from Section 1.2 of Embedded Financial Analytics Blueprint:\nConsolidates operational PayPal transactional data into structured tabular sources,\nrelational join definitions, calculated KPI expressions, and temporal boundaries\ntailored for AG Studio and AI context harness ingestion.",
+        "operationId": "get_dashboard_api_data_api_v1_analytics_sessions__session_id__dashboard_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Dashboard Api Data Api V1 Analytics Sessions  Session Id  Dashboard Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base, SessionLocal
-from app.api import health, discovery, policies, checkout, orders, agent, sessions
+from app.api import health, discovery, policies, checkout, orders, agent, sessions, webhooks, analytics
 from app.models.catalogue import DemoProduct
 from app.security import validate_auth_config
 
@@ -116,3 +116,6 @@ app.include_router(checkout.router)
 app.include_router(orders.router)
 app.include_router(agent.router)
 app.include_router(sessions.router)
+app.include_router(webhooks.router)
+app.include_router(analytics.router)
+
