@@ -1,12 +1,20 @@
 import json
 from datetime import datetime, timezone
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.order import Order, Payment
-from app.schemas.order import OrderDetailResponse, AuditTimelineResponse, AuditTimelineEvent
+from app.models.catalogue import DemoProduct
+from app.schemas.order import (
+    OrderDetailResponse,
+    AuditTimelineResponse,
+    AuditTimelineEvent,
+    OrderSummaryItem
+)
 from app.services.audit_service import AuditService
 from app.security import require_session, require_session_match
+
 
 router = APIRouter(prefix="/api/v1", tags=["Orders & Audit"])
 
@@ -88,6 +96,49 @@ def get_session_audit_timeline(
             for e in events
         ]
     )
+
+@router.get("/sessions/{session_id}/orders", response_model=List[OrderSummaryItem])
+def get_session_orders(
+    session_id: str,
+    db: Session = Depends(get_db),
+    authenticated_session_id: str = Depends(require_session),
+):
+    require_session_match(session_id, authenticated_session_id)
+    orders = (
+        db.query(Order)
+        .filter(Order.session_id == session_id)
+        .order_by(Order.created_at.desc())
+        .all()
+    )
+
+    skus = {o.sku for o in orders}
+    products = db.query(DemoProduct).filter(DemoProduct.sku.in_(skus)).all() if skus else []
+    sku_to_title = {p.sku: p.title for p in products}
+
+    order_ids = [o.id for o in orders]
+    payments = db.query(Payment).filter(Payment.order_id.in_(order_ids)).all() if order_ids else []
+    order_to_payment = {p.order_id: p for p in payments}
+
+    result = []
+    for o in orders:
+        pmt = order_to_payment.get(o.id)
+        result.append(
+            OrderSummaryItem(
+                order_id=o.id,
+                quote_id=o.quote_id,
+                session_id=o.session_id,
+                sku=o.sku,
+                item_title=sku_to_title.get(o.sku, o.sku),
+                paypal_order_id=o.paypal_order_id,
+                capture_id=pmt.capture_id if pmt else None,
+                status=o.status,
+                amount=o.amount,
+                currency=o.currency,
+                created_at=o.created_at.isoformat() if o.created_at else "",
+                updated_at=o.updated_at.isoformat() if o.updated_at else None,
+            )
+        )
+    return result
 
 @router.post("/orders/{order_id}/cancel")
 def cancel_order(

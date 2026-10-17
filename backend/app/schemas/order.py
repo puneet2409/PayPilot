@@ -23,3 +23,18 @@ class AuditTimelineResponse(BaseModel):
     session_id: Optional[str] = None
     order_id: Optional[str] = None
     events: List[AuditTimelineEvent]
+
+class OrderSummaryItem(BaseModel):
+    order_id: str
+    quote_id: str
+    session_id: str
+    sku: str
+    item_title: Optional[str] = None
+    paypal_order_id: Optional[str] = None
+    capture_id: Optional[str] = None
+    status: str
+    amount: float
+    currency: str
+    created_at: str
+    updated_at: Optional[str] = None
+

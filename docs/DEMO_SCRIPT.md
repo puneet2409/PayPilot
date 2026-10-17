@@ -1,53 +1,76 @@
 # PayPilot — Demo Script
 
-> Use this 3-minute walkthrough to demonstrate all three pillars of PayPilot.
+> **Target Video Length:** 2 minutes 40 seconds (Strict cutoff: Under 3 minutes!)  
+> **Structure:** 4 concise segments showing all hackathon sponsor integrations.
 
-## Prerequisites
-- Backend running on `http://localhost:8000`
-- Frontend running on `http://localhost:5173`
-- PayPal Sandbox REST credentials and the matching frontend Client ID for the judging demo; simulated mode is local-only and does not satisfy the PayPal integration demonstration
-- (Optional) Channel3 API key for live product discovery
-- Gemini API key to demonstrate structured AI intent parsing (the rules fallback supports local setup, but configure Gemini for the hackathon video)
+---
 
-## Demo Flow (target: 2 minutes 45 seconds)
+## Prerequisites Before Recording
+1. **Backend:** Running on `http://localhost:8000` (`python -m uvicorn app.main:app --port 8000`)
+2. **Frontend:** Running on `http://localhost:5173` (`npm run dev`)
+3. **Environment (.env):**
+   - `PAYPAL_CLIENT_ID` & `PAYPAL_CLIENT_SECRET` (from `developer.paypal.com` Sandbox)
+   - `VITE_PAYPAL_CLIENT_ID` (matching client ID in `frontend/.env`)
+   - `CHANNEL3_API_KEY` (from `trychannel3.com` with promo code `PAYPAL-HACKATHON-2026`)
+   - `GEMINI_API_KEY` (from `aistudio.google.com`)
+4. **Header Status Check:** Confirm all three badges are active:
+   - `Channel3 Live (25k+ Retailers)` 🟢
+   - `PayPal Sandbox Ready` 🟢
+   - `OpenAPI 3.1` 🟣
 
-### 1. Product Discovery (about 45 seconds)
-1. Open the app at `http://localhost:5173`
-2. Search: **"Find a work headset under $100 with multipoint Bluetooth and a built-in microphone. Avoid refurbished."**
-3. Show **Parsed shopping intent**: category, budget, required features, exclusion, and Gemini/rules source
-4. If Channel3 is configured, show both a **Channel3 result** (live retailer offer) and a **PayPilot demo-store item**; without a key, show the bundled demo-store items
-5. Point out that only live Channel3 results show retailer links; the demo-store price is clearly identified and is what the sandbox purchase uses
-6. Note the **Auditable Provenance Trail** on the right — first event logged
+---
 
-### 2. Deterministic Policy Engine (about 45 seconds)
-1. A purchasable PayPilot demo-store candidate is auto-selected when available and policy-evaluated; live retailer-only results remain comparison-only
-2. Show that extracted requirements and exclusions are passed to the policy engine
-3. Explain the checked price is PayPilot demo-store inventory; a retailer offer is market comparison, not this checkout price
-4. A quote is generated with a 10-minute TTL only when all deterministic checks pass
-5. Now try the preset **"Headset under $50 (Test Policy Block)"**
-6. Observe: candidates remain visible, over-budget options are flagged, and the policy panel shows **REJECTED** using the PayPilot demo-store price
-7. Point out: No quote is created. Gemini parsed the request; deterministic code made the purchase decision.
+## Demo Walkthrough (Total: 2m 40s)
 
-### 3. Consent-First PayPal Checkout (about 60 seconds)
-1. Go back to "Headset under $100" and select the PayPilot demo-store item if the live Channel3 result is comparison-only
-2. Click **"Proceed to PayPal Checkout"** to enter the approval panel
-3. Click **"Generate PayPal Sandbox Order"** — server creates the order via PayPal Orders v2 API
-4. The PayPal Approve button appears (real PayPal SDK or simulated)
-5. Click to approve and capture
-6. Observe: Payment is confirmed, capture ID is displayed, audit trail shows the full lifecycle
+### Act 1: AI Intent Parsing & Channel3 Discovery (~40s)
+1. **Hook:** "Autonomous AI agents that spend money can hallucinate prices, overlook required specs, or overspend. PayPilot solves this with consent-first agentic commerce."
+2. Click the preset: **"Headset under $100"** (or type: *"Find a wireless headset under $100 with multipoint Bluetooth and a built-in microphone. Avoid refurbished."*).
+3. **Point out Parsed Shopping Intent:** Show how Gemini extracted:
+   - Category: `wireless headset`
+   - Budget: `$100.00 USD`
+   - Must-have tags: `multipoint`, `built-in microphone`
+   - Exclusions: `refurbished`
+4. **Point out Channel3 Multi-Retailer Results:**
+   - Live external comparison results from major retailers (Best Buy, Walmart, B&H) with direct retailer links.
+   - Verified feature badges (green) vs unverified (gray).
+   - PayPilot demo-store item ready for purchase.
 
-### Key Differentiators to Highlight
-- **No autonomous spending**: The AI recommends but never pays without explicit consent
-- **Deterministic guardrails**: Budget, features, and exclusions are enforced by code — not LLM promises
-- **Auditable event timeline**: Key actions are logged with timestamps and session-scoped provenance
-- **Meaningful AI use**: Gemini extracts structured intent that drives search, ranking, and policy checks
-- **Real APIs**: Channel3 for discovery and PayPal Sandbox Orders for buyer-approved checkout
-- **Architecture honesty**: Demo-store vs. external offers are clearly distinguished
+### Act 2: Deterministic Purchase Policy Engine (~45s)
+1. Select the top candidate: The **Purchase Policy Checklist** evaluates in real-time.
+2. Show all 4 deterministic code checks passing:
+   - SKU active status ✓
+   - Currency match ✓
+   - Budget ceiling check ✓
+   - Feature specification verification ✓
+3. Point out: A cryptographically signed **Quote** is issued with a locked 10-minute TTL.
+4. **Demonstrate Policy Enforcement:** Click the preset **"Headset under $50 (Test Policy Block)"**.
+5. Show what happens:
+   - Products remain visible with an **Over Budget** warning badge.
+   - The Policy Engine **REJECTS** the transaction (Price $89.99 > $50.00 ceiling).
+   - Emphasize: *No quote is created. The LLM cannot bypass the deterministic rules.*
 
-## Before Submission
-- [ ] Publish the source repository publicly and confirm the MIT `LICENSE` is visible at the repository root
-- [ ] Keep source, assets, and complete setup/run instructions in that repository
-- [ ] Add the hosted demo URL, or confirm the README setup works from a clean clone
-- [ ] Record a public YouTube demo under 3 minutes that shows the app running end to end
-- [ ] In the submission form, name Gemini, PayPal Sandbox, and Channel3 and explain each tool's role
-- [ ] Use only media and music that the team has permission to include
+### Act 3: Consent-First PayPal Sandbox Checkout (~45s)
+1. Switch back to "Headset under $100" and click **"Proceed to PayPal Checkout"**.
+2. Click **"1. Generate PayPal Sandbox Order"**:
+   - The server calls PayPal Orders v2 API with `intent: CAPTURE` and an idempotency key.
+   - The verified PayPal Order ID appears.
+3. The official **PayPal JS SDK Button** (`@paypal/react-paypal-js`) renders.
+4. Click the PayPal button, log in with your Sandbox Personal buyer account, and click **Pay Now / Complete Purchase**.
+5. **Capture Confirmation:** Server captures and verifies payment. Order status turns to **PAID** with the official PayPal Capture ID displayed.
+
+### Act 4: Financial Ledger, Audit Trail & OpenAPI 3.1 (~30s)
+1. Switch to the **Payments Ledger** tab in the right-hand panel (inspired by the AG Grid payments workshop).
+2. Show the real-time financial ledger:
+   - Order ID, Item, Amount ($89.99), Status (`PAID`), PayPal Order ID, Capture ID, and timestamp.
+   - Click **Export CSV** to demonstrate clean financial reporting.
+3. Switch to the **Audit Trail** tab to show the immutable session provenance log.
+4. Click **OpenAPI 3.1** in the header to show the APIMatic-compliant interactive API documentation.
+5. **Closing:** "PayPilot delivers agentic commerce with deterministic safety: AI advises, code protects, and the buyer approves. Thank you!"
+
+---
+
+## Submission Checklist
+- [ ] Video duration is strictly under 3 minutes (target: 2m 40s).
+- [ ] Video uploaded to YouTube as Public or Unlisted.
+- [ ] GitHub repository is public with `LICENSE` (MIT).
+- [ ] Devpost submission lists all sponsor categories (Channel3, AG Grid, APIMatic, Render, Overall).

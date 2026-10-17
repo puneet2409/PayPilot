@@ -241,3 +241,46 @@ def test_channel3_sku_matching():
     assert Channel3Client._match_demo_sku("Logitech MX Master 3S Wireless Mouse", "Logitech") == "MOUSE-DEMO-01"
     assert Channel3Client._match_demo_sku("Anker 575 USB-C Docking Station", "Anker") == "DOCK-DEMO-01"
     assert Channel3Client._match_demo_sku("Sony WH-1000XM5 Wireless Headphones", "Sony") is None
+
+
+def test_session_orders_listing(client, db_session):
+    """Verify that listing session orders returns created and captured orders with product details."""
+    session_id = client.test_session_id
+    # Create order 1
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": session_id,
+        "demo_sku": "HEADSET-DEMO-01",
+        "max_total": 100.0
+    })
+    assert eval_res.status_code == 200
+    quote_id = eval_res.json()["quote"]["id"]
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": session_id
+    })
+    assert create_res.status_code == 200
+    order_id = create_res.json()["order_id"]
+
+    # Check orders listing before capture
+    orders_res = client.get(f"/api/v1/sessions/{session_id}/orders")
+    assert orders_res.status_code == 200
+    orders = orders_res.json()
+    assert len(orders) == 1
+    assert orders[0]["order_id"] == order_id
+    assert orders[0]["status"] == "AWAITING_APPROVAL"
+    assert orders[0]["sku"] == "HEADSET-DEMO-01"
+    assert "Anker Soundcore Space Q45" in orders[0]["item_title"]
+    assert orders[0]["amount"] == 89.99
+
+    # Capture the order
+    cap_res = client.post(f"/api/v1/checkout/{order_id}/capture", json={})
+    assert cap_res.status_code == 200
+
+    # Check orders listing after capture
+    orders_res2 = client.get(f"/api/v1/sessions/{session_id}/orders")
+    assert orders_res2.status_code == 200
+    orders2 = orders_res2.json()
+    assert len(orders2) == 1
+    assert orders2[0]["status"] == "PAID"
+    assert orders2[0]["capture_id"] is not None
+

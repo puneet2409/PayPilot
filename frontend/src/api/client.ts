@@ -4,7 +4,8 @@ import type {
   CheckoutCreateResponse,
   CheckoutCaptureResponse,
   AuditTimelineEvent,
-  AuthSession
+  AuthSession,
+  OrderSummaryItem
 } from '../types';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
@@ -139,5 +140,23 @@ export const api = {
     if (!res.ok) return [];
     const data = await res.json();
     return data.events || [];
+  },
+
+  async getSessionOrders(sessionId: string): Promise<OrderSummaryItem[]> {
+    const res = await fetch(`${API_BASE}/api/v1/sessions/${sessionId}/orders`, { headers: authHeaders() });
+    if (!res.ok) return [];
+    return res.json();
+  },
+
+  async cancelOrder(orderId: string): Promise<{ order_id: string; status: string }> {
+    const res = await fetch(`${API_BASE}/api/v1/orders/${orderId}/cancel`, {
+      method: 'POST',
+      headers: authHeaders()
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Order cancellation failed: ${res.statusText}`);
+    }
+    return res.json();
   }
 };

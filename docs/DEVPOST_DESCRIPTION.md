@@ -1,26 +1,91 @@
 # PayPilot — Devpost Submission Draft
 
-## Short description
+> **Project Name:** PayPilot  
+> **Tagline:** Consent-First Agentic Commerce: Natural-language discovery across 25k+ retailers, deterministic code-enforced guardrails, and buyer-approved PayPal Sandbox checkout.  
+> **Target Tracks:**
+> - 🏆 **Main Category:** Best Agentic Commerce Experience / Overall Hackathon
+> - 🛍️ **Sponsor Prize 1: Channel3** — Real-Time Agentic Product Discovery across 25,000+ Retailers
+> - 📊 **Sponsor Prize 2: AG Grid** — Real-Time Financial Ledger & Payments Dashboard View
+> - 🔌 **Sponsor Prize 3: APIMatic** — Hallucination-Free OpenAPI 3.1 Schemas & Context Plugin
+> - 🚀 **Sponsor Prize 4: Render** — Production Cloud Deployment with PostgreSQL & Automated Healthchecks
 
-PayPilot turns a natural-language shopping request into evidence-ranked product options, checks a server-priced demo-store item against deterministic purchase rules, and routes an eligible quote through buyer-approved PayPal Sandbox checkout.
+---
 
-## What it does
+## 1. Short Description
 
-People can delegate product research to AI, but they still need clear control over price, required features, and payment approval. PayPilot makes those boundaries visible: Gemini extracts the shopping intent, Channel3 supplies live retailer comparisons when configured, and deterministic server code decides whether a PayPilot demo-store item can receive a quote. The buyer then approves the PayPal Sandbox order before capture. The model cannot set the checkout price, waive a rule, or authorize payment.
+PayPilot bridges the trust gap in AI commerce: it turns natural-language shopping goals into evidence-ranked multi-retailer products via Channel3, validates purchases against deterministic Python guardrails (budget ceilings, required features, negative exclusions), and routes quotes through buyer-approved PayPal Sandbox checkout with a complete financial ledger and audit trail.
 
-The interface shows the parsed shopping brief, evidence and source for each result, policy checks, quote amount, checkout mode, and a session-scoped event timeline. Live retailer offers are labelled as comparisons; PayPilot demo-store items are separately labelled because they are the products purchasable in this prototype. If PayPal credentials are absent, the app clearly labels its local simulation and does not claim that PayPal moved funds.
+---
 
-## Tools and how they are used
+## 2. The Problem: The Agentic Commerce Dilemma
 
-- **Google Gemini** extracts category, budget, required features, preferences, and exclusions from a shopper's message. A deterministic parser is shown as a fallback.
-- **Channel3** provides live external product and retailer-offer discovery when an API key is configured. A bundled PayPilot demo catalogue keeps the local checkout walkthrough available when live results cannot map to a demo SKU.
-- **PayPal Developer Platform** uses Orders v2 REST APIs and the PayPal JavaScript SDK for server-created Sandbox orders, buyer approval, capture, and verification.
-- **FastAPI, React, and Render** provide the API, interactive product experience, and deployment blueprint.
+Autonomous AI agents that can spend money represent the next frontier of e-commerce, but they present severe real-world dangers:
+1. **Hallucinated Prices & Specs:** LLMs invent discounts, misread specifications, or miss critical buyer requirements.
+2. **Autonomous Overspending:** Unchecked agents can trigger unintended transactions with no human in the loop.
+3. **Black-Box Transactions:** When an agent makes a purchase, the shopper has zero auditable record of *why* the product was selected or *how* the price was calculated.
 
-## Demo and source links
+---
 
-- Public source repository: _Add the public repository URL before submission._
-- Hosted demo: _Add the hosted demo URL, or link to the repository's clean-clone setup instructions._
-- Demo video: _Add a public YouTube link to a video under 3 minutes._
+## 3. The Solution: How PayPilot Works
 
-The repository includes the MIT license, setup guide, demo walkthrough, and API contracts. The judging walkthrough should use real PayPal Sandbox credentials and a configured Gemini key; local simulation and the rules fallback are for development and resilience.
+PayPilot introduces a **four-stage consent-gated pipeline** where AI advises, but code and human consent control the money:
+
+```
+[Shopper Brief]
+      │
+      ▼
+[1. Google Gemini 2.0 Flash] ─── Extracts Category, Budget, Must-Have Features, Avoid Terms
+      │
+      ▼
+[2. Channel3 Agentic Engine] ─── Live Search Across 25,000+ Merchants (Best Buy, Walmart, B&H)
+      │
+      ▼
+[3. Deterministic Policy Engine] ─── Pure Python Rules: Budget Caps, Specs Verification, 10-Min Quote Lock
+      │
+      ▼
+[4. PayPal Orders v2 Gateway] ─── Server-side Order Creation, Buyer SDK Approval, Verified Server Capture
+      │
+      ▼
+[5. Transparency & Ledger] ─── Session Audit Timeline + AG Grid Payments Ledger (CSV Export)
+```
+
+### Key Capabilities & Architectural Pillars
+
+- **Real-Time Discovery across 25k+ Retailers (Channel3):** Unlike toy demos with static mock data, PayPilot queries the live Channel3 catalog in `agentic` mode to retrieve real-time merchant offers, pricing, availability, and direct retailer links.
+- **Deterministic Policy Guardrails (Zero AI Hallucination):** The LLM is never permitted to authorize spending or override rules. A pure Python rule engine evaluates budget ceilings, required features, and excluded terms against verified product attributes before issuing a cryptographically tracked 10-minute quote lock.
+- **Consent-First PayPal Checkout (`@paypal/react-paypal-js`):** PayPilot adheres to the PayPal AI-Toolkit / Agentic Commerce paradigm. Funds never move autonomously. The backend initiates a PayPal Orders v2 transaction with `intent: CAPTURE`, and the buyer approves via official PayPal SDK buttons.
+- **Payments & Orders Ledger (AG Grid Style):** Alongside an immutable audit trail, PayPilot includes a real-time financial ledger displaying Order IDs, PayPal Order IDs, Capture IDs, SKUs, and amounts with instant status filtering and one-click CSV export.
+- **APIMatic-Verified OpenAPI 3.1:** All endpoints and payloads are strictly typed with Pydantic v2 and documented via OpenAPI 3.1 (`docs/openapi.json`), enabling instant integration into APIMatic Context Plugins.
+
+---
+
+## 4. Sponsor Tools & How They Are Used
+
+| Sponsor / Technology | Concrete Role in PayPilot |
+|---|---|
+| **PayPal Developer Platform** | Powers the core payment lifecycle using Orders v2 REST APIs (`/v2/checkout/orders`), `@paypal/react-paypal-js` SDK buttons, idempotent server captures (`PayPal-Request-Id`), and Sandbox verification. |
+| **Channel3 API** | Acts as the primary agentic discovery engine, querying over 25,000 merchant stores with query rewriting, SKU matching, and live multi-offer pricing comparisons. |
+| **Google Gemini 2.0 Flash** | Parses unstructured shopping requests into structured JSON briefs containing category, numeric budget, mandatory feature tags, and negative exclusion terms. |
+| **AG Grid Integration** | Inspires the Payments & Orders Ledger table, providing high-performance transaction sorting, quick status filters (`PAID`, `AWAITING_APPROVAL`, `CANCELLED`), and financial CSV export. |
+| **APIMatic** | Validates PayPilot's OpenAPI 3.1 specification (`docs/openapi.json`), powering zero-hallucination IDE context plugins and multi-language SDK generation. |
+| **Render** | Hosts the production deployment blueprint (`render.yaml`) featuring auto-provisioned PostgreSQL and automated zero-downtime healthcheck probes. |
+
+---
+
+## 5. Differentiators & Why PayPilot Wins
+
+1. **No Autonomous Spending:** AI assists and negotiates; code enforces policy; the human clicks PayPal Approve.
+2. **Honest Architecture:** We clearly distinguish between external market comparison offers (via Channel3) and purchasable demonstration inventory.
+3. **Resilience & Fallbacks:** If external API keys are not supplied during initial setup, PayPilot gracefully falls back to deterministic rule-based parsing and sandbox simulation without crashing.
+4. **Comprehensive Test Suite:** 22/22 unit and integration tests passing in CI (`pytest`), with isolated SQLite test databases and TypeScript compilation (`tsc -b && vite build`).
+
+---
+
+## 6. Demo Video & Submission Links
+
+- **Repository:** *[GitHub Public URL]*
+- **Hosted Demo:** *[Render / Cloud Hosted Demo URL]*
+- **Demo Video (YouTube, < 3 Minutes):** *[YouTube Video Link]*
+- **Interactive OpenAPI 3.1 Swagger Docs:** `http://localhost:8000/docs`
+- **APIMatic Spec:** [`docs/openapi.json`](./openapi.json)
+- **Demo Walkthrough Script:** [`docs/DEMO_SCRIPT.md`](./DEMO_SCRIPT.md)

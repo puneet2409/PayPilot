@@ -116,3 +116,19 @@ export interface AuthSession {
   token_type: 'bearer';
   expires_at: number;
 }
+
+export interface OrderSummaryItem {
+  order_id: string;
+  quote_id: string;
+  session_id: string;
+  sku: string;
+  item_title?: string;
+  paypal_order_id?: string;
+  capture_id?: string;
+  status: string;
+  amount: number;
+  currency: string;
+  created_at: string;
+  updated_at?: string;
+}
+

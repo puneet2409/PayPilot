@@ -1,0 +1,1671 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "PayPilot API",
+    "description": "Consent-First Agentic Commerce with Deterministic Purchase Policies & PayPal Sandbox",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health Check",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/catalogue": {
+      "get": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "List Catalogue",
+        "description": "List all active demo-store products.",
+        "operationId": "list_catalogue_api_v1_catalogue_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discovery/search": {
+      "post": {
+        "tags": [
+          "Discovery"
+        ],
+        "summary": "Search Products",
+        "operationId": "search_products_api_v1_discovery_search_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DiscoverySearchRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverySearchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/policies/evaluate": {
+      "post": {
+        "tags": [
+          "Policies"
+        ],
+        "summary": "Evaluate Purchase Policy",
+        "operationId": "evaluate_purchase_policy_api_v1_policies_evaluate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyEvaluateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyEvaluateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/checkout/create": {
+      "post": {
+        "tags": [
+          "Checkout"
+        ],
+        "summary": "Create Checkout Order",
+        "operationId": "create_checkout_order_api_v1_checkout_create_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/checkout/{order_id}/capture": {
+      "post": {
+        "tags": [
+          "Checkout"
+        ],
+        "summary": "Capture Checkout Order",
+        "operationId": "capture_checkout_order_api_v1_checkout__order_id__capture_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutCaptureRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutCaptureResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}": {
+      "get": {
+        "tags": [
+          "Orders & Audit"
+        ],
+        "summary": "Get Order Details",
+        "operationId": "get_order_details_api_v1_orders__order_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderDetailResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}/timeline": {
+      "get": {
+        "tags": [
+          "Orders & Audit"
+        ],
+        "summary": "Get Order Audit Timeline",
+        "operationId": "get_order_audit_timeline_api_v1_orders__order_id__timeline_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditTimelineResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/timeline": {
+      "get": {
+        "tags": [
+          "Orders & Audit"
+        ],
+        "summary": "Get Session Audit Timeline",
+        "operationId": "get_session_audit_timeline_api_v1_sessions__session_id__timeline_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditTimelineResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions/{session_id}/orders": {
+      "get": {
+        "tags": [
+          "Orders & Audit"
+        ],
+        "summary": "Get Session Orders",
+        "operationId": "get_session_orders_api_v1_sessions__session_id__orders_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OrderSummaryItem"
+                  },
+                  "title": "Response Get Session Orders Api V1 Sessions  Session Id  Orders Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/orders/{order_id}/cancel": {
+      "post": {
+        "tags": [
+          "Orders & Audit"
+        ],
+        "summary": "Cancel Order",
+        "operationId": "cancel_order_api_v1_orders__order_id__cancel_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/sessions/{session_id}/turn": {
+      "post": {
+        "tags": [
+          "Agent"
+        ],
+        "summary": "Process Agent Turn",
+        "operationId": "process_agent_turn_api_v1_agent_sessions__session_id__turn_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentTurnRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentTurnResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sessions": {
+      "post": {
+        "tags": [
+          "Sessions"
+        ],
+        "summary": "Create Session",
+        "description": "Create an anonymous, isolated session with a signed bearer credential.",
+        "operationId": "create_session_api_v1_sessions_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionCreateResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgentIntent": {
+        "properties": {
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "USD"
+          },
+          "must_have": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Must Have"
+          },
+          "preferences": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Preferences"
+          },
+          "avoid": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Avoid"
+          }
+        },
+        "type": "object",
+        "title": "AgentIntent"
+      },
+      "AgentTurnRequest": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Message"
+          },
+          "search_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Search Id"
+          },
+          "user_budget": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Budget"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message"
+        ],
+        "title": "AgentTurnRequest"
+      },
+      "AgentTurnResponse": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "reply_text": {
+            "type": "string",
+            "title": "Reply Text"
+          },
+          "intent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentIntent"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "intent_source": {
+            "type": "string",
+            "enum": [
+              "gemini",
+              "rules"
+            ],
+            "title": "Intent Source",
+            "default": "rules"
+          },
+          "recommendations": {
+            "items": {
+              "$ref": "#/components/schemas/RankedCandidate"
+            },
+            "type": "array",
+            "title": "Recommendations"
+          },
+          "requires_clarification": {
+            "type": "boolean",
+            "title": "Requires Clarification",
+            "default": false
+          },
+          "clarification_question": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clarification Question"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "reply_text"
+        ],
+        "title": "AgentTurnResponse"
+      },
+      "AuditTimelineEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "event_type": {
+            "type": "string",
+            "title": "Event Type"
+          },
+          "details": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Details"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "event_type",
+          "details",
+          "created_at"
+        ],
+        "title": "AuditTimelineEvent"
+      },
+      "AuditTimelineResponse": {
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "order_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Order Id"
+          },
+          "events": {
+            "items": {
+              "$ref": "#/components/schemas/AuditTimelineEvent"
+            },
+            "type": "array",
+            "title": "Events"
+          }
+        },
+        "type": "object",
+        "required": [
+          "events"
+        ],
+        "title": "AuditTimelineResponse"
+      },
+      "CheckoutCaptureRequest": {
+        "properties": {
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 38,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "type": "object",
+        "title": "CheckoutCaptureRequest"
+      },
+      "CheckoutCaptureResponse": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "payment": {
+            "$ref": "#/components/schemas/PaymentDetails"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "status",
+          "payment"
+        ],
+        "title": "CheckoutCaptureResponse"
+      },
+      "CheckoutCreateRequest": {
+        "properties": {
+          "quote_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Quote Id"
+          },
+          "session_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Session Id"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 38,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "quote_id",
+          "session_id"
+        ],
+        "title": "CheckoutCreateRequest"
+      },
+      "CheckoutCreateResponse": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "paypal_order_id": {
+            "type": "string",
+            "title": "Paypal Order Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "paypal_mode": {
+            "type": "string",
+            "enum": [
+              "sandbox",
+              "simulated"
+            ],
+            "title": "Paypal Mode"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "paypal_order_id",
+          "status",
+          "amount",
+          "currency",
+          "paypal_mode"
+        ],
+        "title": "CheckoutCreateResponse"
+      },
+      "DiscoverySearchRequest": {
+        "properties": {
+          "query": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Query"
+          },
+          "max_price": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Price"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "USD"
+          },
+          "requirements": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Requirements"
+          },
+          "limit": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "default": 10
+          }
+        },
+        "type": "object",
+        "required": [
+          "query"
+        ],
+        "title": "DiscoverySearchRequest"
+      },
+      "DiscoverySearchResponse": {
+        "properties": {
+          "search_id": {
+            "type": "string",
+            "title": "Search Id"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ProductItem"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "search_id",
+          "query",
+          "results"
+        ],
+        "title": "DiscoverySearchResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "OfferItem": {
+        "properties": {
+          "merchant": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Merchant"
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Price"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency",
+            "default": "USD"
+          },
+          "availability": {
+            "type": "string",
+            "title": "Availability",
+            "default": "InStock"
+          },
+          "buy_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Buy Url"
+          },
+          "observed_at": {
+            "type": "string",
+            "title": "Observed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "merchant",
+          "price",
+          "observed_at"
+        ],
+        "title": "OfferItem"
+      },
+      "OrderDetailResponse": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "quote_id": {
+            "type": "string",
+            "title": "Quote Id"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "sku": {
+            "type": "string",
+            "title": "Sku"
+          },
+          "paypal_order_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paypal Order Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "payment": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "quote_id",
+          "session_id",
+          "sku",
+          "status",
+          "amount",
+          "currency",
+          "created_at"
+        ],
+        "title": "OrderDetailResponse"
+      },
+      "OrderSummaryItem": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "quote_id": {
+            "type": "string",
+            "title": "Quote Id"
+          },
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "sku": {
+            "type": "string",
+            "title": "Sku"
+          },
+          "item_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Title"
+          },
+          "paypal_order_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paypal Order Id"
+          },
+          "capture_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capture Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "quote_id",
+          "session_id",
+          "sku",
+          "status",
+          "amount",
+          "currency",
+          "created_at"
+        ],
+        "title": "OrderSummaryItem"
+      },
+      "PaymentDetails": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "title": "Provider"
+          },
+          "capture_id": {
+            "type": "string",
+            "title": "Capture Id"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provider",
+          "capture_id",
+          "amount",
+          "currency"
+        ],
+        "title": "PaymentDetails"
+      },
+      "PolicyCheckItem": {
+        "properties": {
+          "rule": {
+            "type": "string",
+            "title": "Rule"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "rule",
+          "passed",
+          "detail"
+        ],
+        "title": "PolicyCheckItem"
+      },
+      "PolicyEvaluateRequest": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Session Id",
+            "default": "sess_default"
+          },
+          "demo_sku": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Demo Sku"
+          },
+          "max_total": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Max Total"
+          },
+          "currency": {
+            "type": "string",
+            "maxLength": 3,
+            "minLength": 3,
+            "title": "Currency",
+            "default": "USD"
+          },
+          "required_features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Required Features"
+          },
+          "excluded_terms": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Excluded Terms"
+          }
+        },
+        "type": "object",
+        "required": [
+          "demo_sku",
+          "max_total"
+        ],
+        "title": "PolicyEvaluateRequest"
+      },
+      "PolicyEvaluateResponse": {
+        "properties": {
+          "eligible": {
+            "type": "boolean",
+            "title": "Eligible"
+          },
+          "policy_version": {
+            "type": "string",
+            "title": "Policy Version",
+            "default": "v1"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "max_total": {
+            "type": "number",
+            "title": "Max Total"
+          },
+          "item_price": {
+            "type": "number",
+            "title": "Item Price"
+          },
+          "sku": {
+            "type": "string",
+            "title": "Sku"
+          },
+          "item_title": {
+            "type": "string",
+            "title": "Item Title"
+          },
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyCheckItem"
+            },
+            "type": "array",
+            "title": "Checks"
+          },
+          "quote": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/QuoteSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "eligible",
+          "currency",
+          "max_total",
+          "item_price",
+          "sku",
+          "item_title",
+          "checks"
+        ],
+        "title": "PolicyEvaluateResponse"
+      },
+      "ProductItem": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "title": "Product Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "channel3"
+          },
+          "offers": {
+            "items": {
+              "$ref": "#/components/schemas/OfferItem"
+            },
+            "type": "array",
+            "title": "Offers"
+          },
+          "attributes": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Attributes"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "demo_sku": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Demo Sku"
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id",
+          "title"
+        ],
+        "title": "ProductItem"
+      },
+      "QuoteSummary": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "amount": {
+            "type": "number",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "expires_at": {
+            "type": "string",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "amount",
+          "currency",
+          "expires_at"
+        ],
+        "title": "QuoteSummary"
+      },
+      "RankedCandidate": {
+        "properties": {
+          "product_id": {
+            "type": "string",
+            "title": "Product Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "brand": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Brand"
+          },
+          "price": {
+            "type": "number",
+            "title": "Price"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency",
+            "default": "USD"
+          },
+          "rank": {
+            "type": "integer",
+            "title": "Rank"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "explanation": {
+            "type": "string",
+            "title": "Explanation"
+          },
+          "verified_features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Verified Features"
+          },
+          "unverified_features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unverified Features"
+          },
+          "within_budget": {
+            "type": "boolean",
+            "title": "Within Budget",
+            "default": true
+          },
+          "buy_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Buy Url"
+          },
+          "merchant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant"
+          },
+          "offers": {
+            "items": {
+              "$ref": "#/components/schemas/OfferItem"
+            },
+            "type": "array",
+            "title": "Offers"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "demo_sku": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Demo Sku"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source",
+            "default": "channel3"
+          }
+        },
+        "type": "object",
+        "required": [
+          "product_id",
+          "title",
+          "price",
+          "rank",
+          "score",
+          "explanation"
+        ],
+        "title": "RankedCandidate"
+      },
+      "SessionCreateResponse": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "access_token",
+          "expires_at"
+        ],
+        "title": "SessionCreateResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

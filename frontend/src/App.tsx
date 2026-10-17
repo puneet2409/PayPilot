@@ -1,13 +1,22 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from './api/client';
-import type { RankedCandidate, PolicyEvaluateResponse, CheckoutCaptureResponse, AuditTimelineEvent, AuthSession, AgentIntent } from './types';
+import type {
+  RankedCandidate,
+  PolicyEvaluateResponse,
+  CheckoutCaptureResponse,
+  AuditTimelineEvent,
+  AuthSession,
+  AgentIntent,
+  OrderSummaryItem
+} from './types';
 import { ChatPanel } from './components/ChatPanel';
 import { ProductCard } from './components/ProductCard';
 import { PolicyPanel } from './components/PolicyPanel';
 import { ApprovalPanel } from './components/ApprovalPanel';
 import { OrderStatus } from './components/OrderStatus';
 import { AuditTimeline } from './components/AuditTimeline';
-import { History, ShoppingBag, Layers, Sparkles } from 'lucide-react';
+import { OrdersLedger } from './components/OrdersLedger';
+import { History, ShoppingBag, Layers, Sparkles, CreditCard, Code2 } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -25,6 +34,8 @@ export const App: React.FC = () => {
   const [policyResult, setPolicyResult] = useState<PolicyEvaluateResponse | null>(null);
   const [paymentResult, setPaymentResult] = useState<CheckoutCaptureResponse | null>(null);
   const [auditEvents, setAuditEvents] = useState<AuditTimelineEvent[]>([]);
+  const [orders, setOrders] = useState<OrderSummaryItem[]>([]);
+  const [rightPanelTab, setRightPanelTab] = useState<'timeline' | 'ledger'>('timeline');
   const [showApprovalStep, setShowApprovalStep] = useState(false);
   const [currentBudget, setCurrentBudget] = useState<number>(100);
   const [paypalBackendConfigured, setPaypalBackendConfigured] = useState<boolean | null>(null);
@@ -53,6 +64,16 @@ export const App: React.FC = () => {
     }
   }, [session, sessionId]);
 
+  const refreshOrders = useCallback(async () => {
+    if (!session) return;
+    try {
+      const list = await api.getSessionOrders(sessionId);
+      setOrders(list);
+    } catch (e) {
+      console.error('Failed to load session orders', e);
+    }
+  }, [session, sessionId]);
+
   useEffect(() => {
     api.getHealth()
       .then((health) => {
@@ -76,7 +97,8 @@ export const App: React.FC = () => {
 
   useEffect(() => {
     refreshAuditEvents();
-  }, [refreshAuditEvents]);
+    refreshOrders();
+  }, [refreshAuditEvents, refreshOrders]);
 
   const handleSendMessage = async (message: string, budget?: number) => {
     if (!session) return;
@@ -157,6 +179,19 @@ export const App: React.FC = () => {
     setPaymentResult(captureRes);
     setShowApprovalStep(false);
     await refreshAuditEvents();
+    await refreshOrders();
+    setRightPanelTab('ledger');
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!session) return;
+    try {
+      await api.cancelOrder(orderId);
+      await refreshOrders();
+      await refreshAuditEvents();
+    } catch (err: any) {
+      console.error('Failed to cancel order', err);
+    }
   };
 
   const handleReset = () => {
@@ -195,6 +230,16 @@ export const App: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <a
+            href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
+            target="_blank"
+            rel="noreferrer"
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-xs text-slate-300 transition-colors"
+            title="Open interactive OpenAPI 3.1 Swagger docs (APIMatic compliant)"
+          >
+            <Code2 className="w-3.5 h-3.5 text-indigo-400" />
+            <span>OpenAPI 3.1</span>
+          </a>
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
             <span className={`w-2 h-2 rounded-full ${channel3Configured ? 'bg-sky-400 animate-pulse' : 'bg-slate-400'}`}></span>
             <span className="text-slate-300 font-medium">
@@ -306,21 +351,55 @@ export const App: React.FC = () => {
             />
           )}
 
-          {/* Session-scoped Audit Log */}
+          {/* Tabbed Right Panel: Provenance Trail & Payments Ledger */}
           <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <History className="w-4 h-4 text-purple-400" />
-                <h4 className="text-xs font-semibold text-slate-200 uppercase tracking-wider">
-                  Auditable Provenance Trail
-                </h4>
+              <div className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-lg border border-slate-800">
+                <button
+                  onClick={() => setRightPanelTab('timeline')}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                    rightPanelTab === 'timeline'
+                      ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <History className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Audit Trail</span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-[10px] font-mono text-slate-300">
+                    {auditEvents.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setRightPanelTab('ledger')}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                    rightPanelTab === 'ledger'
+                      ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Payments Ledger</span>
+                  <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-[10px] font-mono text-slate-300">
+                    {orders.length}
+                  </span>
+                </button>
               </div>
-              <span className="text-[10px] text-slate-400 font-mono">
-                {auditEvents.length} events
+
+              <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+                {rightPanelTab === 'timeline' ? 'Session-scoped audit' : 'AG Grid payments overview'}
               </span>
             </div>
 
-            <AuditTimeline events={auditEvents} />
+            {rightPanelTab === 'timeline' ? (
+              <AuditTimeline events={auditEvents} />
+            ) : (
+              <OrdersLedger
+                orders={orders}
+                onCancelOrder={handleCancelOrder}
+                onRefresh={refreshOrders}
+              />
+            )}
           </div>
         </section>
       </main>
