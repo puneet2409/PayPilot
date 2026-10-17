@@ -2,9 +2,15 @@
 
 Base URL: `/api/v1`
 
+## Session authorization
+
+`POST /api/v1/sessions` creates an isolated anonymous session and a signed bearer token valid for 12 hours. Send `Authorization: Bearer <access_token>` on agent, policy, checkout, order, cancellation, and audit requests. The API binds the bearer token to the requested session or order. Discovery and catalogue endpoints remain public because they expose no session data.
+
+Production requires `SESSION_SIGNING_SECRET` with at least 32 characters. Treat issued tokens like passwords. This demo provides session authorization, not account identity, recovery, or token revocation.
+
 ## 1. Discovery
 ### `POST /api/v1/discovery/search`
-Retrieves products from Channel3 with normalized schema.
+Retrieves live Channel3 products when configured. Search results may also include clearly labelled `demo_catalogue` items so the PayPal Sandbox purchase flow remains available without mapping an external retailer SKU to PayPilot inventory. Demo items do not contain retailer purchase links.
 **Request**:
 ```json
 {
@@ -29,10 +35,10 @@ Retrieves products from Channel3 with normalized schema.
       "offers": [
         {
           "merchant": "Amazon",
-          "price": "99.99",
+          "price": 99.99,
           "currency": "USD",
           "availability": "InStock",
-          "buy_url": "https://amazon.com/example",
+          "buy_url": "https://merchant.example/item",
           "observed_at": "2026-10-12T12:00:00Z"
         }
       ],
@@ -64,7 +70,7 @@ Executes deterministic validation rules and creates an authoritative quote.
 {
   "session_id": "sess_default",
   "demo_sku": "HEADSET-DEMO-01",
-  "max_total": "100.00",
+  "max_total": 100.00,
   "currency": "USD"
 }
 ```
@@ -96,7 +102,7 @@ Executes deterministic validation rules and creates an authoritative quote.
 
 ## 4. PayPal Checkout Lifecycle
 ### `POST /api/v1/checkout/create`
-Creates a PayPal Sandbox order matching the authoritative quote. The quote must belong to `session_id` and is consumed exactly once.
+Creates an order matching the authoritative quote. The quote must belong to `session_id` and is atomically claimed once. `paypal_mode` reports `sandbox` for a real PayPal Sandbox order and `simulated` for the local no-credential flow. The quote must belong to `session_id`; repeating the same request with the same idempotency key returns or resumes that order; reusing the key for a different checkout returns `409`.
 **Request**:
 ```json
 {
@@ -112,12 +118,13 @@ Creates a PayPal Sandbox order matching the authoritative quote. The quote must 
   "paypal_order_id": "9B12345678901234",
   "status": "AWAITING_APPROVAL",
   "amount": 89.99,
-  "currency": "USD"
+  "currency": "USD",
+  "paypal_mode": "sandbox"
 }
 ```
 
 ### `POST /api/v1/checkout/{order_id}/capture`
-Captures buyer-approved order with PayPal and verifies result.
+Captures a buyer-approved order once, then verifies PayPal's completed capture ID, amount, and currency against the quote. Ambiguous provider responses move the order to reconciliation instead of being treated as success.
 **Request**:
 ```json
 {
@@ -146,6 +153,7 @@ Returns service readiness:
   "status": "ok",
   "app_env": "development",
   "paypal_env": "sandbox",
+  "paypal_configured": true,
   "ai_provider": "gemini"
 }
 ```

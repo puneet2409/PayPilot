@@ -1,19 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from './api/client';
-import type { RankedCandidate, PolicyEvaluateResponse, CheckoutCaptureResponse, AuditTimelineEvent } from './types';
+import type { RankedCandidate, PolicyEvaluateResponse, CheckoutCaptureResponse, AuditTimelineEvent, AuthSession, AgentIntent } from './types';
 import { ChatPanel } from './components/ChatPanel';
 import { ProductCard } from './components/ProductCard';
 import { PolicyPanel } from './components/PolicyPanel';
 import { ApprovalPanel } from './components/ApprovalPanel';
 import { OrderStatus } from './components/OrderStatus';
 import { AuditTimeline } from './components/AuditTimeline';
-import { History, ShoppingBag, Layers } from 'lucide-react';
+import { History, ShoppingBag, Layers, Sparkles } from 'lucide-react';
 
 export const App: React.FC = () => {
-  const [sessionId] = useState<string>(() => `sess_${Math.random().toString(36).substring(2, 9)}`);
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const sessionId = session?.session_id ?? '';
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [isLoadingPolicy, setIsLoadingPolicy] = useState(false);
   const [agentReply, setAgentReply] = useState<string | null>(null);
+  const [shoppingIntent, setShoppingIntent] = useState<AgentIntent | null>(null);
+  const [intentSource, setIntentSource] = useState<'gemini' | 'rules'>('rules');
+  const [requiredFeatures, setRequiredFeatures] = useState<string[]>([]);
+  const [excludedTerms, setExcludedTerms] = useState<string[]>([]);
   const [candidates, setCandidates] = useState<RankedCandidate[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<RankedCandidate | null>(null);
   const [policyResult, setPolicyResult] = useState<PolicyEvaluateResponse | null>(null);
@@ -21,29 +27,53 @@ export const App: React.FC = () => {
   const [auditEvents, setAuditEvents] = useState<AuditTimelineEvent[]>([]);
   const [showApprovalStep, setShowApprovalStep] = useState(false);
   const [currentBudget, setCurrentBudget] = useState<number>(100);
+  const [paypalBackendConfigured, setPaypalBackendConfigured] = useState<boolean | null>(null);
+  const policyRequestVersion = useRef(0);
 
-  const isPayPalConfigured = Boolean(
+  const isPayPalClientConfigured = Boolean(
     import.meta.env.VITE_PAYPAL_CLIENT_ID &&
     import.meta.env.VITE_PAYPAL_CLIENT_ID !== 'your_paypal_sandbox_client_id_here'
   );
+  const isPayPalConfigured = paypalBackendConfigured === true && isPayPalClientConfigured;
+  const paypalStatus = paypalBackendConfigured === null
+    ? 'PayPal Status Unknown'
+    : paypalBackendConfigured && !isPayPalClientConfigured
+      ? 'PayPal SDK Setup Needed'
+      : isPayPalConfigured ? 'PayPal Sandbox Ready' : 'PayPal Simulated';
 
   // Refresh audit events whenever session changes or actions occur
   const refreshAuditEvents = useCallback(async () => {
+    if (!session) return;
     try {
       const events = await api.getSessionTimeline(sessionId);
       setAuditEvents(events);
     } catch (e) {
       console.error('Failed to load audit events', e);
     }
-  }, [sessionId]);
+  }, [session, sessionId]);
+
+  useEffect(() => {
+    api.getHealth()
+      .then((health) => setPaypalBackendConfigured(
+        typeof health.paypal_configured === 'boolean' ? health.paypal_configured : null
+      ))
+      .catch(() => setPaypalBackendConfigured(null));
+    api.getOrCreateSession()
+      .then(setSession)
+      .catch((err: unknown) => {
+        setSessionError(err instanceof Error ? err.message : 'Could not start a secure session.');
+      });
+  }, []);
 
   useEffect(() => {
     refreshAuditEvents();
   }, [refreshAuditEvents]);
 
   const handleSendMessage = async (message: string, budget?: number) => {
-    const activeBudget = budget || currentBudget;
-    if (budget) setCurrentBudget(budget);
+    if (!session) return;
+    policyRequestVersion.current += 1;
+    setIsLoadingPolicy(false);
+    if (budget !== undefined) setCurrentBudget(budget);
 
     setIsLoadingSearch(true);
     setPolicyResult(null);
@@ -51,12 +81,23 @@ export const App: React.FC = () => {
     setPaymentResult(null);
 
     try {
-      const res = await api.sendAgentTurn(sessionId, message, activeBudget);
+      const res = await api.sendAgentTurn(sessionId, message, budget);
       setAgentReply(res.reply_text);
       setCandidates(res.recommendations);
+      setShoppingIntent(res.intent ?? null);
+      setIntentSource(res.intent_source);
+      const nextRequiredFeatures = res.intent?.must_have ?? [];
+      const nextExcludedTerms = res.intent?.avoid ?? [];
+      setRequiredFeatures(nextRequiredFeatures);
+      setExcludedTerms(nextExcludedTerms);
+      const effectiveBudget = res.intent?.budget ?? budget ?? currentBudget;
+      setCurrentBudget(effectiveBudget);
       if (res.recommendations.length > 0) {
-        // Auto-select top recommendation
-        handleSelectCandidate(res.recommendations[0], activeBudget);
+        // Start policy evaluation on a PayPilot SKU when available. Live
+        // retailer comparisons are not necessarily purchasable in this demo.
+        const policyCandidate = res.recommendations.find((candidate) => candidate.demo_sku)
+          ?? res.recommendations[0];
+        handleSelectCandidate(policyCandidate, effectiveBudget, nextRequiredFeatures, nextExcludedTerms);
       }
       await refreshAuditEvents();
     } catch (err: any) {
@@ -66,10 +107,19 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleSelectCandidate = async (cand: RankedCandidate, budgetOverride?: number) => {
+  const handleSelectCandidate = async (
+    cand: RankedCandidate,
+    budgetOverride?: number,
+    requiredFeaturesOverride?: string[],
+    excludedTermsOverride?: string[],
+  ) => {
+    if (!session) return;
+    const requestVersion = ++policyRequestVersion.current;
     setSelectedCandidate(cand);
     setShowApprovalStep(false);
     setPaymentResult(null);
+    setPolicyResult(null);
+    setIsLoadingPolicy(false);
 
     if (!cand.demo_sku) return;
 
@@ -78,15 +128,19 @@ export const App: React.FC = () => {
       const evalRes = await api.evaluatePolicy(
         sessionId,
         cand.demo_sku,
-        budgetOverride || currentBudget,
-        cand.verified_features
+        budgetOverride ?? currentBudget,
+        requiredFeaturesOverride ?? requiredFeatures,
+        excludedTermsOverride ?? excludedTerms,
       );
+      if (requestVersion !== policyRequestVersion.current) return;
       setPolicyResult(evalRes);
       await refreshAuditEvents();
     } catch (err: any) {
-      console.error('Policy evaluation failed', err);
+      if (requestVersion === policyRequestVersion.current) {
+        console.error('Policy evaluation failed', err);
+      }
     } finally {
-      setIsLoadingPolicy(false);
+      if (requestVersion === policyRequestVersion.current) setIsLoadingPolicy(false);
     }
   };
 
@@ -97,12 +151,17 @@ export const App: React.FC = () => {
   };
 
   const handleReset = () => {
+    policyRequestVersion.current += 1;
+    setIsLoadingPolicy(false);
     setSelectedCandidate(null);
     setPolicyResult(null);
     setPaymentResult(null);
     setShowApprovalStep(false);
     setAgentReply(null);
     setCandidates([]);
+    setShoppingIntent(null);
+    setRequiredFeatures([]);
+    setExcludedTerms([]);
   };
 
   return (
@@ -129,10 +188,10 @@ export const App: React.FC = () => {
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
             <span className={`w-2 h-2 rounded-full ${isPayPalConfigured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-            <span className="text-slate-300 font-medium">{isPayPalConfigured ? 'PayPal Sandbox Live' : 'PayPal Simulated'}</span>
+            <span className="text-slate-300 font-medium">{paypalStatus}</span>
           </div>
           <div className="text-[11px] text-slate-400 font-mono hidden md:block">
-            Session: <span className="text-slate-200">{sessionId}</span>
+            {session ? <>Session: <span className="text-slate-200">{sessionId}</span></> : 'Securing session…'}
           </div>
         </div>
       </header>
@@ -144,8 +203,30 @@ export const App: React.FC = () => {
           <ChatPanel
             onSendMessage={handleSendMessage}
             isLoading={isLoadingSearch}
-            agentReply={agentReply}
+            isDisabled={!session}
+            agentReply={agentReply || sessionError}
           />
+
+          {shoppingIntent && (
+            <div className="rounded-xl border border-indigo-500/20 bg-indigo-950/20 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+                  <Sparkles className="w-4 h-4 text-indigo-300" /> Parsed shopping intent
+                </div>
+                <span className="text-[10px] uppercase tracking-wide text-indigo-200/80">
+                  {intentSource === 'gemini' ? 'Gemini structured parse' : 'Rules fallback'}
+                </span>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                {shoppingIntent.category && <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-200">{shoppingIntent.category}</span>}
+                {shoppingIntent.budget !== undefined && <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-200">Max ${shoppingIntent.budget.toFixed(2)} {shoppingIntent.currency}</span>}
+                {shoppingIntent.must_have.map((feature) => <span key={`need-${feature}`} className="rounded-full bg-emerald-900/60 px-2.5 py-1 text-emerald-200">Needs: {feature}</span>)}
+                {shoppingIntent.avoid.map((term) => <span key={`avoid-${term}`} className="rounded-full bg-rose-900/60 px-2.5 py-1 text-rose-200">Avoid: {term}</span>)}
+                {shoppingIntent.preferences.map((preference) => <span key={`pref-${preference}`} className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-300">Prefers: {preference}</span>)}
+              </div>
+              <p className="mt-2 text-[10px] text-slate-500">Required features and exclusions are passed to the deterministic policy check.</p>
+            </div>
+          )}
 
           {/* Product Discovery Results */}
           <div>
@@ -153,7 +234,7 @@ export const App: React.FC = () => {
               <div className="flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4 text-blue-400" />
                 <h3 className="text-sm font-semibold text-white">
-                  Channel3 Discovery Candidates ({candidates.length})
+                  Product Candidates ({candidates.length})
                 </h3>
               </div>
               <span className="text-xs text-slate-400">
@@ -165,7 +246,7 @@ export const App: React.FC = () => {
               <div className="rounded-xl border border-dashed border-slate-800 bg-slate-900/30 p-8 text-center">
                 <Layers className="w-8 h-8 text-slate-600 mx-auto mb-2" />
                 <p className="text-xs text-slate-400">
-                  Search or click a scenario above to retrieve real product candidates from Channel3.
+                  Search to compare live Channel3 offers and PayPilot demo-store items. The demo items support the sandbox checkout flow.
                 </p>
               </div>
             ) : (
@@ -210,7 +291,7 @@ export const App: React.FC = () => {
             />
           )}
 
-          {/* Immutable Audit Log */}
+          {/* Session-scoped Audit Log */}
           <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
             <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
               <div className="flex items-center gap-2">

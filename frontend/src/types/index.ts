@@ -3,7 +3,7 @@ export interface OfferItem {
   price: number;
   currency: string;
   availability: string;
-  buy_url: string;
+  buy_url?: string;
   observed_at: string;
 }
 
@@ -34,6 +34,7 @@ export interface RankedCandidate {
   merchant?: string;
   image_url?: string;
   demo_sku?: string;
+  source: string;
 }
 
 export interface AgentIntent {
@@ -49,6 +50,7 @@ export interface AgentTurnResponse {
   session_id: string;
   reply_text: string;
   intent?: AgentIntent;
+  intent_source: 'gemini' | 'rules';
   recommendations: RankedCandidate[];
   requires_clarification: boolean;
   clarification_question?: string;
@@ -86,6 +88,7 @@ export interface CheckoutCreateResponse {
   status: string;
   amount: number;
   currency: string;
+  paypal_mode: 'sandbox' | 'simulated';
 }
 
 export interface CheckoutCaptureResponse {
@@ -104,4 +107,11 @@ export interface AuditTimelineEvent {
   event_type: string;
   details: Record<string, any>;
   created_at: string;
+}
+
+export interface AuthSession {
+  session_id: string;
+  access_token: string;
+  token_type: 'bearer';
+  expires_at: number;
 }

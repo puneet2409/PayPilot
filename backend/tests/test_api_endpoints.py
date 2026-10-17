@@ -37,7 +37,7 @@ def test_fallback_discovery_relevance(client):
     assert all("Mouse" not in t and "Dock" not in t for t in titles2)
 
 def test_agent_turn_top_pick_within_budget(client):
-    res = client.post("/api/v1/agent/sessions/sess_ok/turn", json={
+    res = client.post(f"/api/v1/agent/sessions/{client.test_session_id}/turn", json={
         "message": "Find a wireless headset under $100 with multipoint Bluetooth and a good mic",
         "user_budget": 100.0
     })
@@ -53,7 +53,7 @@ def test_agent_turn_top_pick_within_budget(client):
 
 def test_agent_turn_over_budget_top_pick_flagged(client):
     """Discovery surfaces candidates above budget; the policy engine blocks them."""
-    res = client.post("/api/v1/agent/sessions/sess_flag/turn", json={
+    res = client.post(f"/api/v1/agent/sessions/{client.test_session_id}/turn", json={
         "message": "Find a wireless headset under $50 with active noise cancelling",
         "user_budget": 50.0
     })
@@ -65,7 +65,7 @@ def test_agent_turn_over_budget_top_pick_flagged(client):
 
 def test_policy_evaluation_success_and_quote(client):
     res = client.post("/api/v1/policies/evaluate", json={
-        "session_id": "test_session_1",
+        "session_id": client.test_session_id,
         "demo_sku": "HEADSET-DEMO-01",
         "max_total": 100.0,
         "currency": "USD"
@@ -78,7 +78,7 @@ def test_policy_evaluation_success_and_quote(client):
 
 def test_policy_evaluation_budget_exceeded(client):
     res = client.post("/api/v1/policies/evaluate", json={
-        "session_id": "test_session_2",
+        "session_id": client.test_session_id,
         "demo_sku": "HEADSET-DEMO-01",
         "max_total": 50.0, # Below 89.99
         "currency": "USD"
@@ -91,7 +91,7 @@ def test_policy_evaluation_budget_exceeded(client):
 def test_end_to_end_checkout_and_capture(client):
     # 1. Evaluate policy and get quote
     eval_res = client.post("/api/v1/policies/evaluate", json={
-        "session_id": "test_sess_e2e",
+        "session_id": client.test_session_id,
         "demo_sku": "HEADSET-DEMO-01",
         "max_total": 100.0
     })
@@ -101,7 +101,7 @@ def test_end_to_end_checkout_and_capture(client):
     # 2. Create Order
     create_res = client.post("/api/v1/checkout/create", json={
         "quote_id": quote_id,
-        "session_id": "test_sess_e2e"
+        "session_id": client.test_session_id
     })
     assert create_res.status_code == 200
     order_data = create_res.json()
@@ -114,7 +114,8 @@ def test_end_to_end_checkout_and_capture(client):
     assert capture_res.status_code == 200
     capture_data = capture_res.json()
     assert capture_data["status"] == "PAID"
-    assert capture_data["payment"]["provider"] == "paypal_sandbox"
+    expected_provider = "simulated" if order_data["paypal_order_id"].startswith("SANDBOX_ORDER_") else "paypal_sandbox"
+    assert capture_data["payment"]["provider"] == expected_provider
 
     # 4. Fetch Order and Audit Timeline
     timeline_res = client.get(f"/api/v1/orders/{order_id}/timeline")
@@ -122,14 +123,15 @@ def test_end_to_end_checkout_and_capture(client):
     timeline_data = timeline_res.json()
     event_types = [e["event_type"] for e in timeline_data["events"]]
     assert "PAYPAL_ORDER_CREATED" in event_types
-    assert "PAYMENT_CAPTURED" in event_types
+    expected_event = "SIMULATED_CHECKOUT_COMPLETED" if expected_provider == "simulated" else "PAYMENT_CAPTURED"
+    assert expected_event in event_types
 
 
 def test_checkout_quote_ownership_validation(client, db_session):
     """Verify that a session cannot use another session's quote."""
     # Evaluate policy to create a quote for session_A
     eval_res = client.post("/api/v1/policies/evaluate", json={
-        "session_id": "session_A",
+        "session_id": client.test_session_id,
         "demo_sku": "HEADSET-DEMO-01",
         "max_total": 100.0
     })
@@ -147,7 +149,7 @@ def test_checkout_quote_ownership_validation(client, db_session):
 def test_checkout_expired_quote(client, db_session):
     """Verify that an expired quote is rejected."""
     eval_res = client.post("/api/v1/policies/evaluate", json={
-        "session_id": "session_expire_test",
+        "session_id": client.test_session_id,
         "demo_sku": "HEADSET-DEMO-01",
         "max_total": 100.0
     })
@@ -163,7 +165,7 @@ def test_checkout_expired_quote(client, db_session):
     # Try to create checkout with expired quote
     checkout_res = client.post("/api/v1/checkout/create", json={
         "quote_id": quote_id,
-        "session_id": "session_expire_test"
+        "session_id": client.test_session_id
     })
     assert checkout_res.status_code == 400
 
@@ -172,7 +174,7 @@ def test_capture_idempotency(client, db_session):
     """Verify that capturing an already-paid order returns the existing payment."""
     # Create a full checkout flow first
     eval_res = client.post("/api/v1/policies/evaluate", json={
-        "session_id": "session_idemp",
+        "session_id": client.test_session_id,
         "demo_sku": "HEADSET-DEMO-01",
         "max_total": 100.0
     })
@@ -180,7 +182,7 @@ def test_capture_idempotency(client, db_session):
 
     create_res = client.post("/api/v1/checkout/create", json={
         "quote_id": quote_id,
-        "session_id": "session_idemp"
+        "session_id": client.test_session_id
     })
     order_id = create_res.json()["order_id"]
 
@@ -210,7 +212,7 @@ def test_catalogue_listing(client):
 def test_order_cancellation(client):
     """Verify that an unpaid order can be cancelled."""
     eval_res = client.post("/api/v1/policies/evaluate", json={
-        "session_id": "session_cancel",
+        "session_id": client.test_session_id,
         "demo_sku": "HEADSET-DEMO-01",
         "max_total": 100.0
     })
@@ -218,7 +220,7 @@ def test_order_cancellation(client):
 
     create_res = client.post("/api/v1/checkout/create", json={
         "quote_id": quote_id,
-        "session_id": "session_cancel"
+        "session_id": client.test_session_id
     })
     order_id = create_res.json()["order_id"]
 
@@ -228,4 +230,4 @@ def test_order_cancellation(client):
 
     # Cannot cancel again
     cancel_res2 = client.post(f"/api/v1/orders/{order_id}/cancel")
-    assert cancel_res2.status_code == 400
+    assert cancel_res2.status_code == 409

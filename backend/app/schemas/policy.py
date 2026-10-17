@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class PolicyCheckItem(BaseModel):
@@ -13,12 +13,12 @@ class QuoteSummary(BaseModel):
     expires_at: str
 
 class PolicyEvaluateRequest(BaseModel):
-    session_id: str = "sess_default"
-    demo_sku: str
-    max_total: float
-    currency: str = "USD"
-    required_features: List[str] = []
-    excluded_terms: List[str] = []
+    session_id: str = Field(default="sess_default", min_length=1, max_length=100)
+    demo_sku: str = Field(min_length=1, max_length=100)
+    max_total: float = Field(ge=0, allow_inf_nan=False)
+    currency: str = Field(default="USD", min_length=3, max_length=3)
+    required_features: List[str] = Field(default_factory=list, max_length=20)
+    excluded_terms: List[str] = Field(default_factory=list, max_length=20)
 
 class PolicyEvaluateResponse(BaseModel):
     eligible: bool

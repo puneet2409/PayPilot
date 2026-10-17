@@ -9,14 +9,24 @@ class RankingEngine:
         intent: AgentIntent
     ) -> List[RankedCandidate]:
         ranked: List[RankedCandidate] = []
-        budget = intent.budget or 999999.0
+        budget = intent.budget if intent.budget is not None else 999999.0
 
         for item in candidates:
-            # Find best offer price
-            offers = item.offers or []
-            min_price = min((o.price for o in offers), default=0.0)
-            best_merchant = offers[0].merchant if offers else "Retailer"
-            buy_url = offers[0].buy_url if offers else None
+            # Rank and link to the same currently purchasable offer. Never turn
+            # an empty/unavailable offer list into a misleading $0 candidate.
+            offers = [
+                offer for offer in (item.offers or [])
+                if offer.price > 0 and offer.availability.strip().lower() in {
+                    "in stock", "instock", "available", "in_stock"
+                }
+                and offer.currency.upper() == intent.currency.upper()
+            ]
+            if not offers:
+                continue
+            best_offer = min(offers, key=lambda offer: offer.price)
+            min_price = best_offer.price
+            best_merchant = best_offer.merchant
+            buy_url = best_offer.buy_url
 
             within_budget = min_price <= budget
 
@@ -24,6 +34,11 @@ class RankingEngine:
             attrs = item.attributes or {}
             verified = []
             unverified = []
+            item_evidence = f"{item.title} {item.brand or ''} {attrs}".casefold().replace("-", " ").replace("_", " ")
+            preference_matches = [
+                preference for preference in intent.preferences
+                if preference.casefold().replace("-", " ").replace("_", " ") in item_evidence
+            ]
 
             for req in intent.must_have:
                 norm_req = req.lower().replace("-", "_").replace(" ", "_")
@@ -39,7 +54,11 @@ class RankingEngine:
 
             # Scoring factors (0 to 1)
             # M: preference match
-            m_score = 0.9 if verified else 0.6
+            m_score = (
+                len(preference_matches) / len(intent.preferences)
+                if intent.preferences
+                else (0.9 if verified else 0.6)
+            )
             # V: verified feature ratio
             total_reqs = len(intent.must_have) or 1
             v_score = len(verified) / total_reqs
@@ -71,10 +90,12 @@ class RankingEngine:
                 if within_budget
                 else f" Exceeds the ${budget:.2f} ceiling — the policy engine will refuse to issue a quote."
             )
+            price_source = "PayPilot demo-store price" if item.source == "demo_catalogue" else "Retailer offer"
             explanation = (
-                f"Offered at ${min_price:.2f} by {best_merchant}. "
+                f"{price_source}: ${min_price:.2f} from {best_merchant}. "
                 f"Verified: {', '.join(verified) if verified else 'Standard specs'}. "
                 f"{'Pending confirmation: ' + ', '.join(unverified) if unverified else 'All requirements satisfied.'}"
+                f"{' Matched preferences: ' + ', '.join(preference_matches) + '.' if preference_matches else ''}"
                 f"{budget_note}"
             )
 
@@ -83,7 +104,7 @@ class RankingEngine:
                 title=item.title,
                 brand=item.brand,
                 price=min_price,
-                currency=offers[0].currency if offers else "USD",
+                currency=best_offer.currency,
                 rank=1,
                 score=round(composite_score, 2),
                 explanation=explanation,
@@ -93,6 +114,7 @@ class RankingEngine:
                 merchant=best_merchant,
                 image_url=item.image_url,
                 demo_sku=item.demo_sku,
+                source=item.source,
                 within_budget=within_budget
             ))
 

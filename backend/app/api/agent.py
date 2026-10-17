@@ -4,6 +4,7 @@ from app.database import get_db
 from app.schemas.agent import AgentTurnRequest, AgentTurnResponse
 from app.services.orchestrator import orchestrator
 from app.services.audit_service import AuditService
+from app.security import require_session, require_session_match
 
 router = APIRouter(prefix="/api/v1/agent", tags=["Agent"])
 
@@ -11,8 +12,10 @@ router = APIRouter(prefix="/api/v1/agent", tags=["Agent"])
 async def process_agent_turn(
     session_id: str,
     request: AgentTurnRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    authenticated_session_id: str = Depends(require_session),
 ):
+    require_session_match(session_id, authenticated_session_id)
     response = await orchestrator.handle_turn(session_id, request)
 
     AuditService.record_event(

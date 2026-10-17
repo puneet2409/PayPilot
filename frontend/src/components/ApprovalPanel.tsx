@@ -13,7 +13,7 @@ interface ApprovalPanelProps {
 }
 
 const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID || '';
-const IS_PAYPAL_CONFIGURED = Boolean(
+const IS_PAYPAL_CLIENT_CONFIGURED = Boolean(
   PAYPAL_CLIENT_ID && PAYPAL_CLIENT_ID !== 'your_paypal_sandbox_client_id_here'
 );
 
@@ -27,6 +27,11 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [createdOrder, setCreatedOrder] = useState<CheckoutCreateResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const isRealSandboxOrder = Boolean(createdOrder && (
+    createdOrder.paypal_mode === 'sandbox' ||
+    (!createdOrder.paypal_mode && !createdOrder.paypal_order_id.startsWith('SANDBOX_ORDER_'))
+  ));
+  const canShowPayPalApproval = isRealSandboxOrder && IS_PAYPAL_CLIENT_CONFIGURED;
 
   const paypalInitOptions = useMemo(() => ({
     clientId: PAYPAL_CLIENT_ID,
@@ -78,7 +83,7 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
         </div>
 
         <span className="px-2.5 py-1 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-semibold flex items-center gap-1">
-          <Lock className="w-3 h-3" /> {IS_PAYPAL_CONFIGURED ? 'Sandbox Mode' : 'Simulated Mode'}
+          <Lock className="w-3 h-3" /> {isRealSandboxOrder ? 'Sandbox Mode' : 'Simulated Mode'}
         </span>
       </div>
 
@@ -97,10 +102,13 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
           <span className="text-slate-200 font-mono">{sku}</span>
         </div>
         <div className="pt-2 border-t border-slate-800 flex justify-between text-base font-bold text-white">
-          <span>Authoritative Total</span>
+          <span>PayPilot Demo Store Total</span>
           <span className="text-emerald-400">${quote.amount.toFixed(2)} {quote.currency}</span>
         </div>
       </div>
+      <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
+        This sandbox order is for the PayPilot demo-store SKU above. It does not purchase the external retailer offer shown in discovery. Tax and shipping are not separately modeled in this demo.
+      </p>
 
       {error && (
         <div className="mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-center gap-2">
@@ -151,7 +159,7 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
             </span>
           </div>
 
-          {IS_PAYPAL_CONFIGURED ? (
+          {canShowPayPalApproval ? (
             /* Real PayPal Buttons SDK */
             <div className="rounded-lg bg-white p-4">
               <PayPalScriptProvider options={paypalInitOptions}>
@@ -166,7 +174,11 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
                     setError(null);
                     try {
                       const captureResult = await api.captureCheckout(createdOrder.order_id);
-                      onPaymentSuccess(captureResult);
+      const simulatedOrder = createdOrder.paypal_mode === 'simulated'
+        || createdOrder.paypal_order_id.startsWith('SANDBOX_ORDER_');
+      onPaymentSuccess(simulatedOrder && captureResult.payment.provider !== 'simulated'
+        ? { ...captureResult, payment: { ...captureResult.payment, provider: 'simulated' } }
+        : captureResult);
                     } catch (err: unknown) {
                       const message = err instanceof Error ? err.message : 'Payment capture failed';
                       setError(message);
@@ -182,6 +194,12 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
               <p className="text-[11px] text-slate-500 text-center mt-2">
                 PayPal JS SDK handles buyer authentication and consent.
               </p>
+            </div>
+          ) : isRealSandboxOrder ? (
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-200">
+              The backend created a real PayPal Sandbox order, but this frontend is missing
+              <code className="mx-1 rounded bg-slate-950/70 px-1 py-0.5">VITE_PAYPAL_CLIENT_ID</code>.
+              Add the matching Sandbox client ID and rebuild the frontend to show the buyer approval button.
             </div>
           ) : (
             /* Simulated mode for local dev without credentials */
@@ -204,7 +222,7 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
                 )}
               </button>
               <p className="text-[10px] text-amber-400/70 text-center">
-                ⚠ Simulated mode — set VITE_PAYPAL_CLIENT_ID for real PayPal buttons
+                Simulated checkout — configure PayPal Sandbox credentials to demonstrate a real PayPal approval
               </p>
             </>
           )}

@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from app.config import settings
+from app.integrations.paypal import paypal_client
 
 router = APIRouter(tags=["Health"])
 
@@ -9,5 +10,6 @@ def health_check():
         "status": "ok",
         "app_env": settings.APP_ENV,
         "paypal_env": settings.PAYPAL_ENV,
+        "paypal_configured": paypal_client.is_configured,
         "ai_provider": settings.AI_PROVIDER
     }

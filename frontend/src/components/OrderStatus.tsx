@@ -11,15 +11,18 @@ export const OrderStatus: React.FC<OrderStatusProps> = ({
   paymentResult,
   onReset
 }) => {
+  const isSimulated = paymentResult.payment.provider === 'simulated';
   return (
     <div className="rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-6 text-center shadow-xl">
       <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3 ring-8 ring-emerald-500/10">
         <CheckCircle2 className="w-6 h-6" />
       </div>
 
-      <h3 className="text-xl font-bold text-white">Payment Confirmed & Verified</h3>
+      <h3 className="text-xl font-bold text-white">{isSimulated ? 'Simulated Checkout Complete' : 'Payment Confirmed & Verified'}</h3>
       <p className="text-xs text-slate-300 mt-1 max-w-sm mx-auto">
-        PayPal Sandbox order captured and verified server-side.
+        {isSimulated
+          ? 'This local demo flow did not contact PayPal or move funds.'
+          : 'PayPal Sandbox order captured and verified server-side.'}
       </p>
 
       {/* Receipt Details */}
@@ -39,7 +42,7 @@ export const OrderStatus: React.FC<OrderStatusProps> = ({
         </div>
 
         <div className="flex justify-between">
-          <span className="text-slate-400">PayPal Capture ID</span>
+            <span className="text-slate-400">{isSimulated ? 'Capture Reference' : 'PayPal Capture ID'}</span>
           <span className="text-slate-200 font-mono font-medium">{paymentResult.payment.capture_id}</span>
         </div>
 

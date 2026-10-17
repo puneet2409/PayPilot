@@ -1,13 +1,14 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
+from typing import Literal
 
 class AgentIntent(BaseModel):
-    category: Optional[str] = None
-    budget: Optional[float] = None
+    category: Optional[str] = Field(default=None, max_length=100)
+    budget: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
     currency: str = "USD"
-    must_have: List[str] = []
-    preferences: List[str] = []
-    avoid: List[str] = []
+    must_have: List[str] = Field(default_factory=list, max_length=20)
+    preferences: List[str] = Field(default_factory=list, max_length=20)
+    avoid: List[str] = Field(default_factory=list, max_length=20)
 
 class RankedCandidate(BaseModel):
     product_id: str
@@ -18,23 +19,25 @@ class RankedCandidate(BaseModel):
     rank: int
     score: float
     explanation: str
-    verified_features: List[str] = []
-    unverified_features: List[str] = []
+    verified_features: List[str] = Field(default_factory=list)
+    unverified_features: List[str] = Field(default_factory=list)
     within_budget: bool = True
     buy_url: Optional[str] = None
     merchant: Optional[str] = None
     image_url: Optional[str] = None
     demo_sku: Optional[str] = None
+    source: str = "channel3"
 
 class AgentTurnRequest(BaseModel):
-    message: str
+    message: str = Field(min_length=1, max_length=2000)
     search_id: Optional[str] = None
-    user_budget: Optional[float] = None
+    user_budget: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
 
 class AgentTurnResponse(BaseModel):
     session_id: str
     reply_text: str
     intent: Optional[AgentIntent] = None
-    recommendations: List[RankedCandidate] = []
+    intent_source: Literal["gemini", "rules"] = "rules"
+    recommendations: List[RankedCandidate] = Field(default_factory=list)
     requires_clarification: bool = False
     clarification_question: Optional[str] = None

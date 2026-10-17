@@ -75,6 +75,10 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
         </div>
       </div>
 
+      <div className="mt-4 rounded-lg border border-indigo-500/20 bg-indigo-950/20 px-3 py-2.5 text-xs text-indigo-100/90">
+        This check uses PayPilot demo-store inventory at <strong>${policyResult.item_price.toFixed(2)} {policyResult.currency}</strong>. A Channel3 retailer offer is separate and is not the price charged by this demo checkout.
+      </div>
+
       {/* Rules Checklist */}
       <div className="mt-4 space-y-2.5">
         {policyResult.checks.map((chk, idx) => (
@@ -103,7 +107,7 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
       {policyResult.eligible && policyResult.quote && (
         <div className="mt-5 p-4 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
           <div>
-            <div className="text-xs text-slate-400">Authoritative Locked Quote</div>
+            <div className="text-xs text-slate-400">PayPilot Demo Store Quote</div>
             <div className="text-lg font-bold text-white">
               ${policyResult.quote.amount.toFixed(2)} {policyResult.quote.currency}
             </div>

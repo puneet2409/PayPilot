@@ -5,14 +5,17 @@ from app.schemas.policy import PolicyEvaluateRequest, PolicyEvaluateResponse, Qu
 from app.services.policy_engine import PolicyEngine
 from app.services.quote_service import QuoteService
 from app.services.audit_service import AuditService
+from app.security import require_session, require_session_match
 
 router = APIRouter(prefix="/api/v1/policies", tags=["Policies"])
 
 @router.post("/evaluate", response_model=PolicyEvaluateResponse)
 def evaluate_purchase_policy(
     request: PolicyEvaluateRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    authenticated_session_id: str = Depends(require_session),
 ):
+    require_session_match(request.session_id, authenticated_session_id)
     passed, checks, product, reason = PolicyEngine.evaluate(
         db=db,
         demo_sku=request.demo_sku,

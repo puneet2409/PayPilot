@@ -13,11 +13,12 @@ logger = logging.getLogger(__name__)
 FALLBACK_STOPWORDS = frozenset({
     "find", "for", "and", "with", "under", "over", "the", "want", "need",
     "looking", "good", "great", "best", "budget", "max", "upto", "please",
-    "buy", "get", "than", "about", "new", "has", "have", "you", "your",
+    "buy", "get", "than", "about", "new", "has", "have", "you", "your", "work",
 })
 
-# Fallback realistic catalog data when Channel3 key is unset or network error occurs
-MOCK_CHANNEL3_DATA: List[Dict[str, Any]] = [
+# Bundled PayPilot demo-store items used when Channel3 is unavailable and to
+# keep sandbox checkout available alongside live comparison results.
+DEMO_STORE_DISCOVERY_DATA: List[Dict[str, Any]] = [
     {
         "product_id": "ch3_headset_q45",
         "title": "Anker Soundcore Space Q45 Wireless Noise Cancelling Headphones",
@@ -27,19 +28,17 @@ MOCK_CHANNEL3_DATA: List[Dict[str, Any]] = [
         "image_url": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=80",
         "offers": [
             {
-                "merchant": "Best Buy",
+                "merchant": "PayPilot Demo Store",
                 "price": 89.99,
                 "currency": "USD",
                 "availability": "InStock",
-                "buy_url": "https://bestbuy.com/example-q45",
                 "observed_at": datetime.now(timezone.utc).isoformat()
             },
             {
-                "merchant": "Amazon",
+                "merchant": "PayPilot Demo Store",
                 "price": 94.50,
                 "currency": "USD",
                 "availability": "InStock",
-                "buy_url": "https://amazon.com/example-q45",
                 "observed_at": datetime.now(timezone.utc).isoformat()
             }
         ],
@@ -59,11 +58,10 @@ MOCK_CHANNEL3_DATA: List[Dict[str, Any]] = [
         "image_url": "https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&q=80",
         "offers": [
             {
-                "merchant": "Walmart",
+                "merchant": "PayPilot Demo Store",
                 "price": 79.95,
                 "currency": "USD",
                 "availability": "InStock",
-                "buy_url": "https://walmart.com/example-tune760",
                 "observed_at": datetime.now(timezone.utc).isoformat()
             }
         ],
@@ -83,11 +81,10 @@ MOCK_CHANNEL3_DATA: List[Dict[str, Any]] = [
         "image_url": "https://images.unsplash.com/photo-1544717305-2782549b5136?w=500&q=80",
         "offers": [
             {
-                "merchant": "Newegg",
+                "merchant": "PayPilot Demo Store",
                 "price": 139.99,
                 "currency": "USD",
                 "availability": "InStock",
-                "buy_url": "https://newegg.com/example-dock",
                 "observed_at": datetime.now(timezone.utc).isoformat()
             }
         ],
@@ -107,11 +104,10 @@ MOCK_CHANNEL3_DATA: List[Dict[str, Any]] = [
         "image_url": "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&q=80",
         "offers": [
             {
-                "merchant": "Amazon",
+                "merchant": "PayPilot Demo Store",
                 "price": 99.00,
                 "currency": "USD",
                 "availability": "InStock",
-                "buy_url": "https://amazon.com/example-mx3s",
                 "observed_at": datetime.now(timezone.utc).isoformat()
             }
         ],
@@ -137,8 +133,9 @@ class Channel3Client:
         user_id: str = "sess_paypilot_demo"
     ) -> List[ProductItem]:
         """
-        Executes search via Channel3 API. If API key is missing or endpoint is unreachable,
-        falls back to structured realistic catalog data with clear provenance logs.
+        Executes search via Channel3 API. Live results are kept separate from
+        purchasable demo-store items. When Channel3 is unavailable, demo-store
+        items provide a clearly labelled, self-contained walkthrough path.
         """
         if not self.api_key or self.api_key == "your_channel3_api_key_here":
             logger.info("Channel3 API key not configured. Using normalized demo discovery catalogue.")
@@ -153,7 +150,7 @@ class Channel3Client:
             "query": query,
             "limit": limit
         }
-        if max_price:
+        if max_price is not None:
             payload["filters"] = {
                 "price": {"max_price": max_price}
             }
@@ -163,7 +160,16 @@ class Channel3Client:
                 res = await client.post(f"{self.base_url}/search", headers=headers, json=payload)
                 if res.status_code == 200:
                     data = res.json()
-                    return self._normalize_channel3_response(data)
+                    live_results = self._normalize_channel3_response(data)
+                    # Keep a small, explicitly labelled demo-store selection in
+                    # live searches so the PayPal sandbox flow remains testable
+                    # even when Channel3 products have no purchasable demo SKU.
+                    demo_limit = min(2, max(0, limit - 1))
+                    demo_results = self._fallback_filter(query, max_price, demo_limit)
+                    if not demo_results:
+                        return live_results[:limit]
+                    live_slots = max(0, limit - len(demo_results))
+                    return live_results[:live_slots] + demo_results
                 else:
                     logger.warning(f"Channel3 returned HTTP {res.status_code}: {res.text}. Falling back to cached catalog.")
                     return self._fallback_filter(query, max_price, limit)
@@ -182,7 +188,7 @@ class Channel3Client:
                     price=float(o.get("price", 0.0)),
                     currency=o.get("currency", "USD"),
                     availability=o.get("availability", "InStock"),
-                    buy_url=o.get("buy_url") or o.get("url", "https://example.com"),
+                    buy_url=o.get("buy_url") or o.get("url"),
                     observed_at=o.get("observed_at") or datetime.now(timezone.utc).isoformat()
                 ))
             
@@ -209,7 +215,7 @@ class Channel3Client:
         else:
             min_score = max(1, math.ceil(len(q_tokens) * 0.6))
         matches = []
-        for item in MOCK_CHANNEL3_DATA:
+        for item in DEMO_STORE_DISCOVERY_DATA:
             text = (
                 f"{item['title']} {item.get('brand', '')} {item.get('category', '')} "
                 f"{item.get('attributes', {})}"
@@ -219,7 +225,7 @@ class Channel3Client:
                 continue
             offers = [OfferItem(**o) for o in item["offers"]]
             # Filter by max_price if specified
-            if max_price:
+            if max_price is not None:
                 min_price = min(o.price for o in offers) if offers else 0
                 if min_price > max_price:
                     continue

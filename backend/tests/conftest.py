@@ -29,4 +29,9 @@ def db_session():
 @pytest.fixture(scope="function")
 def client():
     with TestClient(app) as test_client:
+        session_res = test_client.post("/api/v1/sessions")
+        assert session_res.status_code == 200
+        session = session_res.json()
+        test_client.headers.update({"Authorization": f"Bearer {session['access_token']}"})
+        test_client.test_session_id = session["session_id"]
         yield test_client

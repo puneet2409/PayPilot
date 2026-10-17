@@ -32,6 +32,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
       case 'PAYPAL_ORDER_CREATED':
         return <CreditCard className="w-3.5 h-3.5 text-purple-400" />;
       case 'PAYMENT_CAPTURED':
+      case 'SIMULATED_CHECKOUT_COMPLETED':
         return <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />;
       default:
         return <ArrowRight className="w-3.5 h-3.5 text-slate-400" />;

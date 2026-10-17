@@ -39,18 +39,31 @@ class QuoteService:
         if not quote:
             return None
 
+        if quote.status != "ACTIVE":
+            return None
+
+        # Quotes are tied to the catalogue terms that passed policy evaluation.
+        # If inventory or the authoritative price changed, require a new check.
+        product = db.query(DemoProduct).filter(DemoProduct.sku == quote.sku).first()
+        if (
+            not product
+            or not product.active
+            or product.currency.upper() != quote.currency.upper()
+            or round(product.fixed_price, 2) != round(quote.amount, 2)
+        ):
+            quote.status = "STALE"
+            db.commit()
+            return None
+
         # Expiration check
         now = datetime.now(timezone.utc)
         exp = quote.expires_at
         if exp.tzinfo is None:
             exp = exp.replace(tzinfo=timezone.utc)
 
-        if now > exp:
+        if now >= exp:
             quote.status = "EXPIRED"
             db.commit()
-            return None
-
-        if quote.status != "ACTIVE":
             return None
 
         return quote

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.order import Order, Payment
+from app.models.quote import Quote
 from app.schemas.checkout import (
     CheckoutCreateRequest, CheckoutCreateResponse,
     CheckoutCaptureRequest, CheckoutCaptureResponse, PaymentDetails
@@ -12,42 +13,17 @@ from app.schemas.checkout import (
 from app.services.quote_service import QuoteService
 from app.services.audit_service import AuditService
 from app.integrations.paypal import paypal_client
+from app.security import require_session, require_session_match
 
 router = APIRouter(prefix="/api/v1/checkout", tags=["Checkout"])
 
-@router.post("/create", response_model=CheckoutCreateResponse)
-async def create_checkout_order(
-    request: CheckoutCreateRequest,
-    db: Session = Depends(get_db)
-):
-    # 1. Authoritative Quote Verification
-    quote = QuoteService.get_valid_quote(db, request.quote_id)
-    if not quote:
-        raise HTTPException(
-            status_code=400,
-            detail="Quote is expired, invalid, or already consumed. Please re-evaluate purchase policy."
-        )
 
-    # 2. Quote Ownership Validation
-    if quote.session_id != request.session_id:
-        raise HTTPException(
-            status_code=403,
-            detail="Quote does not belong to this session"
-        )
+def _paypal_mode(paypal_order_id: str) -> str:
+    return "simulated" if paypal_order_id.startswith("SANDBOX_ORDER_") else "sandbox"
 
-    # 3. Check Idempotency / Existing Order
-    idemp_key = request.idempotency_key or f"idemp_{uuid.uuid4().hex[:12]}"
-    existing_order = db.query(Order).filter(Order.idempotency_key == idemp_key).first()
-    if existing_order:
-        return CheckoutCreateResponse(
-            order_id=existing_order.id,
-            paypal_order_id=existing_order.paypal_order_id,
-            status=existing_order.status,
-            amount=existing_order.amount,
-            currency=existing_order.currency
-        )
 
-    # 4. Create PayPal Sandbox Order
+async def _complete_paypal_order_creation(db: Session, order: Order, quote: Quote, idemp_key: str) -> None:
+    """Create or safely retry the remote order using the same provider key."""
     try:
         paypal_res = await paypal_client.create_order(
             amount=quote.amount,
@@ -56,40 +32,27 @@ async def create_checkout_order(
             idempotency_key=idemp_key
         )
     except Exception as e:
+        order.status = "RECONCILIATION_REQUIRED"
+        order.updated_at = datetime.now(timezone.utc)
+        db.commit()
         raise HTTPException(status_code=502, detail=f"PayPal API error: {str(e)}")
 
-    paypal_order_id = paypal_res.get("id")
+    paypal_order_id = paypal_res.get("id") if isinstance(paypal_res, dict) else None
     if not paypal_order_id:
-        raise HTTPException(
-            status_code=502,
-            detail="PayPal returned a response without an order id. No quote was consumed."
-        )
-    local_order_id = f"order_{uuid.uuid4().hex[:10]}"
+        order.status = "RECONCILIATION_REQUIRED"
+        order.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        raise HTTPException(status_code=502, detail="PayPal returned a response without an order id; checkout requires reconciliation")
 
-    # 5. Consume Quote and Persist Order
-    QuoteService.consume_quote(db, quote.id)
-
-    order = Order(
-        id=local_order_id,
-        quote_id=quote.id,
-        session_id=quote.session_id,
-        sku=quote.sku,
-        paypal_order_id=paypal_order_id,
-        status="AWAITING_APPROVAL",
-        amount=quote.amount,
-        currency=quote.currency,
-        idempotency_key=idemp_key
-    )
-    db.add(order)
+    order.paypal_order_id = paypal_order_id
+    order.status = "AWAITING_APPROVAL"
+    order.updated_at = datetime.now(timezone.utc)
     db.commit()
-    db.refresh(order)
-
-    # 6. Audit Logging
     AuditService.record_event(
         db=db,
         event_type="PAYPAL_ORDER_CREATED",
         session_id=quote.session_id,
-        order_id=local_order_id,
+        order_id=order.id,
         details={
             "paypal_order_id": paypal_order_id,
             "amount": quote.amount,
@@ -98,47 +61,135 @@ async def create_checkout_order(
         }
     )
 
+@router.post("/create", response_model=CheckoutCreateResponse)
+async def create_checkout_order(
+    request: CheckoutCreateRequest,
+    db: Session = Depends(get_db),
+    authenticated_session_id: str = Depends(require_session),
+):
+    require_session_match(request.session_id, authenticated_session_id)
+    # Look up ownership before returning an idempotent result. Idempotency keys
+    # are global, so a key must never disclose another session's order.
+    quote = db.query(Quote).filter(Quote.id == request.quote_id).first()
+    if not quote:
+        raise HTTPException(status_code=400, detail="Quote is invalid. Please re-evaluate purchase policy.")
+    if quote.session_id != request.session_id:
+        raise HTTPException(
+            status_code=403,
+            detail="Quote does not belong to this session"
+        )
+
+    # Stable default lets a retry after a lost response recover the same order.
+    idemp_key = request.idempotency_key or f"checkout_{quote.id}"
+    existing_order = db.query(Order).filter(Order.idempotency_key == idemp_key).first()
+    if existing_order:
+        if existing_order.quote_id != quote.id or existing_order.session_id != request.session_id:
+            raise HTTPException(status_code=409, detail="Idempotency key was already used for another checkout")
+        if not existing_order.paypal_order_id and existing_order.status == "RECONCILIATION_REQUIRED":
+            await _complete_paypal_order_creation(db, existing_order, quote, idemp_key)
+            db.refresh(existing_order)
+        if not existing_order.paypal_order_id:
+            raise HTTPException(status_code=409, detail="Checkout is still being reconciled")
+        return CheckoutCreateResponse(
+            order_id=existing_order.id,
+            paypal_order_id=existing_order.paypal_order_id,
+            status=existing_order.status,
+            amount=existing_order.amount,
+            currency=existing_order.currency,
+            paypal_mode=_paypal_mode(existing_order.paypal_order_id),
+        )
+
+    # 1. Verify quote is live and claim it atomically before contacting PayPal.
+    quote = QuoteService.get_valid_quote(db, request.quote_id)
+    if not quote:
+        raise HTTPException(
+            status_code=400,
+            detail="Quote is expired, invalid, or already consumed. Please re-evaluate purchase policy."
+        )
+
+    if not QuoteService.consume_quote(db, quote.id):
+        raise HTTPException(status_code=409, detail="Quote has already been used. Please re-evaluate purchase policy.")
+
+    # Persist the intent before calling PayPal. A timeout can then be retried
+    # with the same provider request ID without consuming a second quote.
+    local_order_id = f"order_{uuid.uuid4().hex[:10]}"
+    order = Order(
+        id=local_order_id,
+        quote_id=quote.id,
+        session_id=quote.session_id,
+        sku=quote.sku,
+        paypal_order_id=None,
+        status="CREATING",
+        amount=quote.amount,
+        currency=quote.currency,
+        idempotency_key=idemp_key
+    )
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+    await _complete_paypal_order_creation(db, order, quote, idemp_key)
+
     return CheckoutCreateResponse(
         order_id=local_order_id,
-        paypal_order_id=paypal_order_id,
+        paypal_order_id=order.paypal_order_id,
         status="AWAITING_APPROVAL",
         amount=quote.amount,
-        currency=quote.currency
+        currency=quote.currency,
+        paypal_mode=_paypal_mode(order.paypal_order_id),
     )
 
 @router.post("/{order_id}/capture", response_model=CheckoutCaptureResponse)
 async def capture_checkout_order(
     order_id: str,
     request: CheckoutCaptureRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    authenticated_session_id: str = Depends(require_session),
 ):
     order = db.query(Order).filter(Order.id == order_id).first()
     if not order:
         raise HTTPException(status_code=404, detail="Order not found")
+    require_session_match(order.session_id, authenticated_session_id)
 
     if order.status == "PAID":
         payment = db.query(Payment).filter(Payment.order_id == order.id).first()
+        if not payment:
+            raise HTTPException(status_code=409, detail="Paid order has no recorded capture; reconciliation is required")
         return CheckoutCaptureResponse(
             order_id=order.id,
             status="PAID",
             payment=PaymentDetails(
-                provider="paypal_sandbox",
-                capture_id=payment.capture_id if payment else "ALREADY_CAPTURED",
+                provider=payment.provider,
+                capture_id=payment.capture_id,
                 amount=order.amount,
                 currency=order.currency
             )
         )
 
-    # Execute PayPal Capture
+    if order.status != "AWAITING_APPROVAL":
+        raise HTTPException(status_code=409, detail=f"Cannot capture order in {order.status} state")
+
+    # Claim capture atomically so two requests cannot issue separate captures.
+    claimed = (
+        db.query(Order)
+        .filter(Order.id == order.id, Order.status == "AWAITING_APPROVAL")
+        .update({"status": "CAPTURE_PENDING", "updated_at": datetime.now(timezone.utc)})
+    )
+    db.commit()
+    if not claimed:
+        raise HTTPException(status_code=409, detail="Order capture is already in progress")
+    db.refresh(order)
+
+    # Execute PayPal Capture. An ambiguous network failure must be reconciled;
+    # blindly retrying with a fresh request ID could duplicate a capture.
     try:
         capture_res = await paypal_client.capture_order(
             paypal_order_id=order.paypal_order_id,
-            idempotency_key=request.idempotency_key,
+            idempotency_key=request.idempotency_key or f"capture_{order.id}",
             amount=order.amount,
             currency=order.currency
         )
     except Exception as e:
-        order.status = "FAILED"
+        order.status = "RECONCILIATION_REQUIRED"
         order.updated_at = datetime.now(timezone.utc)
         db.commit()
         AuditService.record_event(
@@ -150,6 +201,12 @@ async def capture_checkout_order(
         )
         raise HTTPException(status_code=502, detail=f"PayPal capture failed: {str(e)}")
 
+    if not isinstance(capture_res, dict):
+        order.status = "RECONCILIATION_REQUIRED"
+        order.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        raise HTTPException(status_code=502, detail="PayPal returned an invalid capture response")
+
     paypal_status = capture_res.get("status")
     # Verify capture status
     if paypal_status != "COMPLETED":
@@ -158,14 +215,29 @@ async def capture_checkout_order(
         db.commit()
         raise HTTPException(status_code=400, detail=f"Payment capture returned unverified status: {paypal_status}")
 
-    # Extract Capture ID
+    # Verify the provider returned an actual capture matching the locked quote.
     captures = []
     for pu in capture_res.get("purchase_units", []):
         for c in pu.get("payments", {}).get("captures", []):
             captures.append(c)
 
-    primary_cap = captures[0] if captures else {}
-    capture_id = primary_cap.get("id") or f"CAP_{uuid.uuid4().hex[:10].upper()}"
+    primary_cap = next((c for c in captures if c.get("status") == "COMPLETED"), None)
+    cap_amount = (primary_cap or {}).get("amount") or {}
+    try:
+        amount_matches = float(cap_amount.get("value")) == round(order.amount, 2)
+    except (TypeError, ValueError):
+        amount_matches = False
+    if (
+        not primary_cap
+        or not primary_cap.get("id")
+        or not amount_matches
+        or cap_amount.get("currency_code", "").upper() != order.currency.upper()
+    ):
+        order.status = "RECONCILIATION_REQUIRED"
+        order.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        raise HTTPException(status_code=502, detail="PayPal capture could not be verified against the quoted amount")
+    capture_id = primary_cap["id"]
 
     # Update Order to PAID
     order.status = "PAID"
@@ -174,7 +246,7 @@ async def capture_checkout_order(
     payment = Payment(
         id=f"pay_{uuid.uuid4().hex[:10]}",
         order_id=order.id,
-        provider="paypal_sandbox",
+        provider="simulated" if order.paypal_order_id.startswith("SANDBOX_ORDER_") else "paypal_sandbox",
         capture_id=capture_id,
         status="COMPLETED",
         captured_amount=order.amount,
@@ -184,10 +256,11 @@ async def capture_checkout_order(
     db.add(payment)
     db.commit()
 
-    # Immutable Audit Log
+    paypal_mode = _paypal_mode(order.paypal_order_id)
+    # Keep local simulation distinct from an actual PayPal capture in the audit.
     AuditService.record_event(
         db=db,
-        event_type="PAYMENT_CAPTURED",
+        event_type="PAYMENT_CAPTURED" if paypal_mode == "sandbox" else "SIMULATED_CHECKOUT_COMPLETED",
         session_id=order.session_id,
         order_id=order.id,
         details={
@@ -195,6 +268,7 @@ async def capture_checkout_order(
             "paypal_order_id": order.paypal_order_id,
             "captured_amount": order.amount,
             "currency": order.currency,
+            "paypal_mode": paypal_mode,
             "verified": True
         }
     )
@@ -203,7 +277,7 @@ async def capture_checkout_order(
         order_id=order.id,
         status="PAID",
         payment=PaymentDetails(
-            provider="paypal_sandbox",
+            provider=payment.provider,
             capture_id=capture_id,
             amount=order.amount,
             currency=order.currency

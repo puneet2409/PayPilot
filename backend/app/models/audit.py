@@ -9,6 +9,6 @@ class AuditEvent(Base):
     session_id = Column(String, index=True, nullable=True)
     order_id = Column(String, index=True, nullable=True)
     event_type = Column(String, index=True, nullable=False)
-    # Event types: SEARCH_REQUESTED, POLICY_EVALUATED, QUOTE_GENERATED, PAYPAL_ORDER_CREATED, BUYER_APPROVED, PAYMENT_CAPTURED, REJECTED_BY_POLICY, PAYMENT_FAILED
+    # Event types include live PayPal captures and separately labelled local simulation completions.
     details_json = Column(Text, nullable=False, default="{}")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))

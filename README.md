@@ -13,13 +13,16 @@
 
 ## 🎯 Executive Summary & Problem Statement
 
-**The Problem:** Traditional AI shopping bots either generate passive affiliate links (boring) or attempt to execute unconstrained autonomous purchases (terrifying). LLMs hallucinate prices, overlook shipping caps, ignore fine print, and cannot be trusted with an open wallet.
+**The Problem:** Traditional AI shopping bots either generate passive affiliate links or attempt unconstrained autonomous purchases. LLMs can hallucinate prices and product details, so purchase limits and payment authorization need deterministic enforcement.
 
 **The Solution:** **PayPilot** implements **Policy-Constrained Agency**:
-1. **Intelligent Discovery:** Leverages the **Channel3 API** to retrieve real-time external product candidates, live retailer offers, and verified attributes.
-2. **Deterministic Guardrails:** Evaluates candidates against a non-LLM, mathematical **Purchase Policy Engine** (hard budget limits, required attributes, active catalog checks).
-3. **Consent-First PayPal Checkout:** Prepares a cryptographically locked quote, creates a server-side **PayPal Sandbox Order**, and requires **explicit buyer approval** before capturing payment.
-4. **Auditable Provenance:** Produces an immutable event timeline tracing every recommendation, policy check, and payment capture ID.
+1. **AI Intent Understanding:** Gemini turns natural-language needs into structured category, budget, required-feature, preference, and exclusion fields. The UI shows the parsed brief and whether Gemini or the rules fallback produced it.
+2. **Intelligent Discovery:** Uses **Channel3** for live external products, retailer offers, and product attributes. Live searches also include up to two explicitly labelled PayPilot demo-store items so judges can complete the sandbox flow even when external results cannot map to a purchasable demo SKU.
+3. **Deterministic Guardrails:** Evaluates PayPilot demo-store items against the buyer's budget and required attributes. The model cannot set prices or approve a purchase.
+4. **Consent-First PayPal Checkout:** Prepares a server-side quote, creates a **PayPal Sandbox Order**, and requires **explicit buyer approval** before capturing payment.
+5. **Auditable Provenance:** Produces an event timeline tracing policy checks and payment capture status.
+
+Private commerce and audit endpoints require a signed, 12-hour bearer token bound to an anonymous session. This isolates session data; it does not provide account identity or recovery. Production deployments must set `SESSION_SIGNING_SECRET` to a random value of at least 32 characters.
 
 ---
 
@@ -36,7 +39,7 @@ flowchart TD
     Q --> PP_Create["PayPal Orders v2 API: /orders"]
     PP_Create --> Modal["PayPal Checkout Modal (Buyer Approval)"]
     Modal --> PP_Cap["PayPal Capture API: /orders/{id}/capture"]
-    PP_Cap --> Audit["Immutable Provenance Audit Trail"]
+    PP_Cap --> Audit["Session-Scoped Audit Timeline"]
     Audit --> UI
 ```
 
@@ -45,7 +48,7 @@ flowchart TD
 ## 🛡️ Core Differentiator: The Purchase Policy Engine
 
 PayPilot separates **discovery reasoning** from **financial execution**. Even if an LLM is prompt-injected or hallucinates:
-* **Hard Spending Ceiling:** $\text{Price} + \text{Tax} + \text{Shipping} \le \text{Max Total}$. Rejects purchases that exceed the budget by even $\$0.01$.
+* **Hard Spending Ceiling:** The catalogue's fixed item price must be at or below the buyer's maximum. Taxes and shipping are not separately modeled in this demo.
 * **Authoritative Server Pricing:** Item amounts are derived from the server database, never accepted from client payloads.
 * **Quote Expiration:** Quotes expire after 10 minutes. Stale price changes trigger re-evaluation.
 * **Consent Gate:** Autonomous checkout without human PayPal approval is blocked at the API level.
@@ -55,10 +58,14 @@ PayPilot separates **discovery reasoning** from **financial execution**. Even if
 
 ## 🚀 Quickstart Guide
 
+Hackathon walkthrough, submission checklist, and draft project description: [demo script and checklist](docs/DEMO_SCRIPT.md), [Devpost copy](docs/DEVPOST_DESCRIPTION.md), and [API contracts](docs/API_CONTRACTS.md).
+
 ### 1. Prerequisites
 * **Python 3.12+**
 * **Node.js 20+**
 * (Optional) PayPal Developer Sandbox account & Channel3 API key
+
+Set `GEMINI_API_KEY` in `backend/.env` to demonstrate Gemini's structured intent parsing. Without a key, the interface labels the deterministic rules fallback. Configure `CHANNEL3_API_KEY` for live retailer results. For the hackathon video, configure both PayPal Sandbox REST credentials in `backend/.env` and the matching `VITE_PAYPAL_CLIENT_ID` in `frontend/.env`; local simulated checkout is clearly labelled and does not demonstrate a real PayPal transaction.
 
 ### 2. Backend Setup
 ```bash

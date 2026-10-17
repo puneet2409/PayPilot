@@ -5,6 +5,7 @@ import ReactMarkdown from 'react-markdown';
 interface ChatPanelProps {
   onSendMessage: (msg: string, budget?: number) => void;
   isLoading: boolean;
+  isDisabled?: boolean;
   agentReply: string | null;
 }
 
@@ -34,16 +35,17 @@ const PRESET_GOALS = [
 export const ChatPanel: React.FC<ChatPanelProps> = ({
   onSendMessage,
   isLoading,
+  isDisabled = false,
   agentReply
 }) => {
   const [inputMessage, setInputMessage] = useState('');
-  const [budgetInput, setBudgetInput] = useState<string>('100');
+  const [budgetInput, setBudgetInput] = useState<string>('');
   const [lastMessage, setLastMessage] = useState<{msg: string, budget?: number} | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || isLoading) return;
-    const numBudget = budgetInput ? parseFloat(budgetInput) : undefined;
+    const numBudget = budgetInput.trim() ? parseFloat(budgetInput) : undefined;
     setLastMessage({ msg: inputMessage.trim(), budget: numBudget });
     onSendMessage(inputMessage.trim(), numBudget);
   };
@@ -64,7 +66,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           </div>
           <div>
             <h3 className="text-sm font-semibold text-white">Shopper Intent Assistant</h3>
-            <p className="text-[11px] text-slate-400">Describe what you need, set your budget limit.</p>
+            <p className="text-[11px] text-slate-400">Describe what you need; use Max $ to override the budget in your request.</p>
           </div>
         </div>
 
@@ -79,6 +81,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                 key={idx}
                 type="button"
                 onClick={() => handleSelectPreset(preset)}
+                disabled={isDisabled || isLoading}
                 className="text-xs px-2.5 py-1 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition-all text-left"
               >
                 {preset.label}
@@ -124,9 +127,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             <DollarSign className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="number"
-              placeholder="Budget"
+              min="0"
+              step="0.01"
+              placeholder="Max $"
               value={budgetInput}
               onChange={(e) => setBudgetInput(e.target.value)}
+              disabled={isDisabled || isLoading}
               className="w-full pl-7 pr-2 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
             />
           </div>
@@ -135,11 +141,12 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             placeholder="e.g. Wireless headset under $100 with multipoint Bluetooth..."
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
+            disabled={isDisabled || isLoading}
             className="flex-1 px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
           />
           <button
             type="submit"
-            disabled={isLoading || !inputMessage.trim()}
+            disabled={isDisabled || isLoading || !inputMessage.trim()}
             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/20 shrink-0"
           >
             {isLoading ? (

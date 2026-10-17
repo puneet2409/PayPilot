@@ -1,10 +1,10 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Literal, Optional
 
 class CheckoutCreateRequest(BaseModel):
-    quote_id: str
-    session_id: str
-    idempotency_key: Optional[str] = None
+    quote_id: str = Field(min_length=1, max_length=100)
+    session_id: str = Field(min_length=1, max_length=100)
+    idempotency_key: Optional[str] = Field(default=None, min_length=1, max_length=38)
 
 class CheckoutCreateResponse(BaseModel):
     order_id: str
@@ -12,9 +12,10 @@ class CheckoutCreateResponse(BaseModel):
     status: str
     amount: float
     currency: str
+    paypal_mode: Literal["sandbox", "simulated"]
 
 class CheckoutCaptureRequest(BaseModel):
-    idempotency_key: Optional[str] = None
+    idempotency_key: Optional[str] = Field(default=None, min_length=1, max_length=38)
 
 class PaymentDetails(BaseModel):
     provider: str

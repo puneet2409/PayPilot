@@ -4,8 +4,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base, SessionLocal
-from app.api import health, discovery, policies, checkout, orders, agent
+from app.api import health, discovery, policies, checkout, orders, agent, sessions
 from app.models.catalogue import DemoProduct
+from app.security import validate_auth_config
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("paypilot")
@@ -78,6 +79,7 @@ def seed_initial_demo_catalogue():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: ensure tables exist and seed default catalogue
+    validate_auth_config()
     Base.metadata.create_all(bind=engine)
     seed_initial_demo_catalogue()
     yield
@@ -113,3 +115,4 @@ app.include_router(policies.router)
 app.include_router(checkout.router)
 app.include_router(orders.router)
 app.include_router(agent.router)
+app.include_router(sessions.router)

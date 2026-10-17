@@ -31,9 +31,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             <span className="px-2 py-0.5 text-xs font-semibold rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
               Rank #{product.rank}
             </span>
+            <span className={`px-2 py-0.5 text-xs font-medium rounded border ${product.source === 'channel3' ? 'bg-sky-500/10 text-sky-300 border-sky-500/20' : 'bg-violet-500/10 text-violet-300 border-violet-500/20'}`}>
+              {product.source === 'channel3' ? 'Channel3 result' : 'PayPilot demo-store item'}
+            </span>
             {product.demo_sku && (
               <span className="px-2 py-0.5 text-xs font-medium rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" /> Store SKU
+                <ShieldCheck className="w-3 h-3" /> PayPilot demo SKU
               </span>
             )}
             {product.within_budget === false && (
@@ -43,9 +46,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             )}
           </div>
           <div className="text-right">
-            <div className="text-xl font-bold text-white">${product.price.toFixed(2)}</div>
+            <div className="text-xl font-bold text-white">{product.currency} {product.price.toFixed(2)}</div>
             <div className="text-xs text-slate-400 flex items-center gap-1 justify-end">
-              <Tag className="w-3 h-3" /> {product.merchant || 'Channel3 Offer'}
+              <Tag className="w-3 h-3" /> {product.source === 'demo_catalogue' ? 'Demo-store price' : (product.merchant || 'Retailer offer')}
             </div>
           </div>
         </div>
@@ -55,8 +58,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         </h3>
 
         <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-          {product.explanation}
+          {product.source === 'demo_catalogue'
+            ? 'Bundled PayPilot demo-store sample. The server checks the current catalogue price before creating a quote.'
+            : product.explanation}
         </p>
+        {product.source === 'demo_catalogue' && product.demo_sku ? (
+          <p className="mt-2 text-[10px] leading-relaxed text-indigo-200/80">
+            Bundled PayPilot sample product. This demo-store price is used for the policy check and PayPal sandbox order.
+          </p>
+        ) : product.demo_sku ? (
+          <p className="mt-2 text-[10px] leading-relaxed text-indigo-200/80">
+            Retailer offer for comparison. Policy and PayPal checkout use the PayPilot demo-store price shown after selection.
+          </p>
+        ) : null}
 
         {/* Features badges */}
         <div className="mt-4 space-y-1.5">
@@ -76,7 +90,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       <div className="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between gap-3">
-        {product.buy_url && (
+        {product.source === 'channel3' && product.buy_url && (
           <a
             href={product.buy_url}
             target="_blank"
@@ -90,7 +104,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
 
         <button
           onClick={() => onSelect(product)}
-          disabled={isLoading && isSelected}
+          disabled={!product.demo_sku || (isLoading && isSelected)}
           className={`px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
             isSelected
               ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
@@ -102,6 +116,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <Loader2 className="w-3 h-3 animate-spin" />
               <span>Evaluating Policy...</span>
             </>
+          ) : !product.demo_sku ? (
+            'Retailer comparison only'
           ) : isSelected ? (
             'Selected Candidate'
           ) : (

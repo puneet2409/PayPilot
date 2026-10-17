@@ -17,6 +17,8 @@ services:
           property: connectionString
       - key: FRONTEND_ORIGIN
         value: https://paypilot-frontend.onrender.com
+      - key: SESSION_SIGNING_SECRET
+        sync: false
       - key: PAYPAL_ENV
         value: sandbox
       - key: PAYPAL_CLIENT_ID
