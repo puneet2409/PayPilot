@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { AuditTimelineEvent } from '../types';
 import {
   Activity,
@@ -10,7 +10,9 @@ import {
   Code2,
   Lock,
   XCircle,
-  EyeOff
+  EyeOff,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface AuditTimelineProps {
@@ -25,13 +27,25 @@ interface EventMetadata {
   pills: { label: string; value: string | number }[];
 }
 
+const ITEMS_PER_PAGE = 3;
+
 export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
-  const endRef = useRef<HTMLDivElement>(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [developerMode, setDeveloperMode] = useState(false);
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Newest events first so current actions immediately show on Page 1
+  const sortedEvents = useMemo(() => {
+    return [...events].reverse();
   }, [events]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedEvents.length / ITEMS_PER_PAGE));
+
+  // Reset to page 1 if currently out of range
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [totalPages, currentPage]);
 
   if (events.length === 0) {
     return (
@@ -40,6 +54,24 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
       </div>
     );
   }
+
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const currentEvents = sortedEvents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+  const getPageNumbers = () => {
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages: (number | string)[] = [];
+    if (currentPage <= 3) {
+      pages.push(1, 2, 3, 4, '...', totalPages);
+    } else if (currentPage >= totalPages - 2) {
+      pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+    } else {
+      pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+    }
+    return pages;
+  };
 
   const getEventIcon = (type: string) => {
     switch (type) {
@@ -191,11 +223,11 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
 
   return (
     <div className="space-y-3">
-      {/* View Mode Toggle */}
+      {/* Header Bar with Count & Developer View Toggle */}
       <div className="flex items-center justify-between pb-1 text-xs">
         <span className="text-slate-400 text-[11px] flex items-center gap-1">
           <Lock className="w-3 h-3 text-purple-400" />
-          <span>Tamper-evident activity ledger</span>
+          <span>Page {currentPage} of {totalPages} ({sortedEvents.length} total)</span>
         </span>
         <button
           type="button"
@@ -221,95 +253,155 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
         </button>
       </div>
 
-      {events.map((ev, idx) => {
-        const meta = parseEventDetails(ev.event_type, ev.details || {});
-        return (
-          <div
-            key={ev.id || idx}
-            className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs transition-all hover:border-slate-700/80"
-          >
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-lg bg-slate-800/80 shrink-0 mt-0.5">
-                {getEventIcon(ev.event_type)}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-semibold text-slate-100">
-                      {meta.title}
-                    </span>
-                    <span className={`px-2 py-0.2 rounded text-[10px] font-medium border ${meta.badgeColor}`}>
-                      {meta.badge}
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-500 font-mono shrink-0">
-                    {new Date(ev.created_at).toLocaleTimeString()}
-                  </span>
+      {/* Paged Activities List */}
+      <div className="space-y-3">
+        {currentEvents.map((ev, idx) => {
+          const meta = parseEventDetails(ev.event_type, ev.details || {});
+          return (
+            <div
+              key={ev.id || idx}
+              className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs transition-all hover:border-slate-700/80"
+            >
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-slate-800/80 shrink-0 mt-0.5">
+                  {getEventIcon(ev.event_type)}
                 </div>
 
-                {/* Friendly Layman Summary */}
-                <p className="mt-1 text-slate-300 text-xs leading-relaxed">
-                  {meta.summary}
-                </p>
-
-                {/* Metric / Information Pills */}
-                {meta.pills.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {meta.pills.map((pill, pidx) => (
-                      <span
-                        key={pidx}
-                        className="px-2 py-0.5 rounded bg-slate-950/70 border border-slate-800 text-[11px] text-slate-300 font-medium"
-                      >
-                        <span className="text-slate-500 mr-1">{pill.label}:</span>
-                        <span className="text-slate-200">{pill.value}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-semibold text-slate-100">
+                        {meta.title}
                       </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* Expandable Technical Details (JSON & Cryptographic Hashes) */}
-                {(developerMode || ev.entry_hash) && (
-                  <details
-                    className="mt-2.5 pt-2 border-t border-slate-800/60 group"
-                    open={developerMode}
-                  >
-                    <summary className="text-[11px] text-slate-500 hover:text-slate-300 cursor-pointer flex items-center justify-between select-none">
-                      <span className="flex items-center gap-1 font-medium">
-                        <Code2 className="w-3 h-3 text-slate-500 group-open:text-purple-400" />
-                        <span>Technical Details & Hashes</span>
+                      <span className={`px-2 py-0.2 rounded text-[10px] font-medium border ${meta.badgeColor}`}>
+                        {meta.badge}
                       </span>
-                      <span className="text-[10px] text-slate-600 font-mono group-open:hidden">
-                        click to view
-                      </span>
-                    </summary>
-
-                    <div className="mt-2 space-y-2">
-                      {ev.entry_hash && (
-                        <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
-                          <span className="px-1.5 py-0.5 rounded bg-purple-950/60 border border-purple-500/30 text-purple-300">
-                            SHA-256: {ev.entry_hash.slice(0, 16)}…
-                          </span>
-                          {ev.prev_hash && (
-                            <span className="text-slate-500">
-                              prev: {ev.prev_hash.slice(0, 12)}…
-                            </span>
-                          )}
-                        </div>
-                      )}
-
-                      <pre className="text-[10px] text-slate-400 overflow-x-auto whitespace-pre-wrap font-mono bg-slate-950 p-2 rounded border border-slate-800/80">
-                        {JSON.stringify(ev.details, null, 2)}
-                      </pre>
                     </div>
-                  </details>
-                )}
+                    <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                      {new Date(ev.created_at).toLocaleTimeString()}
+                    </span>
+                  </div>
+
+                  {/* Friendly Layman Summary */}
+                  <p className="mt-1 text-slate-300 text-xs leading-relaxed">
+                    {meta.summary}
+                  </p>
+
+                  {/* Metric / Information Pills */}
+                  {meta.pills.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1.5">
+                      {meta.pills.map((pill, pidx) => (
+                        <span
+                          key={pidx}
+                          className="px-2 py-0.5 rounded bg-slate-950/70 border border-slate-800 text-[11px] text-slate-300 font-medium"
+                        >
+                          <span className="text-slate-500 mr-1">{pill.label}:</span>
+                          <span className="text-slate-200">{pill.value}</span>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Expandable Technical Details (JSON & Cryptographic Hashes) */}
+                  {(developerMode || ev.entry_hash) && (
+                    <details
+                      className="mt-2.5 pt-2 border-t border-slate-800/60 group"
+                      open={developerMode}
+                    >
+                      <summary className="text-[11px] text-slate-500 hover:text-slate-300 cursor-pointer flex items-center justify-between select-none">
+                        <span className="flex items-center gap-1 font-medium">
+                          <Code2 className="w-3 h-3 text-slate-500 group-open:text-purple-400" />
+                          <span>Technical Details & Hashes</span>
+                        </span>
+                        <span className="text-[10px] text-slate-600 font-mono group-open:hidden">
+                          click to view
+                        </span>
+                      </summary>
+
+                      <div className="mt-2 space-y-2">
+                        {ev.entry_hash && (
+                          <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
+                            <span className="px-1.5 py-0.5 rounded bg-purple-950/60 border border-purple-500/30 text-purple-300">
+                              SHA-256: {ev.entry_hash.slice(0, 16)}…
+                            </span>
+                            {ev.prev_hash && (
+                              <span className="text-slate-500">
+                                prev: {ev.prev_hash.slice(0, 12)}…
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+                        <pre className="text-[10px] text-slate-400 overflow-x-auto whitespace-pre-wrap font-mono bg-slate-950 p-2 rounded border border-slate-800/80">
+                          {JSON.stringify(ev.details, null, 2)}
+                        </pre>
+                      </div>
+                    </details>
+                  )}
+                </div>
               </div>
             </div>
+          );
+        })}
+      </div>
+
+      {/* Pagination Bar: < 1 2 3 4 > */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-800 text-xs">
+          <span className="text-[11px] text-slate-400">
+            Showing <strong className="text-slate-200">{startIndex + 1}–{Math.min(startIndex + ITEMS_PER_PAGE, sortedEvents.length)}</strong> of <strong className="text-slate-200">{sortedEvents.length}</strong>
+          </span>
+
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 transition-colors"
+              title="Previous page"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+
+            {getPageNumbers().map((pageItem, pidx) => {
+              if (pageItem === '...') {
+                return (
+                  <span key={`ellipsis-${pidx}`} className="px-1 text-slate-500 font-mono text-xs">
+                    …
+                  </span>
+                );
+              }
+              const pageNum = Number(pageItem);
+              return (
+                <button
+                  key={pageNum}
+                  type="button"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold transition-all ${
+                    currentPage === pageNum
+                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30 ring-1 ring-purple-400'
+                      : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 transition-colors"
+              title="Next page"
+              aria-label="Next page"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
           </div>
-        );
-      })}
-      <div ref={endRef} />
+        </div>
+      )}
     </div>
   );
 };
