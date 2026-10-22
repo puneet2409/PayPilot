@@ -9,6 +9,7 @@ interface ApprovalPanelProps {
   itemTitle: string;
   sku: string;
   sessionId: string;
+  imageUrl?: string;
   onPaymentSuccess: (res: CheckoutCaptureResponse) => void;
   onCancelOrder?: (orderId: string) => Promise<void> | void;
   onBack: () => void;
@@ -25,6 +26,7 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
   itemTitle,
   sku,
   sessionId,
+  imageUrl,
   onPaymentSuccess,
   onCancelOrder,
   onBack,
@@ -174,6 +176,22 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
 
       {/* Order Summary */}
       <div className="mt-5 space-y-2 text-sm bg-slate-950/60 p-4 rounded-lg border border-slate-800">
+        {(imageUrl || quote.image_url) && (
+          <div className="flex items-center gap-3 pb-3 border-b border-slate-800/80">
+            <div className="w-14 h-14 rounded-lg bg-slate-900 border border-slate-800 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+              <img
+                src={imageUrl || quote.image_url}
+                alt={itemTitle}
+                className="max-h-full max-w-full object-contain"
+                onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h5 className="text-xs font-semibold text-slate-200 truncate">{itemTitle}</h5>
+              <div className="text-[11px] text-slate-400 font-mono mt-0.5">SKU: {sku}</div>
+            </div>
+          </div>
+        )}
         <div className="flex justify-between text-xs text-slate-400">
           <span>Merchant</span>
           <span className="text-slate-200 font-medium">PayPilot Demo Store</span>

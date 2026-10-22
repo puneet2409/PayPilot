@@ -51,6 +51,7 @@ def evaluate_purchase_policy(
             estimated_tax=estimated_tax,
             shipping=shipping,
             landed_cost=landed_cost,
+            image_url=product.image_url,
             quote_signature=quote_sig
         )
         AuditService.record_event(
@@ -99,5 +100,6 @@ def evaluate_purchase_policy(
         reason=reason,
         estimated_tax=estimated_tax,
         shipping=shipping,
-        landed_cost=landed_cost
+        landed_cost=landed_cost,
+        image_url=product.image_url
     )

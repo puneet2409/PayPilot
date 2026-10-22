@@ -79,6 +79,7 @@ export interface QuoteSummary {
   estimated_tax?: number;
   shipping?: number;
   landed_cost?: number;
+  image_url?: string;
   quote_signature?: string;
 }
 
@@ -101,6 +102,7 @@ export interface PolicyEvaluateResponse {
   is_external_retailer?: boolean;
   buy_url?: string;
   merchant?: string;
+  image_url?: string;
 }
 
 export interface CheckoutCreateResponse {

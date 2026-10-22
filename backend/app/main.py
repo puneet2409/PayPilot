@@ -88,11 +88,29 @@ def seed_initial_demo_catalogue():
     finally:
         db.close()
 
+def ensure_schema_migrations():
+    """Applies non-destructive schema migrations for existing SQLite databases."""
+    from sqlalchemy import text
+    try:
+        with engine.connect() as conn:
+            cols = [c[1] for c in conn.execute(text("PRAGMA table_info(audit_events)")).fetchall()]
+            if cols and "prev_hash" not in cols:
+                conn.execute(text("ALTER TABLE audit_events ADD COLUMN prev_hash VARCHAR;"))
+                conn.commit()
+                logger.info("Migrated audit_events: added prev_hash column.")
+            if cols and "entry_hash" not in cols:
+                conn.execute(text("ALTER TABLE audit_events ADD COLUMN entry_hash VARCHAR DEFAULT 'GENESIS_HASH';"))
+                conn.commit()
+                logger.info("Migrated audit_events: added entry_hash column.")
+    except Exception as e:
+        logger.warning(f"Schema migration check notice: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: ensure tables exist and seed default catalogue
     validate_auth_config()
     Base.metadata.create_all(bind=engine)
+    ensure_schema_migrations()
     seed_initial_demo_catalogue()
     yield
     # Shutdown

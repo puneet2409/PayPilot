@@ -15,6 +15,7 @@ class QuoteSummary(BaseModel):
     estimated_tax: Optional[float] = None
     shipping: Optional[float] = None
     landed_cost: Optional[float] = None
+    image_url: Optional[str] = None
     quote_signature: Optional[str] = None
 
 class PolicyEvaluateRequest(BaseModel):
@@ -39,3 +40,4 @@ class PolicyEvaluateResponse(BaseModel):
     estimated_tax: Optional[float] = None
     shipping: Optional[float] = None
     landed_cost: Optional[float] = None
+    image_url: Optional[str] = None

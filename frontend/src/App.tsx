@@ -213,6 +213,7 @@ export const App: React.FC = () => {
         is_external_retailer: true,
         buy_url: cand.buy_url,
         merchant: cand.merchant,
+        image_url: cand.image_url,
         reason: !isBudgetPassed
           ? `Price $${itemPrice.toFixed(2)} exceeds budget ceiling of $${effectiveBudget.toFixed(2)}`
           : !allReqsPassed
@@ -253,7 +254,10 @@ export const App: React.FC = () => {
         excludedTermsOverride ?? excludedTerms,
       );
       if (requestVersion !== policyRequestVersion.current) return;
-      setPolicyResult(evalRes);
+      setPolicyResult({
+        ...evalRes,
+        image_url: evalRes.image_url || cand.image_url
+      });
       await refreshAuditEvents();
     } catch (err: any) {
       if (requestVersion === policyRequestVersion.current) {
@@ -539,6 +543,7 @@ export const App: React.FC = () => {
               itemTitle={policyResult.item_title}
               sku={policyResult.sku}
               sessionId={sessionId}
+              imageUrl={policyResult.image_url || selectedCandidate?.image_url}
               onPaymentSuccess={handlePaymentSuccess}
               onCancelOrder={handleCancelOrder}
               onBack={() => setShowApprovalStep(false)}

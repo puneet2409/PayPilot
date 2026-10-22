@@ -289,14 +289,55 @@ class Channel3Client:
                     observed_at=o.get("observed_at") or datetime.now(timezone.utc).isoformat()
                 ))
 
-            # Extract image url (singular, array, or dict with url)
-            raw_img = p.get("image_url") or p.get("image")
+            # Extract high-quality image URL from Channel3 product data
+            image_url = None
+            raw_img = (
+                p.get("image_url") or
+                p.get("image") or
+                p.get("thumbnail") or
+                p.get("thumbnail_url")
+            )
+
+            # Channel3 returns an array of image objects under `images`
+            # with 'url', 'cleaned_url', 'is_main_image', 'shot_type', etc.
             if not raw_img and p.get("images"):
-                raw_img = p["images"][0] if isinstance(p["images"], list) and len(p["images"]) > 0 else p["images"]
+                imgs = p.get("images")
+                if isinstance(imgs, list) and len(imgs) > 0:
+                    # 1. Prioritize image flagged explicitly as main image
+                    main_candidate = next(
+                        (img for img in imgs if isinstance(img, dict) and img.get("is_main_image")),
+                        None
+                    )
+                    # 2. Prioritize hero shot type
+                    if not main_candidate:
+                        main_candidate = next(
+                            (img for img in imgs if isinstance(img, dict) and img.get("shot_type") == "hero"),
+                            None
+                        )
+                    # 3. Fallback to first available image
+                    raw_img = main_candidate or imgs[0]
+                elif isinstance(imgs, (dict, str)):
+                    raw_img = imgs
+
+            # Check inside offers if still missing
+            if not raw_img and p.get("offers") and isinstance(p["offers"], list):
+                for off in p["offers"]:
+                    if isinstance(off, dict):
+                        off_img = off.get("image") or off.get("image_url") or off.get("thumbnail")
+                        if off_img:
+                            raw_img = off_img
+                            break
+
             if isinstance(raw_img, dict):
-                image_url = raw_img.get("url") or raw_img.get("src") or raw_img.get("link")
-            elif isinstance(raw_img, str):
-                image_url = raw_img
+                # Channel3 provides cleaned_url (background-removed/cleaned) or url/src/link
+                image_url = (
+                    raw_img.get("cleaned_url") or
+                    raw_img.get("url") or
+                    raw_img.get("src") or
+                    raw_img.get("link")
+                )
+            elif isinstance(raw_img, str) and raw_img.strip().startswith(("http://", "https://")):
+                image_url = raw_img.strip()
             else:
                 image_url = None
 

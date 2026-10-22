@@ -230,6 +230,38 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
         </div>
       </div>
 
+      {/* Evaluated Product Preview with Thumbnail */}
+      <div className="mt-4 p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center gap-3">
+        {policyResult.image_url ? (
+          <div className="w-14 h-14 rounded-lg bg-slate-900 border border-slate-800/80 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+            <img
+              src={policyResult.image_url}
+              alt={policyResult.item_title}
+              className="max-h-full max-w-full object-contain"
+              onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+            />
+          </div>
+        ) : (
+          <div className="w-14 h-14 rounded-lg bg-slate-900 border border-slate-800/80 flex items-center justify-center shrink-0 text-slate-500">
+            <ShieldCheck className="w-6 h-6 text-slate-600" />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-mono text-slate-400 truncate">{policyResult.sku}</span>
+            <span className="text-xs font-bold text-emerald-400 shrink-0">
+              ${policyResult.item_price.toFixed(2)} {policyResult.currency}
+            </span>
+          </div>
+          <div className="text-sm font-semibold text-slate-200 truncate mt-0.5">
+            {policyResult.item_title}
+          </div>
+          <div className="text-[11px] text-slate-400 mt-0.5">
+            {policyResult.is_external_retailer ? (policyResult.merchant || 'Retail partner offer') : 'PayPilot Demo Store'}
+          </div>
+        </div>
+      </div>
+
       {policyResult.is_external_retailer ? (
         <div className="mt-4 rounded-lg border border-sky-500/30 bg-sky-950/20 px-3 py-2.5 text-xs text-sky-200 flex items-center justify-between">
           <span>

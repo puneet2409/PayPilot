@@ -1,6 +1,6 @@
 import React from 'react';
 import type { RankedCandidate } from '../types';
-import { CheckCircle2, AlertCircle, ExternalLink, ShieldCheck, Tag, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, ExternalLink, ShieldCheck, Tag, Loader2, Package } from 'lucide-react';
 
 interface ProductCardProps {
   product: RankedCandidate;
@@ -60,6 +60,37 @@ export const ProductCard: React.FC<ProductCardProps> = ({
               <Tag className="w-3 h-3 text-slate-500" />
               <span>{product.source === 'demo_catalogue' ? 'PayPilot store price' : (product.merchant || 'Live store offer')}</span>
             </div>
+          </div>
+        </div>
+
+        {/* Product Image Container */}
+        <div className="mt-3.5 relative w-full h-44 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-center overflow-hidden p-3 group/img">
+          {product.image_url ? (
+            <img
+              src={product.image_url}
+              alt={product.title}
+              loading="lazy"
+              className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover/img:scale-105"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+                const parent = e.currentTarget.parentElement;
+                const fallback = parent?.querySelector('.img-fallback') as HTMLElement;
+                if (fallback) fallback.classList.remove('hidden');
+              }}
+            />
+          ) : null}
+          <div
+            className={`img-fallback ${product.image_url ? 'hidden' : 'flex'} flex-col items-center justify-center text-slate-500 gap-1.5`}
+          >
+            <Package className="w-10 h-10 text-slate-600 stroke-[1.5]" />
+            <span className="text-[11px] font-medium text-slate-500">{product.brand || 'Product Item'}</span>
+          </div>
+
+          {/* Quick source badge on bottom left of image */}
+          <div className="absolute bottom-2 left-2 pointer-events-none">
+            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-900/80 text-slate-300 backdrop-blur-sm border border-slate-700/50">
+              {product.brand ? product.brand : product.source === 'channel3' ? (product.merchant || 'Channel3 Retailer') : 'PayPilot Store'}
+            </span>
           </div>
         </div>
 
