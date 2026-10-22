@@ -572,7 +572,7 @@ export const App: React.FC = () => {
                   }`}
                 >
                   <History className="w-3.5 h-3.5 text-purple-400" />
-                  <span>Audit Trail</span>
+                  <span>Activity Log</span>
                   <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-[10px] font-mono text-slate-300">
                     {auditEvents.length}
                   </span>
@@ -595,7 +595,7 @@ export const App: React.FC = () => {
               </div>
 
               <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
-                {rightPanelTab === 'timeline' ? 'Session-scoped audit' : 'AG Grid payments overview'}
+                {rightPanelTab === 'timeline' ? 'Real-time action history' : 'Orders & payments overview'}
               </span>
             </div>
 
