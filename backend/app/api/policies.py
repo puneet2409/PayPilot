@@ -36,11 +36,12 @@ def evaluate_purchase_policy(
             session_id=request.session_id,
             product=product
         )
-        quote_sig = QuoteService.compute_quote_signature(
-            quote.id,
-            quote.amount,
-            quote.sku,
-            quote.expires_at.isoformat()
+        quote_sig = quote.quote_signature or QuoteService.compute_quote_signature(
+            quote_id=quote.id,
+            sku=quote.sku,
+            merchant=quote.merchant or "PayPilot Demo Store",
+            landed_cost=quote.landed_cost or landed_cost,
+            expires_at_iso=quote.expires_at.isoformat()
         )
         quote_summary = QuoteSummary(
             id=quote.id,
@@ -50,7 +51,9 @@ def evaluate_purchase_policy(
             item_price=product.fixed_price,
             estimated_tax=estimated_tax,
             shipping=shipping,
+            shipping_cost=shipping,
             landed_cost=landed_cost,
+            merchant=quote.merchant or "PayPilot Demo Store",
             image_url=product.image_url,
             quote_signature=quote_sig
         )
@@ -67,14 +70,17 @@ def evaluate_purchase_policy(
                 "landed_cost": landed_cost,
                 "estimated_tax": estimated_tax,
                 "shipping": shipping,
+                "shipping_cost": shipping,
+                "merchant": quote.merchant or "PayPilot Demo Store",
                 "quote_signature": quote_sig,
                 "checks": [c.model_dump() for c in checks]
             }
         )
     else:
+        is_injection = any(c.rule == "prompt_injection_shield" and not c.passed for c in checks)
         AuditService.record_event(
             db=db,
-            event_type="REJECTED_BY_POLICY",
+            event_type="POLICY_BLOCKED_INJECTION" if is_injection else "REJECTED_BY_POLICY",
             session_id=request.session_id,
             details={
                 "sku": request.demo_sku,
@@ -83,6 +89,7 @@ def evaluate_purchase_policy(
                 "max_total": request.max_total,
                 "item_price": product.fixed_price,
                 "landed_cost": landed_cost,
+                "prompt_injection_blocked": is_injection,
                 "checks": [c.model_dump() for c in checks]
             }
         )
@@ -100,6 +107,8 @@ def evaluate_purchase_policy(
         reason=reason,
         estimated_tax=estimated_tax,
         shipping=shipping,
+        shipping_cost=shipping,
         landed_cost=landed_cost,
+        merchant=quote_summary.merchant if quote_summary else "PayPilot Demo Store",
         image_url=product.image_url
     )

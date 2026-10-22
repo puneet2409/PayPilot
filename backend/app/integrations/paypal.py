@@ -68,27 +68,57 @@ class PayPalClient:
         currency: str = "USD",
         quote_id: str = "quote_default",
         quote_signature: Optional[str] = None,
-        idempotency_key: Optional[str] = None
+        idempotency_key: Optional[str] = None,
+        item_total: Optional[float] = None,
+        tax_total: Optional[float] = None,
+        shipping: Optional[float] = None,
+        invoice_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Creates a PayPal Orders v2 record with intent: CAPTURE.
-        Binds cryptographic HMAC quote signature in custom_id.
+        Binds cryptographic HMAC quote signature in custom_id, invoice_id,
+        and provides full amount.breakdown (item_total, tax_total, shipping).
         """
         req_id = idempotency_key or str(uuid.uuid4())
-        custom_id_val = f"{quote_id}:{quote_signature[:24]}" if quote_signature else f"{quote_id}:v1"
-        
+        inv_id = invoice_id or quote_id
+        custom_id_val = f"{quote_id}:{quote_signature}" if quote_signature else f"{quote_id}:v1"
+        if len(custom_id_val) > 127:
+            custom_id_val = custom_id_val[:127]
+
+        # Calculate exact breakdown for PayPal Orders v2
+        b_item = item_total if item_total is not None else amount
+        b_tax = tax_total if tax_total is not None else 0.0
+        b_shipping = shipping if shipping is not None else 0.0
+
+        # Validate breakdown equals amount; if not, balance with item_total
+        if round(b_item + b_tax + b_shipping, 2) != round(amount, 2):
+            b_item = round(amount - b_tax - b_shipping, 2)
+
+        breakdown_dict = {
+            "item_total": {"currency_code": currency, "value": f"{b_item:.2f}"},
+            "tax_total": {"currency_code": currency, "value": f"{b_tax:.2f}"},
+            "shipping": {"currency_code": currency, "value": f"{b_shipping:.2f}"}
+        }
+
+        amount_payload = {
+            "currency_code": currency,
+            "value": f"{amount:.2f}",
+            "breakdown": breakdown_dict
+        }
+
         if not self.is_configured:
             # Deterministic Sandbox Simulation for testing without live credentials
             mock_paypal_order_id = f"SANDBOX_ORDER_{uuid.uuid4().hex[:12].upper()}"
-            logger.info(f"[SIMULATED PAYPAL] Created order {mock_paypal_order_id} for {amount} {currency} with custom_id {custom_id_val}")
+            logger.info(f"[SIMULATED PAYPAL] Created order {mock_paypal_order_id} for {amount} {currency} with custom_id {custom_id_val} invoice_id {inv_id}")
             return {
                 "id": mock_paypal_order_id,
                 "status": "CREATED",
                 "intent": "CAPTURE",
                 "purchase_units": [{
                     "reference_id": quote_id,
+                    "invoice_id": inv_id,
                     "custom_id": custom_id_val,
-                    "amount": {"currency_code": currency, "value": f"{amount:.2f}"}
+                    "amount": amount_payload
                 }],
                 "links": [
                     {
@@ -110,13 +140,11 @@ class PayPalClient:
             "purchase_units": [
                 {
                     "reference_id": quote_id,
+                    "invoice_id": inv_id,
                     "custom_id": custom_id_val,
                     "soft_descriptor": "PAYPILOT*CH3",
                     "description": "PayPilot Agentic Commerce checkout",
-                    "amount": {
-                        "currency_code": currency,
-                        "value": f"{amount:.2f}"
-                    }
+                    "amount": amount_payload
                 }
             ],
             "application_context": {

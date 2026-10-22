@@ -25,15 +25,23 @@ def _paypal_mode(paypal_order_id: str) -> str:
 async def _complete_paypal_order_creation(db: Session, order: Order, quote: Quote, idemp_key: str) -> None:
     """Create or safely retry the remote order using the same provider key."""
     try:
-        quote_sig = QuoteService.compute_quote_signature(
-            quote.id, quote.amount, quote.sku, quote.expires_at.isoformat()
+        quote_sig = quote.quote_signature or QuoteService.compute_quote_signature(
+            quote_id=quote.id,
+            sku=quote.sku,
+            merchant=quote.merchant or "PayPilot Demo Store",
+            landed_cost=quote.landed_cost or quote.amount,
+            expires_at_iso=quote.expires_at.isoformat()
         )
         paypal_res = await paypal_client.create_order(
             amount=quote.amount,
             currency=quote.currency,
             quote_id=quote.id,
             quote_signature=quote_sig,
-            idempotency_key=idemp_key
+            idempotency_key=idemp_key,
+            item_total=quote.item_price or quote.amount,
+            tax_total=quote.estimated_tax or 0.0,
+            shipping=quote.shipping_cost or 0.0,
+            invoice_id=quote.id
         )
     except Exception as e:
         order.status = "RECONCILIATION_REQUIRED"
@@ -172,12 +180,70 @@ async def capture_checkout_order(
     if order.status != "AWAITING_APPROVAL":
         raise HTTPException(status_code=409, detail=f"Cannot capture order in {order.status} state")
 
-    # Pre-capture Live Price Drift & Stock Re-verification Guard
-    if request.simulate_price_drift:
+    # Pre-capture Re-verification Guard
+    now = datetime.now(timezone.utc)
+    quote = db.query(Quote).filter(Quote.id == order.quote_id).first()
+    if quote:
+        # a) Check quote non-expiry
+        exp = quote.expires_at
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if now > exp:
+            order.status = "CANCELLED"
+            order.updated_at = now
+            quote.status = "EXPIRED"
+            db.commit()
+            AuditService.record_event(
+                db=db,
+                event_type="AUTO_VOID_EXPIRED_QUOTE",
+                session_id=order.session_id,
+                order_id=order.id,
+                details={"quote_id": quote.id, "expires_at": quote.expires_at.isoformat()}
+            )
+            raise HTTPException(status_code=400, detail="Quote expired before payment capture. Please re-evaluate purchase policy.")
+
+        # b) Check cryptographic HMAC signature integrity
+        sig_to_verify = quote.quote_signature or QuoteService.compute_quote_signature(
+            quote.id, quote.sku, quote.merchant or "PayPilot Demo Store", quote.landed_cost or quote.amount, quote.expires_at.isoformat()
+        )
+        if not QuoteService.verify_quote_signature(
+            quote_id=quote.id,
+            sku=quote.sku,
+            merchant=quote.merchant or "PayPilot Demo Store",
+            landed_cost=quote.landed_cost or quote.amount,
+            expires_at_iso=quote.expires_at.isoformat(),
+            provided_sig=sig_to_verify
+        ):
+            order.status = "CANCELLED"
+            order.updated_at = now
+            db.commit()
+            AuditService.record_event(
+                db=db,
+                event_type="SECURITY_ALERT_SIGNATURE_TAMPERED",
+                session_id=order.session_id,
+                order_id=order.id,
+                details={"quote_id": quote.id, "sku": quote.sku}
+            )
+            raise HTTPException(status_code=400, detail="Quote cryptographic signature verification failed; quote has been tampered with")
+
+    # d) Live Merchant Price/Stock Drift Re-verification Guard
+    from app.models.catalogue import DemoProduct
+    product = db.query(DemoProduct).filter(DemoProduct.sku == order.sku).first()
+    price_drifted = False
+    live_price = order.amount
+    if product:
+        if not product.active:
+            price_drifted = True
+            live_price = product.fixed_price
+        elif product.fixed_price > order.amount:
+            price_drifted = True
+            live_price = product.fixed_price
+
+    if request.simulate_price_drift or price_drifted:
         order.status = "CANCELLED"
         order.updated_at = datetime.now(timezone.utc)
         db.commit()
-        attempted_price = round(order.amount * 1.35, 2)
+        attempted_price = live_price if price_drifted else round(order.amount * 1.35, 2)
         AuditService.record_event(
             db=db,
             event_type="AUTO_VOID_PRICE_DRIFT",

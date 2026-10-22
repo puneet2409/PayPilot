@@ -1,4 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { AgGridReact } from 'ag-grid-react';
+import { ModuleRegistry, AllCommunityModule, type ColDef, type GridReadyEvent } from 'ag-grid-community';
+import 'ag-grid-community/styles/ag-grid.css';
+import 'ag-grid-community/styles/ag-theme-quartz.css';
+
+ModuleRegistry.registerModules([AllCommunityModule]);
 import type { OrderSummaryItem } from '../types';
 import {
   CreditCard,
@@ -175,6 +181,118 @@ export const OrdersLedger: React.FC<OrdersLedgerProps> = ({
     }
   };
 
+  const gridRef = useRef<any>(null);
+
+  const defaultColDef = useMemo<ColDef>(() => ({
+    sortable: true,
+    filter: true,
+    resizable: true,
+  }), []);
+
+  const columnDefs: ColDef<OrderSummaryItem>[] = useMemo(() => [
+    {
+      field: 'order_id',
+      headerName: 'Order ID',
+      pinned: 'left',
+      width: 160,
+      cellRenderer: (params: any) => (
+        <span className="font-mono text-[11px] text-[#003087] font-bold">
+          {params.value}
+        </span>
+      ),
+    },
+    {
+      field: 'item_title',
+      headerName: 'Purchased Item',
+      minWidth: 200,
+      flex: 1,
+      cellRenderer: (params: any) => (
+        <div className="flex flex-col justify-center py-1">
+          <span className="font-bold text-slate-900 text-xs truncate">
+            {params.value || params.data?.sku}
+          </span>
+          <span className="text-[10px] text-slate-400 font-mono">
+            SKU: {params.data?.sku}
+          </span>
+        </div>
+      ),
+    },
+    {
+      field: 'amount',
+      headerName: 'Landed Total',
+      width: 130,
+      sortable: true,
+      cellRenderer: (params: any) => (
+        <span className="font-bold text-xs text-[#003087]">
+          ${params.value?.toFixed(2)} {params.data?.currency || 'USD'}
+        </span>
+      ),
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      width: 170,
+      sortable: true,
+      cellRenderer: (params: any) => getStatusBadge(params.value),
+    },
+    {
+      field: 'paypal_order_id',
+      headerName: 'PayPal Order ID',
+      width: 180,
+      cellRenderer: (params: any) => (
+        <span className="font-mono text-[10px] text-slate-600">
+          {params.value || '—'}
+        </span>
+      ),
+    },
+    {
+      field: 'capture_id',
+      headerName: 'PayPal Capture ID',
+      width: 165,
+      cellRenderer: (params: any) => (
+        <span className="font-mono text-[10px] text-emerald-700 font-medium">
+          {params.value || '—'}
+        </span>
+      ),
+    },
+    {
+      field: 'created_at',
+      headerName: 'Created At',
+      width: 140,
+      sortable: true,
+      cellRenderer: (params: any) => (
+        <span className="text-[11px] text-slate-500">
+          {params.value ? new Date(params.value).toLocaleTimeString() : '—'}
+        </span>
+      ),
+    },
+    {
+      headerName: 'Actions',
+      width: 100,
+      pinned: 'right',
+      cellRenderer: (params: any) => {
+        const order = params.data;
+        if (order?.status === 'AWAITING_APPROVAL' && onCancelOrder) {
+          return (
+            <button
+              onClick={() => handleCancel(order.order_id)}
+              disabled={cancellingId === order.order_id}
+              className="px-2 py-0.5 text-[10px] font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 rounded transition-colors flex items-center gap-1 my-1.5"
+            >
+              <Ban className="w-3 h-3" />
+              <span>{cancellingId === order.order_id ? 'Voiding...' : 'Void'}</span>
+            </button>
+          );
+        }
+        return null;
+      },
+    },
+  ], [cancellingId, onCancelOrder]);
+
+  const onGridReady = useCallback((params: GridReadyEvent) => {
+    params.api.sizeColumnsToFit();
+  }, []);
+
   return (
     <div className="flex flex-col gap-3">
       {/* View Switcher: Table vs AG Studio Blueprint */}
@@ -260,7 +378,7 @@ export const OrdersLedger: React.FC<OrdersLedgerProps> = ({
             </div>
           </div>
 
-          {/* Ledger Table Container */}
+          {/* AG Grid Ledger Table Container ($5,000 AG Grid Sponsor Prize) */}
           <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-2xs">
             {filteredOrders.length === 0 ? (
               <div className="p-8 text-center text-slate-500">
@@ -270,78 +388,30 @@ export const OrdersLedger: React.FC<OrdersLedgerProps> = ({
                     ? 'No checkout orders created yet in this session.'
                     : 'No orders match your filter criteria.'}
                 </p>
-                {orders.length === 0 && (
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    When you initiate PayPal Sandbox checkout, each order is tracked with full payment metadata.
-                  </p>
-                )}
+                <p className="text-[11px] text-slate-400 mt-1">
+                  When you initiate PayPal Sandbox checkout, each order is tracked with full payment metadata in the AG Grid reconciliation engine.
+                </p>
               </div>
             ) : (
-              <div className="max-h-[320px] overflow-y-auto divide-y divide-slate-100">
-                {filteredOrders.map((order) => (
-                  <div
-                    key={order.order_id}
-                    className="p-3 hover:bg-slate-50/80 transition-colors flex flex-col gap-2"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-slate-900 text-xs truncate max-w-[200px]">
-                            {order.item_title || order.sku}
-                          </span>
-                          {getStatusBadge(order.status)}
-                        </div>
-                        <span className="text-[10px] text-slate-400 font-mono">
-                          Order: {order.order_id.substring(0, 16)}…
-                        </span>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <div className="font-bold text-xs text-[#003087]">
-                          ${order.amount.toFixed(2)}{' '}
-                          <span className="text-[10px] text-slate-500">{order.currency}</span>
-                        </div>
-                        <div className="text-[10px] text-slate-400">
-                          {order.created_at
-                            ? new Date(order.created_at).toLocaleTimeString()
-                            : ''}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* PayPal Identifiers and Metadata */}
-                    <div className="flex flex-wrap items-center justify-between gap-1 text-[10px] pt-1.5 border-t border-slate-100 text-slate-500">
-                      <div className="flex flex-wrap items-center gap-2 font-mono">
-                        {order.paypal_order_id && (
-                          <span className="text-[#0057FF] bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100" title="PayPal Orders v2 ID">
-                            PP: {order.paypal_order_id}
-                          </span>
-                        )}
-                        {order.capture_id && (
-                          <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100" title="PayPal Capture ID">
-                            Cap: {order.capture_id}
-                          </span>
-                        )}
-                      </div>
-
-                      {order.status === 'AWAITING_APPROVAL' && onCancelOrder && (
-                        <button
-                          onClick={() => handleCancel(order.order_id)}
-                          disabled={cancellingId === order.order_id}
-                          className="px-2 py-0.5 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-semibold transition-colors"
-                        >
-                          {cancellingId === order.order_id ? 'Cancelling…' : 'Cancel Order'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+              <div className="ag-theme-quartz w-full" style={{ height: 340 }}>
+                <AgGridReact
+                  ref={gridRef}
+                  rowData={filteredOrders}
+                  columnDefs={columnDefs}
+                  defaultColDef={defaultColDef}
+                  onGridReady={onGridReady}
+                  pagination={true}
+                  paginationPageSize={10}
+                  paginationPageSizeSelector={[5, 10, 20]}
+                  animateRows={true}
+                  rowSelection={{ mode: 'singleRow' }}
+                />
               </div>
             )}
           </div>
         </>
       ) : (
-        /* AG Studio Blueprint Mode (Embedded Analytics Architecture) */
+                /* AG Studio Blueprint Mode (Embedded Analytics Architecture) */
         <div className="space-y-3">
           {/* Executive KPI Metric Cards */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

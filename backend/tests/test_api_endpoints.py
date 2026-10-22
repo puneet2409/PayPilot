@@ -431,4 +431,57 @@ def test_audit_hash_chaining_integrity(client, db_session):
     assert ev2.prev_hash == ev1.entry_hash
 
 
+def test_pre_capture_tampered_quote_rejected(client, db_session):
+    """Verify that tampering with quote signature causes pre-capture guard to abort payment."""
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": client.test_session_id,
+        "demo_sku": "HEADSET-DEMO-01",
+        "max_total": 100.0
+    })
+    quote_id = eval_res.json()["quote"]["id"]
+
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": client.test_session_id
+    })
+    order_id = create_res.json()["order_id"]
+
+    # Tamper with quote signature in database
+    from app.models.quote import Quote
+    quote = db_session.query(Quote).filter(Quote.id == quote_id).first()
+    quote.quote_signature = "bad_tampered_signature_hex"
+    db_session.commit()
+
+    cap_res = client.post(f"/api/v1/checkout/{order_id}/capture", json={})
+    assert cap_res.status_code == 400
+    assert "signature verification failed" in cap_res.json()["detail"].lower()
+
+
+def test_pre_capture_expired_quote_rejected(client, db_session):
+    """Verify that if a quote expires between order creation and buyer capture, capture is blocked."""
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": client.test_session_id,
+        "demo_sku": "HEADSET-DEMO-01",
+        "max_total": 100.0
+    })
+    quote_id = eval_res.json()["quote"]["id"]
+
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": client.test_session_id
+    })
+    order_id = create_res.json()["order_id"]
+
+    # Expire quote in database
+    from app.models.quote import Quote
+    quote = db_session.query(Quote).filter(Quote.id == quote_id).first()
+    quote.expires_at = datetime.now(timezone.utc) - timedelta(minutes=5)
+    db_session.commit()
+
+    cap_res = client.post(f"/api/v1/checkout/{order_id}/capture", json={})
+    assert cap_res.status_code == 400
+    assert "quote expired before payment capture" in cap_res.json()["detail"].lower()
+
+
+
 

@@ -72,6 +72,18 @@ async def handle_paypal_webhook(
     order = None
     if paypal_order_id:
         order = db.query(Order).filter(Order.paypal_order_id == paypal_order_id).first()
+    if not order:
+        # Fallback to custom_id or invoice_id bound to quote
+        custom_id = resource.get("custom_id")
+        invoice_id = resource.get("invoice_id")
+        candidate_quote_id = (custom_id.split(":")[0] if custom_id else None) or invoice_id
+        if candidate_quote_id:
+            order = db.query(Order).filter(Order.quote_id == candidate_quote_id).first()
+
+    quote = None
+    if order:
+        from app.models.quote import Quote
+        quote = db.query(Quote).filter(Quote.id == order.quote_id).first()
 
     # Event handling switch
     if event_type == "PAYMENT.CAPTURE.COMPLETED" and order:
@@ -83,6 +95,9 @@ async def handle_paypal_webhook(
         if order.status != "PAID":
             order.status = "PAID"
             order.updated_at = datetime.now(timezone.utc)
+
+        if quote and quote.status == "ACTIVE":
+            quote.status = "CONSUMED"
 
         # Check existing payment record
         existing_pmt = db.query(Payment).filter(Payment.order_id == order.id).first()
@@ -110,17 +125,52 @@ async def handle_paypal_webhook(
                 "capture_id": capture_id,
                 "amount": amount_val,
                 "currency": currency,
+                "quote_id": quote.id if quote else None,
+                "reconciliation_status": "PAID",
                 "signature_verified": True
             }
         )
 
     elif event_type == "CHECKOUT.ORDER.APPROVED" and order:
+        if order.status == "CREATING":
+            order.status = "AWAITING_APPROVAL"
+            order.updated_at = datetime.now(timezone.utc)
+            db.commit()
+
         AuditService.record_event(
             db=db,
             event_type="WEBHOOK_ORDER_APPROVED",
             session_id=order.session_id,
             order_id=order.id,
-            details={"webhook_event_id": event_id, "paypal_order_id": paypal_order_id, "signature_verified": True}
+            details={
+                "webhook_event_id": event_id,
+                "paypal_order_id": paypal_order_id,
+                "quote_id": quote.id if quote else None,
+                "reconciliation_status": "AWAITING_APPROVAL",
+                "signature_verified": True
+            }
+        )
+
+    elif event_type == "PAYMENT.CAPTURE.DENIED" and order:
+        if order.status != "PAID":
+            order.status = "FAILED"
+            order.updated_at = datetime.now(timezone.utc)
+            if quote:
+                quote.status = "STALE"
+            db.commit()
+
+        AuditService.record_event(
+            db=db,
+            event_type="WEBHOOK_PAYMENT_DENIED",
+            session_id=order.session_id,
+            order_id=order.id,
+            details={
+                "webhook_event_id": event_id,
+                "paypal_order_id": paypal_order_id,
+                "quote_id": quote.id if quote else None,
+                "reconciliation_status": "FAILED",
+                "signature_verified": True
+            }
         )
 
     elif order:

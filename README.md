@@ -113,26 +113,49 @@ PayPilot includes a production blueprint `render.yaml` supporting:
 
 ## 🧪 Automated Test Suite (100% Pass)
 ```
-tests/test_api_endpoints.py::test_health_check PASSED
-tests/test_api_endpoints.py::test_discovery_search PASSED
-tests/test_api_endpoints.py::test_fallback_discovery_relevance PASSED
-tests/test_api_endpoints.py::test_agent_turn_top_pick_within_budget PASSED
-tests/test_api_endpoints.py::test_agent_turn_over_budget_top_pick_flagged PASSED
-tests/test_api_endpoints.py::test_policy_evaluation_success_and_quote PASSED
-tests/test_api_endpoints.py::test_policy_evaluation_budget_exceeded PASSED
-tests/test_api_endpoints.py::test_end_to_end_checkout_and_capture PASSED
-tests/test_api_endpoints.py::test_checkout_quote_ownership_validation PASSED
-tests/test_api_endpoints.py::test_checkout_expired_quote PASSED
-tests/test_api_endpoints.py::test_capture_idempotency PASSED
-tests/test_api_endpoints.py::test_catalogue_listing PASSED
-tests/test_api_endpoints.py::test_order_cancellation PASSED
-tests/test_policy_engine.py::test_policy_budget_pass PASSED
-tests/test_policy_engine.py::test_policy_budget_exceeded PASSED
-tests/test_policy_engine.py::test_policy_inactive_sku PASSED
-tests/test_policy_engine.py::test_policy_required_feature_unverified PASSED
-tests/test_policy_engine.py::test_policy_feature_hyphen_normalization PASSED
-tests/test_ranking.py::test_ranking_flags_and_demotes_over_budget_candidates PASSED
-tests/test_ranking.py::test_ranking_within_budget_default_true PASSED
+backend/tests/test_api_endpoints.py::test_health_check PASSED
+backend/tests/test_api_endpoints.py::test_discovery_search PASSED
+backend/tests/test_api_endpoints.py::test_fallback_discovery_relevance PASSED
+backend/tests/test_api_endpoints.py::test_agent_turn_top_pick_within_budget PASSED
+backend/tests/test_api_endpoints.py::test_agent_turn_over_budget_top_pick_flagged PASSED
+backend/tests/test_api_endpoints.py::test_policy_evaluation_success_and_quote PASSED
+backend/tests/test_api_endpoints.py::test_policy_evaluation_budget_exceeded PASSED
+backend/tests/test_api_endpoints.py::test_end_to_end_checkout_and_capture PASSED
+backend/tests/test_api_endpoints.py::test_checkout_quote_ownership_validation PASSED
+backend/tests/test_api_endpoints.py::test_checkout_expired_quote PASSED
+backend/tests/test_api_endpoints.py::test_capture_idempotency PASSED
+backend/tests/test_api_endpoints.py::test_catalogue_listing PASSED
+backend/tests/test_api_endpoints.py::test_order_cancellation PASSED
+backend/tests/test_api_endpoints.py::test_channel3_sku_matching PASSED
+backend/tests/test_api_endpoints.py::test_session_orders_listing PASSED
+backend/tests/test_api_endpoints.py::test_paypal_webhook_reconciliation PASSED
+backend/tests/test_api_endpoints.py::test_analytics_dashboard_endpoint PASSED
+backend/tests/test_api_endpoints.py::test_pre_capture_price_drift_auto_void PASSED
+backend/tests/test_api_endpoints.py::test_audit_hash_chaining_integrity PASSED
+backend/tests/test_api_endpoints.py::test_pre_capture_tampered_quote_rejected PASSED
+backend/tests/test_api_endpoints.py::test_pre_capture_expired_quote_rejected PASSED
+backend/tests/test_policy_engine.py::test_policy_budget_pass PASSED
+backend/tests/test_policy_engine.py::test_policy_budget_exceeded PASSED
+backend/tests/test_policy_engine.py::test_policy_inactive_sku PASSED
+backend/tests/test_policy_engine.py::test_policy_required_feature_unverified PASSED
+backend/tests/test_policy_engine.py::test_policy_feature_hyphen_normalization PASSED
+backend/tests/test_policy_engine.py::test_policy_prompt_injection_blocked PASSED
+backend/tests/test_policy_engine.py::test_quote_hmac_signature_integrity PASSED
+backend/tests/test_policy_engine.py::test_policy_landed_cost_budget_exceeded PASSED
+backend/tests/test_policy_engine.py::test_quote_hmac_tampering_rejected_full_payload PASSED
+backend/tests/test_ranking.py::test_ranking_flags_and_demotes_over_budget_candidates PASSED
+backend/tests/test_ranking.py::test_ranking_within_budget_default_true PASSED
+32 passed in backend (100%)
+
+frontend/src/__tests__/paypilot.test.ts
+✓ builds valid AG Studio relational sources (orders, transactions, customers)
+✓ computes aggregate financial metrics correctly
+✓ defines correct relational joins between sources
+✓ defines calculated expressions for collection rate
+✓ configures temporal bounds and calendar range
+✓ generates serializable AGReportState with chart & table views
+✓ includes all required order fields for AG Grid ledger
+7 passed in frontend (100%)
 ```
 
 ---

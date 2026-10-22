@@ -21,10 +21,18 @@ wheels/
 *.egg
 .env
 .env.local
+backend/.env
+backend/.env.local
+backend/.env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 .session_secret
+backend/.session_secret
 *.secret
 .venv
 venv/
+backend/venv/
 ENV/
 env/
 # SQLite databases
@@ -33,6 +41,9 @@ env/
 *.db-wal
 *.sqlite
 *.sqlite3
+paypilot.db*
+paypilot_test.db*
+backend/*.db*
 
 # Node / Frontend
 node_modules/

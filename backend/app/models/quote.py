@@ -11,6 +11,14 @@ class Quote(Base):
     amount = Column(Float, nullable=False)
     currency = Column(String, default="USD", nullable=False)
     policy_version = Column(String, default="v1", nullable=False)
-    status = Column(String, default="ACTIVE", nullable=False) # ACTIVE, CONSUMED, EXPIRED
+    status = Column(String, default="ACTIVE", nullable=False) # ACTIVE, CONSUMED, EXPIRED, STALE
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # True Landed Cost Breakdown & Cryptographic Quote Binding
+    item_price = Column(Float, nullable=True)
+    estimated_tax = Column(Float, nullable=True)
+    shipping_cost = Column(Float, nullable=True)
+    landed_cost = Column(Float, nullable=True)
+    merchant = Column(String, default="PayPilot Demo Store", nullable=True)
+    quote_signature = Column(String, nullable=True)

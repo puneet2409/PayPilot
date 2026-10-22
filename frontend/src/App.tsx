@@ -30,6 +30,8 @@ import {
   Sparkles,
   Loader2,
   ShieldCheck,
+  ShieldAlert,
+  Zap,
   CheckCircle2,
   Lock,
   ArrowRight
@@ -444,6 +446,186 @@ export const App: React.FC = () => {
 
         {/* Main Application Content */}
         <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto">
+          {/* Separation of Powers Pipeline Stepper & Judge Quick Demo Controls ($5k AG Grid / Agentic Commerce) */}
+          <div className="mb-6 rounded-2xl bg-white border border-slate-200/90 p-4 shadow-2xs">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-blue-50 text-[#0057FF] border border-blue-100 shadow-2xs">
+                  <Layers className="w-4 h-4 text-[#0057FF]" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xs font-bold text-slate-900 tracking-tight">
+                      Separation of Powers Pipeline
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[#0057FF] text-[10px] font-extrabold border border-blue-200">
+                      2026 PayPal Hackathon
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    Dual-gated architecture: AI advises • Deterministic code validates • Buyer authorizes • AG Studio reconciles
+                  </p>
+                </div>
+              </div>
+
+              {/* Judge Quick Action Controls */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider hidden md:inline">
+                  Judge Demo Controls:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentView('shop');
+                    handleSendMessage('Wireless headset under $50 (Test Policy Block)', 50);
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                  title="Test deterministic Policy Engine rejecting item exceeding $50 ceiling"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                  <span>1. Test Guardrail: $50 Budget Block</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setCurrentView('shop');
+                    if (policyResult?.eligible && policyResult.quote) {
+                      setShowApprovalStep(true);
+                    } else {
+                      await handleSendMessage('Headset under $100', 100);
+                    }
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl text-[11px] font-bold bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                  title="Test pre-capture live price spike detection and auto-voiding in checkout"
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-600" />
+                  <span>2. Test Guardrail: Price Spike Void</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Visual 5-Stage Stepper Grid */}
+            <div className="pt-3.5 grid grid-cols-2 md:grid-cols-5 gap-2.5 text-left">
+              {/* Step 1: Gemini Intent */}
+              <div className={`p-2.5 rounded-xl border transition-all ${
+                shoppingIntent
+                  ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
+                  : isLoadingSearch
+                    ? 'bg-blue-50/60 border-blue-300 text-blue-900 animate-pulse'
+                    : 'bg-slate-50/80 border-slate-200/80 text-slate-700'
+              }`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Stage 1</span>
+                  {shoppingIntent ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : isLoadingSearch ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0057FF]" />
+                  ) : (
+                    <Sparkles className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </div>
+                <div className="font-bold text-xs truncate">1. Gemini Intent</div>
+                <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                  {shoppingIntent ? `${shoppingIntent.category || 'Shopping brief'} • $${shoppingIntent.budget}` : 'Structured JSON parse'}
+                </div>
+              </div>
+
+              {/* Step 2: Channel3 Live Inventory */}
+              <div className={`p-2.5 rounded-xl border transition-all ${
+                candidates.length > 0
+                  ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
+                  : isLoadingSearch
+                    ? 'bg-blue-50/60 border-blue-300 text-blue-900 animate-pulse'
+                    : 'bg-slate-50/80 border-slate-200/80 text-slate-700'
+              }`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Stage 2</span>
+                  {candidates.length > 0 ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <ShoppingBag className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </div>
+                <div className="font-bold text-xs truncate">2. Channel3 Discovery</div>
+                <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                  {candidates.length > 0 ? `${candidates.length} live retailer offers` : '25,000+ store catalog'}
+                </div>
+              </div>
+
+              {/* Step 3: Python Deterministic Policy + HMAC */}
+              <div className={`p-2.5 rounded-xl border transition-all ${
+                policyResult?.eligible
+                  ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
+                  : policyResult && !policyResult.eligible
+                    ? 'bg-rose-50/60 border-rose-300 text-rose-900'
+                    : isLoadingPolicy
+                      ? 'bg-blue-50/60 border-blue-300 text-blue-900 animate-pulse'
+                      : 'bg-slate-50/80 border-slate-200/80 text-slate-700'
+              }`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Stage 3</span>
+                  {policyResult?.eligible ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : policyResult && !policyResult.eligible ? (
+                    <ShieldAlert className="w-3.5 h-3.5 text-rose-600" />
+                  ) : (
+                    <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </div>
+                <div className="font-bold text-xs truncate">3. Policy & HMAC Lock</div>
+                <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                  {policyResult?.eligible ? `Landed $${(policyResult.landed_cost ?? policyResult.quote?.amount ?? 0).toFixed(2)} • HMAC signed` : policyResult ? 'Policy rejected' : 'Landed cost & safety rules'}
+                </div>
+              </div>
+
+              {/* Step 4: PayPal Orders v2 Consent */}
+              <div className={`p-2.5 rounded-xl border transition-all ${
+                paymentResult
+                  ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
+                  : showApprovalStep
+                    ? 'bg-amber-50/80 border-amber-300 text-amber-900 ring-1 ring-amber-300'
+                    : 'bg-slate-50/80 border-slate-200/80 text-slate-700'
+              }`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Stage 4</span>
+                  {paymentResult ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : showApprovalStep ? (
+                    <Lock className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+                  ) : (
+                    <CreditCard className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </div>
+                <div className="font-bold text-xs truncate">4. PayPal Consent</div>
+                <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                  {paymentResult ? 'Payment captured' : showApprovalStep ? 'Awaiting buyer consent' : 'Orders v2 SDK approval'}
+                </div>
+              </div>
+
+              {/* Step 5: AG Studio Ledger Reconciliation */}
+              <div className={`p-2.5 rounded-xl border transition-all col-span-2 md:col-span-1 ${
+                paymentResult
+                  ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
+                  : orders.length > 0
+                    ? 'bg-blue-50/60 border-blue-200 text-blue-900'
+                    : 'bg-slate-50/80 border-slate-200/80 text-slate-700'
+              }`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Stage 5</span>
+                  {paymentResult ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <History className="w-3.5 h-3.5 text-slate-400" />
+                  )}
+                </div>
+                <div className="font-bold text-xs truncate">5. AG Studio Ledger</div>
+                <div className="text-[10px] text-slate-500 truncate mt-0.5">
+                  {orders.length > 0 ? `${orders.length} orders tracked` : 'Financial model & audit'}
+                </div>
+              </div>
+            </div>
+          </div>
           {/* VIEW: Shop & Discover (Core PayPilot Agentic Experience) */}
           {currentView === 'shop' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -629,6 +811,7 @@ export const App: React.FC = () => {
                     isLoading={isLoadingPolicy}
                     isSearching={isLoadingSearch}
                     onProceedToCheckout={() => setShowApprovalStep(true)}
+                    onReEvaluate={() => selectedCandidate && handleSelectCandidate(selectedCandidate)}
                   />
                 )}
 

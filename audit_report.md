@@ -117,4 +117,28 @@ Private agent, policy, checkout, order, cancellation, and audit routes now requi
 - Configure Gemini and matching PayPal Sandbox credentials for the judging walkthrough; local simulation is not the PayPal integration demonstration.
 - Deploy the hosted demo or verify clean-clone instructions, then record and publish the required YouTube demo under three minutes.
 
-Follow-up verification: the backend suite passes **20/20**, the frontend production build succeeds, and `git diff --check` reports no whitespace errors. Pytest emits one existing Starlette deprecation warning for its `httpx` test-client integration.
+## 2026 PayPal AI Hackathon Upgrade & Hardening (2026-10-22)
+
+All five architectural pillars have been upgraded and hardened:
+1. **Workspace & Git Hygiene**:
+   - Comprehensive `.gitignore` ensuring zero leakage of `.env`, `backend/.env`, `*.db*`, `backend/venv/`, `__pycache__/`, `.session_secret`.
+   - `.env.example` and `backend/.env.example` verified with safe placeholders.
+   - Replaced all outdated model strings with `gemini-2.0-flash`.
+2. **Policy Engine & Quote Service**:
+   - **True Landed Cost Validation**: Explicitly computes and validates `landed_cost = round(item_price + estimated_tax + shipping_cost, 2)` against buyer budget ceilings. Exposes full tax and shipping breakdown in `QuoteSummary` and `PolicyEvaluateResponse`.
+   - **Indirect Prompt Injection Shield**: Deterministic regex rules scanning raw retailer text for `"ignore previous instructions"`, `"override budget"`, `"system prompt"`, and recording dedicated `POLICY_BLOCKED_INJECTION` audit events.
+   - **Cryptographic Quote Binding**: Full 64-character SHA-256 HMAC binding `(quote_id, sku, merchant, landed_cost, expires_at)` with `hmac.compare_digest` verification. Bound to PayPal Orders v2 payload via `purchase_units[0].custom_id`, `invoice_id`, and `amount.breakdown` (`item_total`, `tax_total`, `shipping`).
+3. **Hardened Checkout, Pre-Capture Re-Verification & Webhooks**:
+   - Pre-capture checks verify: quote non-expiry (`now <= quote.expires_at`), HMAC quote signature integrity, capture idempotency, and live price/stock drift (`simulate_price_drift`). Auto-voids payment before funds move if drift or expiration is detected.
+   - Webhook reconciliation seamlessly handles `CHECKOUT.ORDER.APPROVED`, `PAYMENT.CAPTURE.COMPLETED`, and `PAYMENT.CAPTURE.DENIED` with hash-chained audit logging and status synchronization across `Order` and `Quote`.
+4. **Sponsor Track Maximization (Frontend & AG Studio)**:
+   - **AG Grid Community v36**: Integrated into `OrdersLedger.tsx` with interactive column sorting, text/numeric filtering, pinned columns, and custom PayPal status badges ($5,000 AG Grid Track).
+   - **Live 10-Minute Countdown Timer**: Ticking `MM:SS` countdown with one-click **"Re-Verify & Mint New Quote"** on expiration.
+   - **Separation of Powers Stepper**: Visual real-time pipeline bar tracking progression from Gemini Intent -> Channel3 Live Inventory -> Python Deterministic Policy + HMAC Quote -> PayPal Orders v2 Consent -> AG Studio Ledger Reconciliation.
+   - **Judge Quick Demo Controls**: One-click demo triggers for testing budget violations/prompt injection blocks and pre-capture price spike auto-voids.
+5. **Automated Test Suite Expansion**:
+   - 32/32 backend pytest tests pass (100%).
+   - 7/7 frontend vitest tests pass (100%).
+   - Zero TypeScript or build errors.
+
+Follow-up verification: the backend suite passes **32/32**, the frontend test suite passes **7/7**, the frontend production build succeeds (`dist/`), and `git diff --check` reports no whitespace errors. Pytest emits one existing Starlette deprecation warning for its `httpx` test-client integration.

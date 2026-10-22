@@ -14,7 +14,9 @@ class QuoteSummary(BaseModel):
     item_price: Optional[float] = None
     estimated_tax: Optional[float] = None
     shipping: Optional[float] = None
+    shipping_cost: Optional[float] = None
     landed_cost: Optional[float] = None
+    merchant: Optional[str] = "PayPilot Demo Store"
     image_url: Optional[str] = None
     quote_signature: Optional[str] = None
 
@@ -39,5 +41,7 @@ class PolicyEvaluateResponse(BaseModel):
     reason: Optional[str] = None
     estimated_tax: Optional[float] = None
     shipping: Optional[float] = None
+    shipping_cost: Optional[float] = None
     landed_cost: Optional[float] = None
+    merchant: Optional[str] = "PayPilot Demo Store"
     image_url: Optional[str] = None

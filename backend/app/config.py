@@ -26,6 +26,6 @@ class Settings(BaseSettings):
     # AI Configuration (Gemini)
     AI_PROVIDER: str = "gemini"
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-flash-lite-latest"
+    GEMINI_MODEL: str = "gemini-2.0-flash"
 
 settings = Settings()

@@ -78,18 +78,18 @@ class PolicyEngine:
 
         # 4. Landed Cost & Hard Budget Limit Check
         landed_cost, estimated_tax, shipping = PolicyEngine.calculate_landed_cost(product.fixed_price)
-        if product.fixed_price > max_total:
+        if landed_cost > max_total:
             checks.append(PolicyCheckItem(
                 rule="budget_limit",
                 passed=False,
-                detail=f"Item price ${product.fixed_price:.2f} (Landed: ${landed_cost:.2f} incl. ${estimated_tax:.2f} tax & ${shipping:.2f} shipping) exceeds ceiling ${max_total:.2f}"
+                detail=f"Landed cost ${landed_cost:.2f} (Item: ${product.fixed_price:.2f} + Tax: ${estimated_tax:.2f} + Shipping: ${shipping:.2f}) exceeds budget ceiling of ${max_total:.2f}"
             ))
-            return False, checks, product, f"Price exceeds budget limit of ${max_total:.2f}"
+            return False, checks, product, f"Landed cost ${landed_cost:.2f} exceeds budget limit of ${max_total:.2f}"
         else:
             checks.append(PolicyCheckItem(
                 rule="budget_limit",
                 passed=True,
-                detail=f"Item price ${product.fixed_price:.2f} (Landed: ${landed_cost:.2f} incl. ${estimated_tax:.2f} tax & ${shipping:.2f} shipping) is within ceiling ${max_total:.2f}"
+                detail=f"Landed cost ${landed_cost:.2f} (Item: ${product.fixed_price:.2f} + Tax: ${estimated_tax:.2f} + Shipping: ${shipping:.2f}) is within budget ceiling of ${max_total:.2f}"
             ))
 
         # 5. Indirect Prompt Injection Shield (sanitize untrusted retail data)

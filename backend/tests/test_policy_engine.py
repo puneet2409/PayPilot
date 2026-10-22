@@ -111,7 +111,72 @@ def test_quote_hmac_signature_integrity(test_db):
         product=test_db.query(DemoProduct).filter(DemoProduct.sku == "HEADSET-DEMO-01").first()
     )
     sig = QuoteService.compute_quote_signature(quote.id, quote.amount, quote.sku, quote.expires_at.isoformat())
-    assert len(sig) == 32
+    assert len(sig) == 64
     assert QuoteService.verify_quote_signature(quote.id, quote.amount, quote.sku, quote.expires_at.isoformat(), sig) is True
     # Tampering with amount must fail verification
     assert QuoteService.verify_quote_signature(quote.id, quote.amount + 10.0, quote.sku, quote.expires_at.isoformat(), sig) is False
+
+def test_policy_landed_cost_budget_exceeded(test_db):
+    """Item price ($95.00) is under budget ($100.00), but landed cost ($102.84 with tax) exceeds budget."""
+    p_landed = DemoProduct(
+        sku="LANDED-TEST-01",
+        title="High Value Headset",
+        brand="TestBrand",
+        category="wireless headset",
+        fixed_price=95.00,
+        currency="USD",
+        active=True,
+        attributes_json='{"condition": "New"}'
+    )
+    test_db.add(p_landed)
+    test_db.commit()
+
+    passed, checks, product, reason = PolicyEngine.evaluate(
+        db=test_db,
+        demo_sku="LANDED-TEST-01",
+        max_total=100.00  # 95 + 7.84 = 102.84 > 100.00
+    )
+    assert passed is False
+    assert "landed cost" in reason.lower()
+    budget_check = next(c for c in checks if c.rule == "budget_limit")
+    assert budget_check.passed is False
+    assert "102.84" in budget_check.detail
+
+def test_quote_hmac_tampering_rejected_full_payload(test_db):
+    """Verify that tampering with any field in the full quote HMAC binding fails verification."""
+    from app.services.quote_service import QuoteService
+    quote = QuoteService.create_quote(
+        db=test_db,
+        session_id="sess_tamper_test",
+        product=test_db.query(DemoProduct).filter(DemoProduct.sku == "HEADSET-DEMO-01").first()
+    )
+    valid_sig = quote.quote_signature
+    assert len(valid_sig) == 64
+    assert QuoteService.verify_quote_signature(
+        quote_id=quote.id,
+        sku=quote.sku,
+        merchant=quote.merchant,
+        landed_cost=quote.landed_cost,
+        expires_at_iso=quote.expires_at.isoformat(),
+        provided_sig=valid_sig
+    ) is True
+
+    # Tampering with SKU
+    assert QuoteService.verify_quote_signature(
+        quote_id=quote.id,
+        sku="TAMPERED-SKU",
+        merchant=quote.merchant,
+        landed_cost=quote.landed_cost,
+        expires_at_iso=quote.expires_at.isoformat(),
+        provided_sig=valid_sig
+    ) is False
+
+    # Tampering with Landed Cost
+    assert QuoteService.verify_quote_signature(
+        quote_id=quote.id,
+        sku=quote.sku,
+        merchant=quote.merchant,
+        landed_cost=quote.landed_cost + 5.0,
+        expires_at_iso=quote.expires_at.isoformat(),
+        provided_sig=valid_sig
+    ) is False

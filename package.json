@@ -2,7 +2,7 @@
   "name": "paypilot-root",
   "private": true,
   "scripts": {
-    "test": "npm test --prefix frontend",
+    "test": "npx --prefix frontend vitest run --root frontend",
     "typecheck": "npm run typecheck --prefix frontend",
     "build": "npm run build --prefix frontend"
   }

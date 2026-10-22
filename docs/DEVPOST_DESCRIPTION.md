@@ -34,7 +34,7 @@ PayPilot introduces a **four-stage consent-gated pipeline** where AI advises, bu
 [Shopper Brief]
       │
       ▼
-[1. Google Gemini 3.8 Flash] ─── Extracts Category, Budget, Must-Have Features, Avoid Terms
+[1. Google Gemini 2.0 Flash] ─── Extracts Category, Budget, Must-Have Features, Avoid Terms
       │
       ▼
 [2. Channel3 Agentic Engine] ─── Live Search Across 25,000+ Merchants (Best Buy, Walmart, B&H)
