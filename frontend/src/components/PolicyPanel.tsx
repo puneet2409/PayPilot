@@ -1,16 +1,18 @@
 import React from 'react';
 import type { PolicyEvaluateResponse } from '../types';
-import { ShieldCheck, ShieldAlert, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
 
 interface PolicyPanelProps {
   policyResult: PolicyEvaluateResponse | null;
   isLoading: boolean;
+  isSearching?: boolean;
   onProceedToCheckout?: () => void;
 }
 
 export const PolicyPanel: React.FC<PolicyPanelProps> = ({
   policyResult,
   isLoading,
+  isSearching = false,
   onProceedToCheckout
 }) => {
   if (isLoading) {
@@ -21,6 +23,25 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
         <p className="text-xs text-slate-400 mt-1">
           Executing deterministic budget and attribute constraints...
         </p>
+      </div>
+    );
+  }
+
+  if (isSearching) {
+    return (
+      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col items-center justify-center text-center">
+        <div className="p-3 rounded-full bg-blue-500/10 text-blue-400 mb-3 relative">
+          <ShieldCheck className="w-8 h-8 text-blue-400" />
+          <span className="w-2.5 h-2.5 rounded-full bg-blue-400 absolute top-2 right-2 animate-ping" />
+        </div>
+        <h4 className="text-sm font-semibold text-slate-200">Policy Engine Ready & Primed</h4>
+        <p className="text-xs text-slate-400 mt-1 max-w-sm">
+          Standing by to evaluate candidate items against deterministic budget ceilings, prompt-injection shields, and landed costs once results arrive.
+        </p>
+        <div className="mt-4 flex items-center gap-2 text-[11px] text-blue-300 bg-blue-950/40 px-3 py-1.5 rounded-lg border border-blue-500/20">
+          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
+          <span>Awaiting discovery candidate...</span>
+        </div>
       </div>
     );
   }

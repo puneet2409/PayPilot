@@ -79,17 +79,25 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             Quick Scenarios
           </label>
           <div className="flex flex-wrap gap-1.5">
-            {PRESET_GOALS.map((preset, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSelectPreset(preset)}
-                disabled={isDisabled || isLoading}
-                className="text-xs px-2.5 py-1 rounded-md bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60 transition-all text-left"
-              >
-                {preset.label}
-              </button>
-            ))}
+            {PRESET_GOALS.map((preset, idx) => {
+              const isThisActive = isLoading && lastMessage?.msg === preset.query;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => handleSelectPreset(preset)}
+                  disabled={isDisabled || isLoading}
+                  className={`text-xs px-2.5 py-1 rounded-md transition-all text-left flex items-center gap-1.5 ${
+                    isThisActive
+                      ? 'bg-blue-600/30 text-blue-200 border border-blue-400/50 shadow-sm shadow-blue-500/20'
+                      : 'bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700/60'
+                  }`}
+                >
+                  {isThisActive && <Loader2 className="w-3 h-3 animate-spin text-blue-300" />}
+                  <span>{preset.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -190,6 +198,41 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             )}
           </div>
         )}
+        {/* Active Search & Multi-Retailer Discovery Progress */}
+        {isLoading && (
+          <div className="mb-4 p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/40 text-xs text-slate-200 shadow-lg shadow-blue-500/10">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
+                </span>
+                <span className="font-semibold text-blue-300">Searching Channel3 Catalog & Evaluating Policies...</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-mono flex items-center gap-1">
+                <Loader2 className="w-2.5 h-2.5 animate-spin text-blue-300" /> Live
+              </span>
+            </div>
+            <p className="text-slate-300 text-[11px] mb-2.5">
+              Querying <span className="text-white font-medium">"{inputMessage || lastMessage?.msg || 'Product query'}"</span> across 25,000+ merchant inventories.
+            </p>
+            {/* Step Indicators */}
+            <div className="grid grid-cols-3 gap-2 text-[10px]">
+              <div className="px-2 py-1.5 rounded-lg bg-blue-900/40 border border-blue-500/30 text-blue-200 flex items-center gap-1.5 animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span className="truncate">1. Intent Parsing</span>
+              </div>
+              <div className="px-2 py-1.5 rounded-lg bg-sky-900/40 border border-sky-500/40 text-sky-200 flex items-center gap-1.5 animate-pulse">
+                <Loader2 className="w-2.5 h-2.5 animate-spin text-sky-400 shrink-0" />
+                <span className="truncate">2. Channel3 API</span>
+              </div>
+              <div className="px-2 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
+                <span className="truncate">3. Policy Engine</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Input Form */}
@@ -222,11 +265,16 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-blue-600/20 shrink-0"
           >
             {isLoading ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-200" />
+                <span>Searching...</span>
+              </>
             ) : (
-              <Send className="w-3.5 h-3.5" />
+              <>
+                <Send className="w-3.5 h-3.5" />
+                <span>Search</span>
+              </>
             )}
-            <span>Search</span>
           </button>
         </div>
         <p className="text-[11px] text-slate-400 mt-1">

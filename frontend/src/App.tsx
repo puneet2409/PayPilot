@@ -17,7 +17,7 @@ import { ApprovalPanel } from './components/ApprovalPanel';
 import { OrderStatus } from './components/OrderStatus';
 import { AuditTimeline } from './components/AuditTimeline';
 import { OrdersLedger } from './components/OrdersLedger';
-import { History, ShoppingBag, Layers, Sparkles, CreditCard, Code2 } from 'lucide-react';
+import { History, ShoppingBag, Layers, Sparkles, CreditCard, Code2, Loader2 } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -330,11 +330,63 @@ export const App: React.FC = () => {
                 </h3>
               </div>
               <span className="text-xs text-slate-400">
-                {candidates.reduce((sum, c) => sum + (c.offers?.length || 1), 0)} offers ranked by policy fit
+                {isLoadingSearch ? (
+                  <span className="text-sky-300 flex items-center gap-1.5 font-medium animate-pulse">
+                    <Loader2 className="w-3 h-3 animate-spin text-sky-400" />
+                    Scanning 25k+ merchants...
+                  </span>
+                ) : (
+                  `${candidates.reduce((sum, c) => sum + (c.offers?.length || 1), 0)} offers ranked by policy fit`
+                )}
               </span>
             </div>
 
-            {candidates.length === 0 ? (
+            {isLoadingSearch ? (
+              /* Live Multi-Retailer Discovery Skeleton State */
+              <div className="space-y-4">
+                <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-4 flex items-center justify-between shadow-lg shadow-sky-500/5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-sky-500/20 text-sky-400 shrink-0">
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-sky-200">
+                        Scanning 25,000+ Retailers via Channel3 Discovery
+                      </h4>
+                      <p className="text-xs text-sky-300/70 mt-0.5">
+                        Fetching live merchant prices, stock verification, and specs matching your budget.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[11px] font-mono animate-pulse">
+                    Querying...
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[1, 2].map((i) => (
+                    <div
+                      key={i}
+                      className="rounded-xl border border-slate-800 bg-slate-900/50 p-5 space-y-4 animate-pulse shadow-md"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="h-5 w-24 bg-slate-800 rounded-md"></div>
+                        <div className="h-6 w-16 bg-slate-800 rounded-md"></div>
+                      </div>
+                      <div className="h-5 w-3/4 bg-slate-800 rounded-md"></div>
+                      <div className="space-y-2">
+                        <div className="h-3 w-full bg-slate-800/60 rounded"></div>
+                        <div className="h-3 w-5/6 bg-slate-800/60 rounded"></div>
+                      </div>
+                      <div className="space-y-2 pt-2 border-t border-slate-800/60">
+                        <div className="h-3.5 w-1/2 bg-slate-800 rounded"></div>
+                        <div className="h-3.5 w-2/3 bg-slate-800 rounded"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : candidates.length === 0 ? (
               <div className="rounded-xl border border-dashed border-slate-800 bg-slate-900/30 p-8 text-center">
                 <Layers className="w-8 h-8 text-slate-600 mx-auto mb-2" />
                 <p className="text-xs text-slate-400">
@@ -379,6 +431,7 @@ export const App: React.FC = () => {
             <PolicyPanel
               policyResult={policyResult}
               isLoading={isLoadingPolicy}
+              isSearching={isLoadingSearch}
               onProceedToCheckout={() => setShowApprovalStep(true)}
             />
           )}
