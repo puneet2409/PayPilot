@@ -29,8 +29,9 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
     ...((options.headers as Record<string, string>) || {}),
     Authorization: `Bearer ${session.access_token}`,
   };
+  const signal = options.signal || AbortSignal.timeout(15_000);
 
-  let res = await fetch(url, { ...options, headers });
+  let res = await fetch(url, { ...options, headers, signal });
   if (res.status === 401) {
     // Stale or invalidated token. Clear and retry once with a brand new session.
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
@@ -40,7 +41,7 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
       Authorization: `Bearer ${session.access_token}`,
     };
     const updatedUrl = url.replace(/sessions\/sess_[a-f0-9]+/, `sessions/${session.session_id}`);
-    res = await fetch(updatedUrl, { ...options, headers });
+    res = await fetch(updatedUrl, { ...options, headers, signal });
   }
   return res;
 }
