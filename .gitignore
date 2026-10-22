@@ -64,7 +64,10 @@ frontend/dist-ssr/
 .DS_Store
 Thumbs.db
 
-# Test & coverage
+# Archives
+*.zip
+*.tar.gz
+*.tgz
 .pytest_cache/
 .coverage
 htmlcov/
