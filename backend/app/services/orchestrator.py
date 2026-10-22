@@ -4,7 +4,8 @@ import json
 import logging
 from typing import Optional
 from app.config import settings
-from app.schemas.agent import AgentTurnRequest, AgentTurnResponse, AgentIntent
+from typing import Optional, Dict, Any, List
+from app.schemas.agent import AgentTurnRequest, AgentTurnResponse, AgentIntent, SuggestedAction
 from app.integrations.channel3 import channel3_client
 from app.services.ranking import RankingEngine
 
@@ -16,6 +17,7 @@ class AgentOrchestrator:
         self.model_name = settings.GEMINI_MODEL
         self._client = None
 
+        self._session_context: Dict[str, Dict[str, Any]] = {}
         if self.gemini_key and self.gemini_key != "your_gemini_api_key_here":
             try:
                 from google import genai
@@ -28,7 +30,25 @@ class AgentOrchestrator:
         session_id: str,
         request: AgentTurnRequest
     ) -> AgentTurnResponse:
+        prev_ctx = self._session_context.get(session_id)
+        msg_clean = request.message.strip().lower()
+        is_followup = bool(
+            prev_ctx and (
+                any(kw in msg_clean for kw in ["budget", "increase", "raise", "adjust", "make it", "what about", "try", "relax", "yes", "sure", "ok"])
+                or re.match(r"^\$?(\d+(?:\.\d+)?)$", msg_clean)
+            )
+        )
+
         intent, intent_source = await self._interpret_intent(request.message, request.user_budget)
+
+        if is_followup and prev_ctx:
+            if not intent.category or intent.category in ["budget", "yes", "sure", "ok", "pendrive"]:
+                if prev_ctx.get("category"):
+                    intent.category = prev_ctx.get("category")
+            if not intent.must_have and prev_ctx.get("must_have"):
+                intent.must_have = prev_ctx.get("must_have")
+            if not intent.preferences and prev_ctx.get("preferences"):
+                intent.preferences = prev_ctx.get("preferences")
 
         if intent.currency.upper() != "USD":
             return AgentTurnResponse(
@@ -49,6 +69,13 @@ class AgentOrchestrator:
         # agent surfaces what the market offers, and the deterministic policy
         # engine is the component that enforces the spending ceiling.
         query = intent.category or request.message
+        self._session_context[session_id] = {
+            "query": query,
+            "category": intent.category,
+            "budget": intent.budget,
+            "must_have": intent.must_have,
+            "preferences": intent.preferences,
+        }
         candidates = await channel3_client.search(
             query=query,
             limit=8,
@@ -61,6 +88,14 @@ class AgentOrchestrator:
         # 3. Formulate Natural Language Explanation
         if not ranked:
             reply = f"I searched for '{query}' with a budget ceiling of ${intent.budget:.2f}, but found no matching products meeting all your constraints. Would you like to adjust your budget or feature requirements?"
+            base_b = intent.budget or 50.0
+            suggested_actions = [
+                SuggestedAction(label=f"Raise budget to ${base_b + 25:.0f}", query=query, budget=base_b + 25.0),
+                SuggestedAction(label=f"Raise budget to ${base_b + 50:.0f}", query=query, budget=base_b + 50.0),
+                SuggestedAction(label="Remove budget ceiling", query=query, budget=None),
+            ]
+            if any(t in query.lower() for t in ["pendrive", "pen drive"]):
+                suggested_actions.append(SuggestedAction(label="Search 'USB flash drive'", query="USB flash drive", budget=intent.budget))
             return AgentTurnResponse(
                 session_id=session_id,
                 reply_text=reply,
@@ -68,7 +103,8 @@ class AgentOrchestrator:
                 intent_source=intent_source,
                 recommendations=[],
                 requires_clarification=True,
-                clarification_question="Would you like to relax the budget or adjust the search parameters?"
+                clarification_question="Would you like to relax the budget or adjust the search parameters?",
+                suggested_actions=suggested_actions
             )
 
         top_choice = ranked[0]
@@ -82,7 +118,13 @@ class AgentOrchestrator:
             f"**{top_choice.title}** ({price_context}: ${top_choice.price:.2f}). {top_choice.explanation}\n\n"
             f"You can review the candidate comparison and evaluate our purchase policy to generate a locked quote."
         )
+        suggested_actions: List[SuggestedAction] = []
         if not top_choice.within_budget:
+            suggested_actions.append(SuggestedAction(
+                label=f"Adjust budget to ${top_choice.price:.2f}",
+                query=query,
+                budget=top_choice.price
+            ))
             reply += (
                 f"\n\nHeads up: every matching option is above your ${intent.budget:.2f} ceiling. "
                 f"I can show you the market, but the deterministic policy engine will block any quote until the budget is raised."
@@ -94,7 +136,8 @@ class AgentOrchestrator:
             intent=intent,
             intent_source=intent_source,
             recommendations=ranked,
-            requires_clarification=False
+            requires_clarification=False,
+            suggested_actions=suggested_actions
         )
 
     def _extract_intent(self, message: str, explicit_budget: Optional[float] = None) -> AgentIntent:

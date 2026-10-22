@@ -117,6 +117,29 @@ DEMO_STORE_DISCOVERY_DATA: List[Dict[str, Any]] = [
             "multipoint_bluetooth": True,
             "condition": "New"
         }
+    },
+    {
+        "product_id": "ch3_flash_sandisk128",
+        "title": "SanDisk 128GB Ultra Dual Drive Luxe USB Type-C Flash Drive",
+        "brand": "SanDisk",
+        "category": "flash drive",
+        "demo_sku": "FLASH-DEMO-01",
+        "image_url": "https://images.unsplash.com/photo-1624823183493-ed5832f44e18?w=500",
+        "offers": [
+            {
+                "merchant": "PayPilot Demo Store",
+                "price": 19.99,
+                "currency": "USD",
+                "availability": "InStock",
+                "observed_at": datetime.now(timezone.utc).isoformat()
+            }
+        ],
+        "attributes": {
+            "capacity_gb": 128,
+            "connector": "USB-C and USB-A",
+            "read_speed_mbps": 150,
+            "condition": "New"
+        }
     }
 ]
 
@@ -142,6 +165,10 @@ class Channel3Client:
             ("DOCK-DEMO-01", ["anker", "dock"]),
             ("MOUSE-DEMO-01", ["mx master"]),
             ("MOUSE-DEMO-01", ["mx", "3s"]),
+            ("FLASH-DEMO-01", ["flash"]),
+            ("FLASH-DEMO-01", ["pendrive"]),
+            ("FLASH-DEMO-01", ["sandisk"]),
+            ("FLASH-DEMO-01", ["usb", "drive"]),
         ]
         for sku, tokens in sku_patterns:
             if all(tok in text for tok in tokens):
@@ -216,14 +243,30 @@ class Channel3Client:
             for o in p.get("offers", []):
                 raw_price = o.get("price")
                 if isinstance(raw_price, dict):
-                    price_val = float(raw_price.get("amount") or raw_price.get("value") or 0.0)
+                    price_val = float(
+                        raw_price.get("price") or
+                        raw_price.get("amount") or
+                        raw_price.get("value") or
+                        0.0
+                    )
                     curr_val = raw_price.get("currency") or "USD"
                 else:
-                    price_val = float(raw_price or 0.0)
+                    try:
+                        price_val = float(raw_price or 0.0)
+                    except (ValueError, TypeError):
+                        price_val = 0.0
                     curr_val = o.get("currency", "USD")
 
+                merchant_name = (
+                    o.get("merchant") or
+                    o.get("domain") or
+                    o.get("seller") or
+                    o.get("store") or
+                    "Retailer"
+                )
+
                 offers_list.append(OfferItem(
-                    merchant=o.get("merchant") or o.get("seller") or o.get("store") or "Retailer",
+                    merchant=merchant_name,
                     price=price_val,
                     currency=curr_val,
                     availability=o.get("availability") or "InStock",
@@ -234,7 +277,7 @@ class Channel3Client:
             # Extract image url (singular, array, or dict with url)
             raw_img = p.get("image_url") or p.get("image")
             if not raw_img and p.get("images"):
-                raw_img = p["images"][0] if isinstance(p["images"], list) else p["images"]
+                raw_img = p["images"][0] if isinstance(p["images"], list) and len(p["images"]) > 0 else p["images"]
             if isinstance(raw_img, dict):
                 image_url = raw_img.get("url") or raw_img.get("src") or raw_img.get("link")
             elif isinstance(raw_img, str):
@@ -244,6 +287,9 @@ class Channel3Client:
 
             title = p.get("title", "Untitled Product")
             brand = p.get("brand")
+            if not brand and p.get("brands") and isinstance(p["brands"], list) and len(p["brands"]) > 0:
+                first_b = p["brands"][0]
+                brand = first_b.get("name") if isinstance(first_b, dict) else str(first_b)
             attributes = p.get("attributes") or p.get("specs") or p.get("specifications") or {}
             demo_sku = p.get("demo_sku") or self._match_demo_sku(title, brand)
 

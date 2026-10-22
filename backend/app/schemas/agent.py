@@ -29,6 +29,11 @@ class RankedCandidate(BaseModel):
     demo_sku: Optional[str] = None
     source: str = "channel3"
 
+class SuggestedAction(BaseModel):
+    label: str
+    query: str
+    budget: Optional[float] = None
+
 class AgentTurnRequest(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     search_id: Optional[str] = None
@@ -42,3 +47,4 @@ class AgentTurnResponse(BaseModel):
     recommendations: List[RankedCandidate] = Field(default_factory=list)
     requires_clarification: bool = False
     clarification_question: Optional[str] = None
+    suggested_actions: List[SuggestedAction] = Field(default_factory=list)

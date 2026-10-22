@@ -7,7 +7,8 @@ import type {
   AuditTimelineEvent,
   AuthSession,
   AgentIntent,
-  OrderSummaryItem
+  OrderSummaryItem,
+  SuggestedAction
 } from './types';
 import { ChatPanel } from './components/ChatPanel';
 import { ProductCard } from './components/ProductCard';
@@ -25,6 +26,7 @@ export const App: React.FC = () => {
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [isLoadingPolicy, setIsLoadingPolicy] = useState(false);
   const [agentReply, setAgentReply] = useState<string | null>(null);
+  const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
   const [shoppingIntent, setShoppingIntent] = useState<AgentIntent | null>(null);
   const [intentSource, setIntentSource] = useState<'gemini' | 'rules'>('rules');
   const [requiredFeatures, setRequiredFeatures] = useState<string[]>([]);
@@ -114,6 +116,7 @@ export const App: React.FC = () => {
     try {
       const res = await api.sendAgentTurn(sessionId, message, budget);
       setAgentReply(res.reply_text);
+      setSuggestedActions(res.suggested_actions ?? []);
       setCandidates(res.recommendations);
       setShoppingIntent(res.intent ?? null);
       setIntentSource(res.intent_source);
@@ -265,6 +268,7 @@ export const App: React.FC = () => {
             isLoading={isLoadingSearch}
             isDisabled={!session}
             agentReply={agentReply || sessionError}
+            suggestedActions={suggestedActions}
           />
 
           {shoppingIntent && (

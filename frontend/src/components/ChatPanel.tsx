@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { Send, Sparkles, DollarSign, Loader2, RotateCcw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import type { SuggestedAction } from '../types';
 
 interface ChatPanelProps {
   onSendMessage: (msg: string, budget?: number) => void;
   isLoading: boolean;
   isDisabled?: boolean;
   agentReply: string | null;
+  suggestedActions?: SuggestedAction[];
 }
 
 const PRESET_GOALS = [
@@ -36,7 +38,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   onSendMessage,
   isLoading,
   isDisabled = false,
-  agentReply
+  agentReply,
+  suggestedActions = []
 }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [budgetInput, setBudgetInput] = useState<string>('');
@@ -116,6 +119,75 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             >
               {agentReply}
             </ReactMarkdown>
+
+            {/* Quick Action / Clarification Chips */}
+            {((suggestedActions && suggestedActions.length > 0) ||
+              agentReply.includes('adjust your budget') ||
+              agentReply.includes('relax the budget') ||
+              agentReply.includes('ceiling')) && (
+              <div className="mt-3 pt-2.5 border-t border-blue-500/20">
+                <span className="text-[10px] uppercase font-semibold text-blue-300 tracking-wider block mb-1.5">
+                  Suggested Responses / Actions:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {suggestedActions && suggestedActions.length > 0 ? (
+                    suggestedActions.map((action, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => {
+                          if (action.budget !== undefined) setBudgetInput(action.budget ? action.budget.toString() : '');
+                          setInputMessage(action.query);
+                          onSendMessage(action.query, action.budget);
+                        }}
+                        disabled={isLoading || isDisabled}
+                        className="px-2.5 py-1 rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border border-blue-400/30 text-xs font-medium flex items-center gap-1 transition-all shadow-sm disabled:opacity-50"
+                      >
+                        <span>⚡ {action.label}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newB = (parseFloat(budgetInput) || 50) + 25;
+                          setBudgetInput(newB.toString());
+                          onSendMessage(inputMessage || 'Find products', newB);
+                        }}
+                        disabled={isLoading || isDisabled}
+                        className="px-2.5 py-1 rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border border-blue-400/30 text-xs font-medium transition-all disabled:opacity-50"
+                      >
+                        ⚡ Increase Budget +$25
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newB = (parseFloat(budgetInput) || 50) + 50;
+                          setBudgetInput(newB.toString());
+                          onSendMessage(inputMessage || 'Find products', newB);
+                        }}
+                        disabled={isLoading || isDisabled}
+                        className="px-2.5 py-1 rounded bg-blue-500/20 hover:bg-blue-500/30 text-blue-200 border border-blue-400/30 text-xs font-medium transition-all disabled:opacity-50"
+                      >
+                        ⚡ Increase Budget +$50
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBudgetInput('');
+                          onSendMessage(inputMessage || 'Find products', undefined);
+                        }}
+                        disabled={isLoading || isDisabled}
+                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition-all disabled:opacity-50"
+                      >
+                        ⚡ Clear Budget Limit
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -157,6 +229,9 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             <span>Search</span>
           </button>
         </div>
+        <p className="text-[11px] text-slate-400 mt-1">
+          💡 <span className="text-slate-300 font-medium">To reply to the agent:</span> adjust the <code className="text-blue-300 px-1 py-0.5 rounded bg-slate-800">Max $</code> box, type a follow-up, or click any suggested response chip above.
+        </p>
       </form>
     </div>
   );

@@ -47,6 +47,12 @@ export interface AgentIntent {
   avoid: string[];
 }
 
+export interface SuggestedAction {
+  label: string;
+  query: string;
+  budget?: number;
+}
+
 export interface AgentTurnResponse {
   session_id: string;
   reply_text: string;
@@ -55,6 +61,7 @@ export interface AgentTurnResponse {
   recommendations: RankedCandidate[];
   requires_clarification: boolean;
   clarification_question?: string;
+  suggested_actions?: SuggestedAction[];
 }
 
 export interface PolicyCheckItem {

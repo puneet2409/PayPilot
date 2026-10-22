@@ -66,11 +66,23 @@ def seed_initial_demo_catalogue():
                     active=True,
                     attributes_json='{"quiet_clicks": true, "sensor_dpi": 8000, "multipoint_bluetooth": true, "condition": "New"}',
                     image_url="https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&q=80"
+                ),
+                DemoProduct(
+                    sku="FLASH-DEMO-01",
+                    title="SanDisk 128GB Ultra Dual Drive Luxe USB Type-C Flash Drive",
+                    brand="SanDisk",
+                    category="flash drive",
+                    description="High-speed USB 3.1 Gen 1 performance with reversible Type-C and traditional Type-A connectors.",
+                    fixed_price=19.99,
+                    currency="USD",
+                    active=True,
+                    attributes_json='{"capacity_gb": 128, "connector": "USB-C and USB-A", "read_speed_mbps": 150, "condition": "New"}',
+                    image_url="https://images.unsplash.com/photo-1624823183493-ed5832f44e18?w=500"
                 )
             ]
             db.add_all(items)
             db.commit()
-            logger.info("Successfully seeded 4 demo-store products.")
+            logger.info("Successfully seeded 5 demo-store products.")
     except Exception as e:
         logger.error(f"Error seeding demo catalogue: {e}")
     finally:
