@@ -10,6 +10,8 @@ import type {
   OrderSummaryItem,
   SuggestedAction
 } from './types';
+import { Sidebar, type NavView } from './components/Sidebar';
+import { CredentialsView } from './components/CredentialsView';
 import { ChatPanel } from './components/ChatPanel';
 import { ProductCard } from './components/ProductCard';
 import { PolicyPanel } from './components/PolicyPanel';
@@ -17,13 +19,39 @@ import { ApprovalPanel } from './components/ApprovalPanel';
 import { OrderStatus } from './components/OrderStatus';
 import { AuditTimeline } from './components/AuditTimeline';
 import { OrdersLedger } from './components/OrdersLedger';
-import { PayPalLogo } from './components/PayPalLogo';
-import { History, ShoppingBag, Layers, Sparkles, CreditCard, Code2, Loader2, RotateCcw } from 'lucide-react';
+import {
+  Menu,
+  Search,
+  RotateCcw,
+  Info,
+  X,
+  Users,
+  KeyRound,
+  Zap,
+  ShieldCheck,
+  Radio,
+  CreditCard,
+  FileText,
+  Code2,
+  ExternalLink,
+  History,
+  ShoppingBag,
+  Layers,
+  Sparkles,
+  Loader2,
+  FlaskConical
+} from 'lucide-react';
 
 export const App: React.FC = () => {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const sessionId = session?.session_id ?? '';
+
+  const [currentView, setCurrentView] = useState<NavView>('home');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [dismissAnnouncement, setDismissAnnouncement] = useState(false);
+  const [globalSearchInput, setGlobalSearchInput] = useState('');
+
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [isLoadingPolicy, setIsLoadingPolicy] = useState(false);
   const [agentReply, setAgentReply] = useState<string | null>(null);
@@ -41,7 +69,7 @@ export const App: React.FC = () => {
   const [rightPanelTab, setRightPanelTab] = useState<'timeline' | 'ledger'>('timeline');
   const [showApprovalStep, setShowApprovalStep] = useState(false);
   const [currentBudget, setCurrentBudget] = useState<number>(100);
-  const [personaView, setPersonaView] = useState<'buyer' | 'cfo'>('buyer');
+
   const [paypalBackendConfigured, setPaypalBackendConfigured] = useState<boolean | null>(null);
   const [channel3Configured, setChannel3Configured] = useState<boolean | null>(null);
   const policyRequestVersion = useRef(0);
@@ -57,7 +85,6 @@ export const App: React.FC = () => {
       ? 'PayPal SDK Setup Needed'
       : isPayPalConfigured ? 'PayPal Sandbox Ready' : 'PayPal Simulated';
 
-  // Refresh audit events whenever session changes or actions occur
   const refreshAuditEvents = useCallback(async () => {
     if (!session) return;
     try {
@@ -129,8 +156,6 @@ export const App: React.FC = () => {
       const effectiveBudget = res.intent?.budget ?? budget ?? currentBudget;
       setCurrentBudget(effectiveBudget);
       if (res.recommendations.length > 0) {
-        // Start policy evaluation on a PayPilot SKU when available. Live
-        // retailer comparisons are not necessarily purchasable in this demo.
         const policyCandidate = res.recommendations.find((candidate) => candidate.demo_sku)
           ?? res.recommendations[0];
         handleSelectCandidate(policyCandidate, effectiveBudget, nextRequiredFeatures, nextExcludedTerms);
@@ -305,409 +330,630 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] text-slate-900 flex flex-col font-sans">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-50 px-6 py-3 shadow-2xs flex items-center justify-between">
-        <div
-          onClick={handleReset}
-          className="flex items-center gap-3 cursor-pointer group"
-          title="Reset to PayPilot Home"
-        >
-          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center p-1.5 shadow-2xs group-hover:scale-105 transition-transform">
-            <PayPalLogo className="w-7 h-8" />
-          </div>
-          <div>
+    <div className="min-h-screen bg-[#F5F7FA] text-slate-900 flex font-sans">
+      {/* Authentic PayPal Developer Side Menu */}
+      <Sidebar
+        currentView={currentView}
+        onSelectView={setCurrentView}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        auditCount={auditEvents.length}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header (Matching developer.paypal.com) */}
+        <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4 shadow-2xs">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsMobileSidebarOpen(true)}
+              className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 lg:hidden"
+              title="Toggle Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-base tracking-tight text-[#001C3D] group-hover:text-[#0057FF] transition-colors">
-                PayPilot
+              <span className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight">
+                Puneet Agarwal
               </span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-[#0057FF] border border-blue-200/80">
-                Agentic Commerce
+              <span className="hidden sm:inline px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-[#0057FF] border border-blue-200/80">
+                PayPilot Developer Portal
               </span>
             </div>
-            <span className="text-[11px] text-slate-500 font-medium">
-              Consent-First AI Shopping & Purchase Policy Guardrails
-            </span>
           </div>
-        </div>
 
-        {/* Dual-Lens Persona Switcher + Global Reset */}
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
+          {/* Centered Pill Search Bar */}
+          <div className="flex-1 max-w-md mx-2 hidden md:block">
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
+              <input
+                type="text"
+                placeholder="Ask us anything or search products, policies, orders..."
+                value={globalSearchInput}
+                onChange={(e) => setGlobalSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && globalSearchInput.trim()) {
+                    setCurrentView('home');
+                    handleSendMessage(globalSearchInput.trim());
+                  }
+                }}
+                className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-full text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0057FF] focus:bg-white transition-all shadow-2xs"
+              />
+            </div>
+          </div>
+
+          {/* Top Right Controls & Profile */}
+          <div className="flex items-center gap-3">
             <button
-              onClick={() => setPersonaView('buyer')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                personaView === 'buyer'
-                  ? 'bg-white text-[#003087] shadow-xs border border-slate-200/80'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              onClick={() => setCurrentView('analytics')}
+              className="hidden sm:inline text-xs font-semibold text-slate-600 hover:text-[#0057FF] transition-colors"
             >
-              <ShoppingBag className="w-3.5 h-3.5 text-[#0057FF]" />
-              <span>🛒 Shopper Experience (B2C)</span>
+              Business Dashboard
             </button>
+
+            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-700 shadow-2xs">
+              <span className={`w-2 h-2 rounded-full ${channel3Configured ? 'bg-sky-500 animate-pulse' : 'bg-slate-400'}`}></span>
+              <span>{channel3Configured ? 'Channel3 Live' : 'Channel3 Cache'}</span>
+            </div>
+
+            <div className="hidden lg:flex items-center gap-2 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-700 shadow-2xs">
+              <span className={`w-2 h-2 rounded-full ${isPayPalConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+              <span>{paypalStatus}</span>
+            </div>
+
             <button
-              onClick={() => setPersonaView('cfo')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                personaView === 'cfo'
-                  ? 'bg-[#003087] text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
+              onClick={handleReset}
+              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              title="Reset search and selection"
             >
-              <Layers className="w-3.5 h-3.5" />
-              <span>📊 Merchant & CFO Command Center (B2B)</span>
+              <RotateCcw className="w-4 h-4 text-[#0057FF]" />
             </button>
-          </div>
 
-          <button
-            onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-all shadow-2xs"
-            title="Reset search, policy evaluation, and start fresh"
-          >
-            <RotateCcw className="w-3.5 h-3.5 text-[#0057FF]" />
-            <span className="hidden sm:inline">Reset Search</span>
-          </button>
-        </div>
+            {/* Profile Avatar Circle */}
+            <div
+              onClick={() => setCurrentView('credentials')}
+              className="w-8 h-8 rounded-full bg-[#2C2E2F] text-white flex items-center justify-center text-xs font-bold shadow-2xs cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all shrink-0"
+              title="Puneet Agarwal — Sandbox Developer Account"
+            >
+              PA
+            </div>
+          </div>
+        </header>
 
-        <div className="flex items-center gap-2.5">
-          <a
-            href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
-            target="_blank"
-            rel="noreferrer"
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 hover:text-[#0057FF] transition-colors shadow-2xs"
-            title="Open interactive OpenAPI 3.1 Swagger docs (APIMatic compliant)"
-          >
-            <Code2 className="w-3.5 h-3.5 text-[#0057FF]" />
-            <span>OpenAPI 3.1</span>
-          </a>
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs shadow-2xs">
-            <span className={`w-2 h-2 rounded-full ${channel3Configured ? 'bg-sky-500 animate-pulse' : 'bg-slate-400'}`}></span>
-            <span className="text-slate-700 font-medium">
-              {channel3Configured ? 'Channel3 Live (25k+ Retailers)' : 'Channel3 Catalog Cache'}
-            </span>
+        {/* Notice Bar: PayPal JS SDK Announcement (from screenshot 2) */}
+        {!dismissAnnouncement && (
+          <div className="bg-slate-900 text-white px-4 sm:px-6 py-2 flex items-center justify-between text-xs font-medium">
+            <div className="flex items-center gap-2 overflow-hidden">
+              <Info className="w-4 h-4 text-blue-400 shrink-0" />
+              <span className="truncate">
+                <strong>PayPal JavaScript SDK v6 is Now Available!</strong> Consent-first autonomous agentic checkout with Orders v2.
+              </span>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                onClick={() => setCurrentView('docs')}
+                className="font-bold underline hover:text-blue-300 text-xs"
+              >
+                Get Started
+              </button>
+              <button
+                onClick={() => setDismissAnnouncement(true)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs shadow-2xs">
-            <span className={`w-2 h-2 rounded-full ${isPayPalConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
-            <span className="text-slate-700 font-medium">{paypalStatus}</span>
-          </div>
-          <div className="text-[11px] text-slate-500 font-mono hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 shadow-2xs">
-            {session ? <>Session: <span className="text-slate-800 font-semibold">{sessionId.slice(0, 11)}...{sessionId.slice(-4)}</span></> : 'Securing…'}
-          </div>
-        </div>
-      </header>
+        )}
 
-      {/* Signature PayPal Horizontal Accent Bar */}
-      <div className="w-full bg-gradient-to-r from-[#003087] via-[#0057FF] to-[#0070BA] text-white px-6 py-2 flex flex-wrap items-center justify-between text-xs font-medium shadow-xs">
-        <div className="flex items-center gap-2">
-          <span className="font-extrabold tracking-wider uppercase text-[10px] bg-white/20 px-2 py-0.5 rounded shadow-2xs">
-            PayPal AI Architecture
-          </span>
-          <span className="hidden sm:inline text-white/90">
-            Autonomous Discovery • Deterministic Guardrails • Orders v2 Human Consent
+        {/* Authentic Purple Sandbox Banner (Exact from screenshots 2, 3, 4) */}
+        <div className="w-full bg-[#7B61FF] text-white py-1.5 px-4 text-center text-xs font-semibold shadow-2xs flex items-center justify-center gap-2">
+          <span>You're in sandbox mode.</span>
+          <span className="hidden sm:inline text-white/80">•</span>
+          <span className="hidden sm:inline text-white/95 text-[11px] font-medium">
+            Orders v2 Sandbox Protocol • Deterministic AI Guardrails Active
           </span>
         </div>
-        <div className="flex items-center gap-3 text-[11px] text-white/95 font-medium">
-          <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            Orders v2 Gateway: Active
-          </span>
-          <span className="hidden md:inline text-white/60">•</span>
-          <span className="hidden md:flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-sky-300"></span>
-            Deterministic Policy: Enforced
-          </span>
-        </div>
-      </div>
 
-      {/* Main Persona Content */}
-      {personaView === 'buyer' ? (
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Chat & Candidates (7 cols) */}
-        <section className="lg:col-span-7 flex flex-col gap-6">
-          <ChatPanel
-            onSendMessage={handleSendMessage}
-            isLoading={isLoadingSearch}
-            isDisabled={!session}
-            agentReply={agentReply || sessionError}
-            suggestedActions={suggestedActions}
-            onReset={handleReset}
-          />
+        {/* Content Container based on Active Navigation View */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+          {currentView === 'credentials' && (
+            <CredentialsView
+              paypalConfigured={isPayPalConfigured}
+              channel3Configured={channel3Configured ?? false}
+            />
+          )}
 
-          {shoppingIntent && (
-            <div className="rounded-2xl border border-blue-200/80 bg-white p-5 shadow-xs">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm font-bold text-[#001C3D]">
-                  <Sparkles className="w-4 h-4 text-[#0057FF]" /> What You're Looking For
+          {currentView === 'logs' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                <div>
+                  <h1 className="text-2xl font-bold text-[#001C3D]">Event Logs & Audit Trail</h1>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Immutable cryptographically-chained SHA-256 event provenance records.
+                  </p>
                 </div>
-                <span className="text-[10px] uppercase font-bold tracking-wide text-[#0057FF] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200/80">
-                  {intentSource === 'gemini' ? 'AI Assisted Match' : 'Smart Keyword Match'}
-                </span>
+                <button
+                  onClick={refreshAuditEvents}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0057FF] border border-blue-200 text-xs font-bold transition-colors shadow-2xs"
+                >
+                  ↻ Refresh Events ({auditEvents.length})
+                </button>
               </div>
-              <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                {shoppingIntent.category && (
-                  <span className="rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1 text-slate-800 font-medium">
-                    {shoppingIntent.category}
-                  </span>
-                )}
-                {shoppingIntent.budget !== undefined && (
-                  <span className="rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1 text-slate-800 font-medium">
-                    Max ${shoppingIntent.budget.toFixed(2)} {shoppingIntent.currency}
-                  </span>
-                )}
-                {shoppingIntent.must_have.map((feature) => (
-                  <span key={`need-${feature}`} className="rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-emerald-800 font-semibold">
-                    Needs: {feature}
-                  </span>
-                ))}
-                {shoppingIntent.avoid.map((term) => (
-                  <span key={`avoid-${term}`} className="rounded-lg bg-rose-50 border border-rose-200 px-2.5 py-1 text-rose-800 font-semibold">
-                    Avoid: {term}
-                  </span>
-                ))}
-                {shoppingIntent.preferences.map((preference) => (
-                  <span key={`pref-${preference}`} className="rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1 text-slate-700">
-                    Prefers: {preference}
-                  </span>
-                ))}
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+                <AuditTimeline events={auditEvents} />
               </div>
-              <p className="mt-2.5 text-[11px] text-slate-500 font-medium">
-                Your preferences and budget limit are automatically checked against each item before purchase.
-              </p>
             </div>
           )}
 
-          {/* Product Discovery Results */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-[#0057FF]" />
-                <h3 className="text-base font-bold text-[#001C3D]">
-                  Stores & Live Price Comparison ({candidates.length})
-                </h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-500 font-medium">
-                  {isLoadingSearch ? (
-                    <span className="text-[#0057FF] flex items-center gap-1.5 font-semibold animate-pulse">
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0057FF]" />
-                      Comparing 25k+ stores...
-                    </span>
-                  ) : (
-                    `${candidates.reduce((sum, c) => sum + (c.offers?.length || 1), 0)} store deals ranked for your budget`
-                  )}
-                </span>
-                {candidates.length > 0 && !isLoadingSearch && (
+          {currentView === 'analytics' && (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-blue-200 bg-white p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-[#001C3D] flex items-center gap-2">
+                    <CreditCard className="w-6 h-6 text-[#0057FF]" />
+                    Merchant & CFO Command Center
+                  </h1>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Embedded Financial Analytics Blueprint (AG Studio) • PayPal REST Data Ingestion • Webhook Event Reconciliation
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
                   <button
-                    onClick={handleReset}
-                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200 shadow-2xs transition-colors flex items-center gap-1"
-                    title="Clear current product results"
+                    onClick={refreshOrders}
+                    className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0057FF] border border-blue-200 text-xs font-bold transition-colors shadow-2xs"
                   >
-                    <RotateCcw className="w-2.5 h-2.5 text-[#0057FF]" />
-                    <span>Clear</span>
+                    ↻ Refresh Analytics Data
                   </button>
-                )}
-              </div>
-            </div>
-
-            {isLoadingSearch ? (
-              /* Live Multi-Retailer Discovery Skeleton State */
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-5 flex items-center justify-between shadow-xs">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-white text-[#0057FF] border border-blue-100 shadow-2xs shrink-0">
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-[#001C3D]">
-                        Comparing 25,000+ Online Stores for Best Deals
-                      </h4>
-                      <p className="text-xs text-slate-600 mt-0.5">
-                        Checking live store prices, stock availability, and specs matching your budget.
-                      </p>
-                    </div>
-                  </div>
-                  <span className="px-3 py-1 rounded-full bg-white text-[#0057FF] border border-blue-200 text-xs font-semibold animate-pulse shadow-2xs">
-                    Querying...
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[1, 2].map((i) => (
-                    <div
-                      key={i}
-                      className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 animate-pulse shadow-xs"
-                    >
-                      <div className="flex justify-between items-center">
-                        <div className="h-5 w-24 bg-slate-100 rounded-md"></div>
-                        <div className="h-6 w-16 bg-slate-100 rounded-md"></div>
-                      </div>
-                      <div className="h-5 w-3/4 bg-slate-100 rounded-md"></div>
-                      <div className="space-y-2">
-                        <div className="h-3 w-full bg-slate-100 rounded"></div>
-                        <div className="h-3 w-5/6 bg-slate-100 rounded"></div>
-                      </div>
-                      <div className="space-y-2 pt-2 border-t border-slate-100">
-                        <div className="h-3.5 w-1/2 bg-slate-100 rounded"></div>
-                        <div className="h-3.5 w-2/3 bg-slate-100 rounded"></div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </div>
-            ) : candidates.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-xs">
-                <Layers className="w-8 h-8 text-slate-400 mx-auto mb-2" />
-                <p className="text-xs text-slate-500 font-medium">
-                  Search for any product to compare live store prices, discounts, and instant checkout options.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {candidates.map((cand) => (
-                  <ProductCard
-                    key={cand.product_id}
-                    product={cand}
-                    isSelected={selectedCandidate?.product_id === cand.product_id}
-                    isLoading={isLoadingPolicy && selectedCandidate?.product_id === cand.product_id}
-                    onSelect={(p) => handleSelectCandidate(p)}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
 
-        {/* Right Column: Policies, Checkout & Audit Timeline (5 cols) */}
-        <section className="lg:col-span-5 flex flex-col gap-6">
-          {/* Payment Success State */}
-          {paymentResult ? (
-            <OrderStatus
-              paymentResult={paymentResult}
-              onReset={handleReset}
-            />
-          ) : showApprovalStep && policyResult?.quote ? (
-            /* Explicit PayPal Approval Panel */
-            <ApprovalPanel
-              quote={policyResult.quote}
-              itemTitle={policyResult.item_title}
-              sku={policyResult.sku}
-              sessionId={sessionId}
-              imageUrl={policyResult.image_url || selectedCandidate?.image_url}
-              onPaymentSuccess={handlePaymentSuccess}
-              onCancelOrder={handleCancelOrder}
-              onBack={() => setShowApprovalStep(false)}
-              onReset={handleReset}
-            />
-          ) : (
-            /* Deterministic Purchase Policy Panel */
-            <PolicyPanel
-              policyResult={policyResult}
-              isLoading={isLoadingPolicy}
-              isSearching={isLoadingSearch}
-              onProceedToCheckout={() => setShowApprovalStep(true)}
-            />
-          )}
-
-          {/* Tabbed Right Panel: Activity Log & Payments Ledger */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
-                <button
-                  onClick={() => setRightPanelTab('timeline')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    rightPanelTab === 'timeline'
-                      ? 'bg-white text-[#003087] border border-slate-200 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <History className="w-3.5 h-3.5 text-[#0057FF]" />
-                  <span>Activity Log</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[10px] font-mono text-slate-700 font-bold">
-                    {auditEvents.length}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => setRightPanelTab('ledger')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    rightPanelTab === 'ledger'
-                      ? 'bg-white text-[#003087] border border-slate-200 shadow-2xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  <CreditCard className="w-3.5 h-3.5 text-[#0057FF]" />
-                  <span>Payments Ledger</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[10px] font-mono text-slate-700 font-bold">
-                    {orders.length}
-                  </span>
-                </button>
-              </div>
-
-              <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
-                {rightPanelTab === 'timeline' ? 'Real-time action history' : 'Orders & payments overview'}
-              </span>
-            </div>
-
-            {rightPanelTab === 'timeline' ? (
-              <AuditTimeline events={auditEvents} />
-            ) : (
               <OrdersLedger
                 orders={orders}
                 sessionId={sessionId}
                 onCancelOrder={handleCancelOrder}
                 onRefresh={refreshOrders}
               />
-            )}
-          </div>
-        </section>
-      </main>
-      ) : (
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
-        <div className="rounded-2xl border border-blue-200/90 bg-white p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-base font-extrabold text-[#001C3D] flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-[#0057FF]" />
-              Merchant & CFO Command Center
-            </h3>
-            <p className="text-xs text-slate-600 mt-1">
-              Embedded Financial Analytics Blueprint (AG Studio) • PayPal REST Data Ingestion • Webhook Event Reconciliation
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={refreshOrders}
-              className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0057FF] border border-blue-200 text-xs font-bold transition-colors shadow-2xs"
-            >
-              ↻ Refresh Analytics Data
-            </button>
-          </div>
-        </div>
+            </div>
+          )}
 
-        <OrdersLedger
-          orders={orders}
-          sessionId={sessionId}
-          onCancelOrder={handleCancelOrder}
-          onRefresh={refreshOrders}
-        />
+          {currentView === 'docs' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                <div>
+                  <h1 className="text-2xl font-bold text-[#001C3D] flex items-center gap-2">
+                    <Code2 className="w-6 h-6 text-[#0057FF]" />
+                    Interactive Developer Documentation & OpenAPI 3.1
+                  </h1>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    APIMatic compliant OpenAPI 3.1 specification for PayPilot Agentic Commerce API.
+                  </p>
+                </div>
+                <a
+                  href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 rounded-xl bg-[#0057FF] hover:bg-[#0047D4] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
+                >
+                  <span>Open Swagger UI</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
 
-        <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
-            <h4 className="text-sm font-bold text-[#001C3D] flex items-center gap-2">
-              <History className="w-4 h-4 text-[#0057FF]" />
-              Immutable Cryptographic Audit Trail
-            </h4>
-            <span className="text-xs text-slate-500 font-mono">
-              {auditEvents.length} events logged with SHA-256 provenance
-            </span>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                  <h3 className="font-bold text-sm text-[#001C3D] mb-1">POST /api/v1/agent/turn</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    AI orchestrator turn combining Channel3 live product discovery and Gemini 2.0 Flash intent analysis.
+                  </p>
+                </div>
+                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                  <h3 className="font-bold text-sm text-[#001C3D] mb-1">POST /api/v1/policies/evaluate</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Deterministic policy verification enforcing strict price ceilings, landed cost calculation, and quote creation.
+                  </p>
+                </div>
+                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                  <h3 className="font-bold text-sm text-[#001C3D] mb-1">POST /api/v1/checkout/create</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Server-to-server PayPal Orders v2 creation bound to authoritative HMAC-signed quote with pre-capture drift defense.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentView === 'policies' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                <div>
+                  <h1 className="text-2xl font-bold text-[#001C3D] flex items-center gap-2">
+                    <FlaskConical className="w-6 h-6 text-[#0057FF]" />
+                    Testing Tools & Policy Simulator
+                  </h1>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Test deterministic AI guardrails, budget rejections, and pre-capture price drift detection.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
+                  <div className="flex items-center gap-2 font-bold text-[#001C3D]">
+                    <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                    <span>Test Budget Enforcement Block</span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Simulates a shopper searching for an item with a $50 budget limit where the item costs $89.99. The policy engine must reject the purchase.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setCurrentView('home');
+                      handleSendMessage('Find a wireless headset under $50 with active noise cancelling', 50);
+                    }}
+                    className="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-colors"
+                  >
+                    Run $50 Budget Rejection Test
+                  </button>
+                </div>
+
+                <div className="p-6 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
+                  <div className="flex items-center gap-2 font-bold text-[#001C3D]">
+                    <Zap className="w-5 h-5 text-[#0057FF]" />
+                    <span>Test Instant PayPal Sandbox Approval</span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Simulates a verified store item under the $100 budget limit. The policy engine verifies rules and unlocks the PayPal checkout flow.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setCurrentView('home');
+                      handleSendMessage('Find a wireless headset under $100 with multipoint Bluetooth', 100);
+                    }}
+                    className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-[#0057FF] border border-blue-200 rounded-xl text-xs font-bold transition-colors"
+                  >
+                    Run Valid Approval Test
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentView === 'home' && (
+            <>
+              {/* "Welcome back" Section (Matching Screenshot 2) */}
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-extrabold text-[#001C3D] tracking-tight">
+                    Welcome back
+                  </h1>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1">
+                    Get started with step-by-step advice for setting up your payment solutions and agentic checkout.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <div className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs">
+                    Default Application ▾
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs">
+                    Last 12 hours ▾
+                  </div>
+                </div>
+              </div>
+
+              {/* Circular Action Icon Row (Exact match to screenshot 2) */}
+              <div className="mb-8 grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3">
+                {[
+                  {
+                    label: 'API & credentials',
+                    icon: <KeyRound className="w-5 h-5" />,
+                    onClick: () => setCurrentView('credentials')
+                  },
+                  {
+                    label: 'Sandbox accounts',
+                    icon: <Users className="w-5 h-5" />,
+                    onClick: () => handleSendMessage("Find a wireless headset under $100 with multipoint Bluetooth", 100)
+                  },
+                  {
+                    label: 'API calls',
+                    icon: <Zap className="w-5 h-5" />,
+                    onClick: () => setCurrentView('analytics')
+                  },
+                  {
+                    label: 'Policy checks',
+                    icon: <ShieldCheck className="w-5 h-5" />,
+                    onClick: () => handleSendMessage("Find a wireless headset under $50 with active noise cancelling", 50)
+                  },
+                  {
+                    label: 'Webhooks events',
+                    icon: <Radio className="w-5 h-5" />,
+                    onClick: () => setCurrentView('logs')
+                  },
+                  {
+                    label: 'Testing tools',
+                    icon: <FlaskConical className="w-5 h-5" />,
+                    onClick: () => setCurrentView('policies')
+                  },
+                  {
+                    label: 'Dev docs',
+                    icon: <FileText className="w-5 h-5" />,
+                    onClick: () => setCurrentView('docs')
+                  },
+                ].map((action, idx) => (
+                  <button
+                    key={idx}
+                    onClick={action.onClick}
+                    className="flex flex-col items-center p-3 rounded-2xl bg-white border border-slate-200 hover:border-[#0057FF]/60 hover:shadow-xs transition-all group cursor-pointer text-center shadow-2xs"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-600 group-hover:text-[#0057FF] group-hover:bg-blue-50 transition-colors mb-2 shadow-2xs">
+                      {action.icon}
+                    </div>
+                    <span className="text-[11px] font-semibold text-slate-700 group-hover:text-slate-900 leading-tight">
+                      {action.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Main 2-Column Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left Column (7 cols): Chat Assistant & Product Discovery */}
+                <section className="lg:col-span-7 flex flex-col gap-6">
+                  <ChatPanel
+                    onSendMessage={handleSendMessage}
+                    isLoading={isLoadingSearch}
+                    isDisabled={!session}
+                    agentReply={agentReply || sessionError}
+                    suggestedActions={suggestedActions}
+                    onReset={handleReset}
+                  />
+
+                  {shoppingIntent && (
+                    <div className="rounded-2xl border border-blue-200/80 bg-white p-5 shadow-xs">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2 text-sm font-bold text-[#001C3D]">
+                          <Sparkles className="w-4 h-4 text-[#0057FF]" /> What You're Looking For
+                        </div>
+                        <span className="text-[10px] uppercase font-bold tracking-wide text-[#0057FF] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200/80">
+                          {intentSource === 'gemini' ? 'AI Assisted Match' : 'Smart Keyword Match'}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                        {shoppingIntent.category && (
+                          <span className="rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1 text-slate-800 font-medium">
+                            {shoppingIntent.category}
+                          </span>
+                        )}
+                        {shoppingIntent.budget !== undefined && (
+                          <span className="rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1 text-slate-800 font-medium">
+                            Max ${shoppingIntent.budget.toFixed(2)} {shoppingIntent.currency}
+                          </span>
+                        )}
+                        {shoppingIntent.must_have.map((feature) => (
+                          <span key={`need-${feature}`} className="rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-emerald-800 font-semibold">
+                            Needs: {feature}
+                          </span>
+                        ))}
+                        {shoppingIntent.avoid.map((term) => (
+                          <span key={`avoid-${term}`} className="rounded-lg bg-rose-50 border border-rose-200 px-2.5 py-1 text-rose-800 font-semibold">
+                            Avoid: {term}
+                          </span>
+                        ))}
+                        {shoppingIntent.preferences.map((preference) => (
+                          <span key={`pref-${preference}`} className="rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1 text-slate-700">
+                            Prefers: {preference}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="mt-2.5 text-[11px] text-slate-500 font-medium">
+                        Your preferences and budget limit are automatically checked against each item before purchase.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Product Discovery Results */}
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <ShoppingBag className="w-4 h-4 text-[#0057FF]" />
+                        <h3 className="text-base font-bold text-[#001C3D]">
+                          Stores & Live Price Comparison ({candidates.length})
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 font-medium">
+                          {isLoadingSearch ? (
+                            <span className="text-[#0057FF] flex items-center gap-1.5 font-semibold animate-pulse">
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0057FF]" />
+                              Comparing 25k+ stores...
+                            </span>
+                          ) : (
+                            `${candidates.reduce((sum, c) => sum + (c.offers?.length || 1), 0)} store deals ranked for your budget`
+                          )}
+                        </span>
+                        {candidates.length > 0 && !isLoadingSearch && (
+                          <button
+                            onClick={handleReset}
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200 shadow-2xs transition-colors flex items-center gap-1"
+                            title="Clear current product results"
+                          >
+                            <RotateCcw className="w-2.5 h-2.5 text-[#0057FF]" />
+                            <span>Clear</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {isLoadingSearch ? (
+                      <div className="space-y-4">
+                        <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-5 flex items-center justify-between shadow-xs">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-white text-[#0057FF] border border-blue-100 shadow-2xs shrink-0">
+                              <Loader2 className="w-5 h-5 animate-spin" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-[#001C3D]">
+                                Comparing 25,000+ Online Stores for Best Deals
+                              </h4>
+                              <p className="text-xs text-slate-600 mt-0.5">
+                                Checking live store prices, stock availability, and specs matching your budget.
+                              </p>
+                            </div>
+                          </div>
+                          <span className="px-3 py-1 rounded-full bg-white text-[#0057FF] border border-blue-200 text-xs font-semibold animate-pulse shadow-2xs">
+                            Querying...
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[1, 2].map((i) => (
+                            <div
+                              key={i}
+                              className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 animate-pulse shadow-xs"
+                            >
+                              <div className="flex justify-between items-center">
+                                <div className="h-5 w-24 bg-slate-100 rounded-md"></div>
+                                <div className="h-6 w-16 bg-slate-100 rounded-md"></div>
+                              </div>
+                              <div className="h-5 w-3/4 bg-slate-100 rounded-md"></div>
+                              <div className="space-y-2">
+                                <div className="h-3 w-full bg-slate-100 rounded"></div>
+                                <div className="h-3 w-5/6 bg-slate-100 rounded"></div>
+                              </div>
+                              <div className="space-y-2 pt-2 border-t border-slate-100">
+                                <div className="h-3.5 w-1/2 bg-slate-100 rounded"></div>
+                                <div className="h-3.5 w-2/3 bg-slate-100 rounded"></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : candidates.length === 0 ? (
+                      <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-xs">
+                        <Layers className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                        <p className="text-xs text-slate-500 font-medium">
+                          Search for any product to compare live store prices, discounts, and instant checkout options.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {candidates.map((cand) => (
+                          <ProductCard
+                            key={cand.product_id}
+                            product={cand}
+                            isSelected={selectedCandidate?.product_id === cand.product_id}
+                            isLoading={isLoadingPolicy && selectedCandidate?.product_id === cand.product_id}
+                            onSelect={(p) => handleSelectCandidate(p)}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* Right Column (5 cols): Policy Guardrails, Checkout & Ledger */}
+                <section className="lg:col-span-5 flex flex-col gap-6">
+                  {/* Payment Success State */}
+                  {paymentResult ? (
+                    <OrderStatus
+                      paymentResult={paymentResult}
+                      onReset={handleReset}
+                    />
+                  ) : showApprovalStep && policyResult?.quote ? (
+                    /* Explicit PayPal Approval Panel */
+                    <ApprovalPanel
+                      quote={policyResult.quote}
+                      itemTitle={policyResult.item_title}
+                      sku={policyResult.sku}
+                      sessionId={sessionId}
+                      imageUrl={policyResult.image_url || selectedCandidate?.image_url}
+                      onPaymentSuccess={handlePaymentSuccess}
+                      onCancelOrder={handleCancelOrder}
+                      onBack={() => setShowApprovalStep(false)}
+                      onReset={handleReset}
+                    />
+                  ) : (
+                    /* Deterministic Purchase Policy Panel */
+                    <PolicyPanel
+                      policyResult={policyResult}
+                      isLoading={isLoadingPolicy}
+                      isSearching={isLoadingSearch}
+                      onProceedToCheckout={() => setShowApprovalStep(true)}
+                    />
+                  )}
+
+                  {/* Tabbed Activity Log & Payments Ledger */}
+                  <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs">
+                    <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+                        <button
+                          onClick={() => setRightPanelTab('timeline')}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            rightPanelTab === 'timeline'
+                              ? 'bg-white text-[#003087] border border-slate-200 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          <History className="w-3.5 h-3.5 text-[#0057FF]" />
+                          <span>Activity Log</span>
+                          <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[10px] font-mono text-slate-700 font-bold">
+                            {auditEvents.length}
+                          </span>
+                        </button>
+
+                        <button
+                          onClick={() => setRightPanelTab('ledger')}
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                            rightPanelTab === 'ledger'
+                              ? 'bg-white text-[#003087] border border-slate-200 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          <CreditCard className="w-3.5 h-3.5 text-[#0057FF]" />
+                          <span>Payments Ledger</span>
+                          <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[10px] font-mono text-slate-700 font-bold">
+                            {orders.length}
+                          </span>
+                        </button>
+                      </div>
+
+                      <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
+                        {rightPanelTab === 'timeline' ? 'Real-time action history' : 'Orders & payments overview'}
+                      </span>
+                    </div>
+
+                    {rightPanelTab === 'timeline' ? (
+                      <AuditTimeline events={auditEvents} />
+                    ) : (
+                      <OrdersLedger
+                        orders={orders}
+                        sessionId={sessionId}
+                        onCancelOrder={handleCancelOrder}
+                        onRefresh={refreshOrders}
+                      />
+                    )}
+                  </div>
+                </section>
+              </div>
+            </>
+          )}
+        </main>
+
+        {/* Authentic PayPal Bottom Footer (Matching Screenshot 3) */}
+        <footer className="border-t border-slate-200 bg-white py-8 px-6 mt-12 text-center text-xs text-slate-500 shadow-2xs">
+          <div className="flex flex-wrap items-center justify-center gap-6 mb-3 font-semibold text-slate-600 text-xs">
+            <a href="#reference" className="hover:underline hover:text-[#0057FF]">Reference</a>
+            <a href="https://www.paypal.com" target="_blank" rel="noreferrer" className="hover:underline hover:text-[#0057FF]">PayPal.com</a>
+            <a href="#privacy" className="hover:underline hover:text-[#0057FF]">Privacy</a>
+            <a href="#support" className="hover:underline hover:text-[#0057FF]">Support</a>
+            <a href="#legal" className="hover:underline hover:text-[#0057FF]">Legal</a>
+            <a href="#contact" className="hover:underline hover:text-[#0057FF]">Contact</a>
           </div>
-          <AuditTimeline events={auditEvents} />
-        </div>
-      </main>
-      )}
-
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-4 px-6 text-center text-xs text-slate-500 font-medium">
-        PayPilot • Built for the PayPal AI Hackathon 2026 • Deterministic Guardrails & PayPal Sandbox Integration
-      </footer>
+          <p className="text-[11px] text-slate-400 font-medium">
+            PayPilot • Built for the PayPal AI Hackathon 2026 • Orders v2 Human Consent & Deterministic Guardrails
+          </p>
+        </footer>
+      </div>
     </div>
   );
 };
