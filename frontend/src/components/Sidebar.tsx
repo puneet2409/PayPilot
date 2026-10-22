@@ -6,7 +6,8 @@ import {
   History,
   Layers,
   FileCode,
-  X
+  X,
+  ChevronLeft
 } from 'lucide-react';
 import { PayPalLogo } from './PayPalLogo';
 
@@ -17,6 +18,8 @@ interface SidebarProps {
   onSelectView: (view: NavView) => void;
   isOpenMobile: boolean;
   onCloseMobile: () => void;
+  isCollapsedDesktop: boolean;
+  onToggleCollapseDesktop: () => void;
   auditCount?: number;
   ordersCount?: number;
 }
@@ -26,6 +29,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectView,
   isOpenMobile,
   onCloseMobile,
+  isCollapsedDesktop,
+  onToggleCollapseDesktop,
   auditCount = 0,
   ordersCount = 0,
 }) => {
@@ -71,12 +76,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed lg:sticky top-0 left-0 h-screen w-64 bg-white border-r border-slate-200 z-50 flex flex-col justify-between shrink-0 transition-transform duration-200 ease-in-out ${
+        className={`fixed lg:sticky top-0 left-0 h-screen bg-white border-r border-slate-200 z-50 flex flex-col justify-between shrink-0 transition-all duration-300 ease-in-out ${
           isOpenMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        } ${
+          isCollapsedDesktop
+            ? 'lg:-ml-64 lg:w-0 lg:overflow-hidden lg:border-r-0 lg:opacity-0 pointer-events-none'
+            : 'lg:ml-0 lg:w-64 lg:opacity-100'
         }`}
       >
         <div className="p-5 flex flex-col flex-1 overflow-y-auto">
-          {/* Logo & Close Button (mobile) */}
+          {/* Logo & Close / Collapse Button */}
           <div className="flex items-center justify-between pb-3">
             <div
               onClick={() => {
@@ -96,20 +105,36 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </span>
               </div>
             </div>
-            <button
-              onClick={onCloseMobile}
-              className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-            >
-              <X className="w-5 h-5" />
-            </button>
+
+            <div className="flex items-center gap-1">
+              {/* Desktop Collapse Toggle */}
+              <button
+                onClick={onToggleCollapseDesktop}
+                className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                title="Hide side menu"
+                aria-label="Hide side menu"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Mobile Close Button */}
+              <button
+                onClick={onCloseMobile}
+                className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100"
+                title="Close side menu"
+                aria-label="Close side menu"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Environment Status Pill */}
           <div className="mt-1 mb-6 flex items-center bg-slate-100 p-0.5 rounded-full border border-slate-200 w-fit">
-            <span className="px-3 py-1 rounded-full bg-[#003087] text-white text-[11px] font-bold shadow-2xs">
+            <span className="px-3.5 py-1 rounded-full bg-[#003087] text-white text-[11px] font-bold shadow-2xs">
               Sandbox
             </span>
-            <span className="px-3 py-1 text-slate-500 text-[11px] font-semibold">
+            <span className="px-3.5 py-1 text-slate-500 text-[11px] font-semibold">
               Live
             </span>
           </div>

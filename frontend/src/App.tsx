@@ -42,6 +42,7 @@ export const App: React.FC = () => {
 
   const [currentView, setCurrentView] = useState<NavView>('shop');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [globalSearchInput, setGlobalSearchInput] = useState('');
 
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
@@ -330,21 +331,30 @@ export const App: React.FC = () => {
         onSelectView={setCurrentView}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
+        isCollapsedDesktop={isSidebarCollapsed}
+        onToggleCollapseDesktop={() => setIsSidebarCollapsed((prev) => !prev)}
         auditCount={auditEvents.length}
         ordersCount={orders.length}
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
         {/* Header */}
         <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between gap-4 shadow-2xs">
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => setIsMobileSidebarOpen(true)}
-              className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 lg:hidden"
-              title="Toggle Menu"
+              onClick={() => {
+                if (window.innerWidth < 1024) {
+                  setIsMobileSidebarOpen(!isMobileSidebarOpen);
+                } else {
+                  setIsSidebarCollapsed(!isSidebarCollapsed);
+                }
+              }}
+              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              title={isSidebarCollapsed ? "Show side menu" : "Hide side menu"}
+              aria-label="Toggle side menu"
             >
-              <Menu className="w-5 h-5" />
+              <Menu className="w-5 h-5 text-slate-700" />
             </button>
             <div
               onClick={() => setCurrentView('shop')}
