@@ -23,13 +23,26 @@ function getSavedSession(): AuthSession | null {
   }
 }
 
-function authHeaders(json = false): Record<string, string> {
-  const session = getSavedSession();
-  if (!session) throw new Error('Your secure session expired. Reload the page to start a new session.');
-  return {
-    ...(json ? { 'Content-Type': 'application/json' } : {}),
+async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
+  let session = await api.getOrCreateSession();
+  let headers: Record<string, string> = {
+    ...((options.headers as Record<string, string>) || {}),
     Authorization: `Bearer ${session.access_token}`,
   };
+
+  let res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    // Stale or invalidated token. Clear and retry once with a brand new session.
+    sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    session = await api.getOrCreateSession(true);
+    headers = {
+      ...((options.headers as Record<string, string>) || {}),
+      Authorization: `Bearer ${session.access_token}`,
+    };
+    const updatedUrl = url.replace(/sessions\/sess_[a-f0-9]+/, `sessions/${session.session_id}`);
+    res = await fetch(updatedUrl, { ...options, headers });
+  }
+  return res;
 }
 
 export const api = {
@@ -39,12 +52,15 @@ export const api = {
     return res.json();
   },
 
-  async getOrCreateSession(): Promise<AuthSession> {
-    const saved = getSavedSession();
-    if (saved) return saved;
+  async getOrCreateSession(forceNew = false): Promise<AuthSession> {
+    if (!forceNew) {
+      const saved = getSavedSession();
+      if (saved) return saved;
+    }
     if (pendingSession) return pendingSession;
 
     pendingSession = (async () => {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
       const res = await fetch(`${API_BASE}/api/v1/sessions`, { method: 'POST' });
       if (!res.ok) throw new Error(`Could not create a secure session: ${res.statusText}`);
       const session = (await res.json()) as AuthSession;
@@ -64,9 +80,9 @@ export const api = {
     message: string,
     userBudget?: number
   ): Promise<AgentTurnResponse> {
-    const res = await fetch(`${API_BASE}/api/v1/agent/sessions/${sessionId}/turn`, {
+    const res = await fetchWithAuth(`${API_BASE}/api/v1/agent/sessions/${sessionId}/turn`, {
       method: 'POST',
-      headers: { ...authHeaders(true), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message, user_budget: userBudget })
     });
     if (!res.ok) throw new Error(`Agent request failed: ${res.statusText}`);
@@ -80,9 +96,9 @@ export const api = {
     requiredFeatures: string[] = [],
     excludedTerms: string[] = []
   ): Promise<PolicyEvaluateResponse> {
-    const res = await fetch(`${API_BASE}/api/v1/policies/evaluate`, {
+    const res = await fetchWithAuth(`${API_BASE}/api/v1/policies/evaluate`, {
       method: 'POST',
-      headers: { ...authHeaders(true), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         session_id: sessionId,
         demo_sku: demoSku,
@@ -100,9 +116,9 @@ export const api = {
     sessionId: string,
     idempotencyKey?: string
   ): Promise<CheckoutCreateResponse> {
-    const res = await fetch(`${API_BASE}/api/v1/checkout/create`, {
+    const res = await fetchWithAuth(`${API_BASE}/api/v1/checkout/create`, {
       method: 'POST',
-      headers: { ...authHeaders(true), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quote_id: quoteId, session_id: sessionId, idempotency_key: idempotencyKey })
     });
     if (!res.ok) {
@@ -116,9 +132,9 @@ export const api = {
     orderId: string,
     idempotencyKey?: string
   ): Promise<CheckoutCaptureResponse> {
-    const res = await fetch(`${API_BASE}/api/v1/checkout/${orderId}/capture`, {
+    const res = await fetchWithAuth(`${API_BASE}/api/v1/checkout/${orderId}/capture`, {
       method: 'POST',
-      headers: { ...authHeaders(true), 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ idempotency_key: idempotencyKey })
     });
     if (!res.ok) {
@@ -129,29 +145,28 @@ export const api = {
   },
 
   async getSessionTimeline(sessionId: string): Promise<AuditTimelineEvent[]> {
-    const res = await fetch(`${API_BASE}/api/v1/sessions/${sessionId}/timeline`, { headers: authHeaders() });
+    const res = await fetchWithAuth(`${API_BASE}/api/v1/sessions/${sessionId}/timeline`);
     if (!res.ok) return [];
     const data = await res.json();
     return data.events || [];
   },
 
   async getOrderTimeline(orderId: string): Promise<AuditTimelineEvent[]> {
-    const res = await fetch(`${API_BASE}/api/v1/orders/${orderId}/timeline`, { headers: authHeaders() });
+    const res = await fetchWithAuth(`${API_BASE}/api/v1/orders/${orderId}/timeline`);
     if (!res.ok) return [];
     const data = await res.json();
     return data.events || [];
   },
 
   async getSessionOrders(sessionId: string): Promise<OrderSummaryItem[]> {
-    const res = await fetch(`${API_BASE}/api/v1/sessions/${sessionId}/orders`, { headers: authHeaders() });
+    const res = await fetchWithAuth(`${API_BASE}/api/v1/sessions/${sessionId}/orders`);
     if (!res.ok) return [];
     return res.json();
   },
 
   async cancelOrder(orderId: string): Promise<{ order_id: string; status: string }> {
-    const res = await fetch(`${API_BASE}/api/v1/orders/${orderId}/cancel`, {
-      method: 'POST',
-      headers: authHeaders()
+    const res = await fetchWithAuth(`${API_BASE}/api/v1/orders/${orderId}/cancel`, {
+      method: 'POST'
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
