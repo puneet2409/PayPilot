@@ -29,14 +29,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="px-2 py-0.5 text-xs font-semibold rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
-              Rank #{product.rank}
+              #{product.rank} Best Match
             </span>
             <span className={`px-2 py-0.5 text-xs font-medium rounded border ${product.source === 'channel3' ? 'bg-sky-500/10 text-sky-300 border-sky-500/20' : 'bg-violet-500/10 text-violet-300 border-violet-500/20'}`}>
-              {product.source === 'channel3' ? 'Channel3 result' : 'PayPilot demo-store item'}
+              {product.source === 'channel3' ? 'Live Store Deal' : 'Featured Store Item'}
             </span>
             {product.demo_sku && (
               <span className="px-2 py-0.5 text-xs font-medium rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
-                <ShieldCheck className="w-3 h-3" /> PayPilot demo SKU
+                <ShieldCheck className="w-3 h-3" /> Instant Checkout
               </span>
             )}
             {product.within_budget === false && (
@@ -92,7 +92,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         {product.offers && product.offers.length > 1 && (
           <div className="mt-3.5 p-2.5 rounded-lg bg-slate-950/60 border border-slate-800">
             <div className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 mb-1.5 flex items-center justify-between">
-              <span>Channel3 Retailer Comparison</span>
+              <span>Store Price Comparison</span>
               <span className="text-[10px] text-sky-400 font-mono font-medium">{product.offers.length} live offers</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -133,12 +133,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {isLoading && isSelected ? (
               <>
                 <Loader2 className="w-3 h-3 animate-spin" />
-                <span>Evaluating Policy...</span>
+                <span>Verifying Budget...</span>
               </>
             ) : isSelected ? (
-              'Selected Candidate'
+              'Selected for Purchase'
             ) : (
-              'Select for Policy Check'
+              'Select to Verify & Buy'
             )}
           </button>
         ) : product.buy_url ? (

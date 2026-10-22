@@ -68,8 +68,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-white">Shopper Intent Assistant</h3>
-            <p className="text-[11px] text-slate-400">Describe what you need; use Max $ to override the budget in your request.</p>
+            <h3 className="text-sm font-semibold text-white">Smart Shopping Assistant</h3>
+            <p className="text-[11px] text-slate-400">Tell me what you need, or set a maximum spending limit.</p>
           </div>
         </div>
 
@@ -207,28 +207,28 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
                 </span>
-                <span className="font-semibold text-blue-300">Searching Channel3 Catalog & Evaluating Policies...</span>
+                <span className="font-semibold text-blue-300">Finding Best Deals & Checking Your Budget...</span>
               </div>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 font-mono flex items-center gap-1">
-                <Loader2 className="w-2.5 h-2.5 animate-spin text-blue-300" /> Live
+                <Loader2 className="w-2.5 h-2.5 animate-spin text-blue-300" /> Searching
               </span>
             </div>
             <p className="text-slate-300 text-[11px] mb-2.5">
-              Querying <span className="text-white font-medium">"{inputMessage || lastMessage?.msg || 'Product query'}"</span> across 25,000+ merchant inventories.
+              Finding the best prices for <span className="text-white font-medium">"{inputMessage || lastMessage?.msg || 'Product query'}"</span> across 25,000+ stores.
             </p>
             {/* Step Indicators */}
             <div className="grid grid-cols-3 gap-2 text-[10px]">
               <div className="px-2 py-1.5 rounded-lg bg-blue-900/40 border border-blue-500/30 text-blue-200 flex items-center gap-1.5 animate-pulse">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                <span className="truncate">1. Intent Parsing</span>
+                <span className="truncate">1. Understanding Request</span>
               </div>
               <div className="px-2 py-1.5 rounded-lg bg-sky-900/40 border border-sky-500/40 text-sky-200 flex items-center gap-1.5 animate-pulse">
                 <Loader2 className="w-2.5 h-2.5 animate-spin text-sky-400 shrink-0" />
-                <span className="truncate">2. Channel3 API</span>
+                <span className="truncate">2. Searching 25k+ Stores</span>
               </div>
               <div className="px-2 py-1.5 rounded-lg bg-slate-900/80 border border-slate-800 text-slate-400 flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
-                <span className="truncate">3. Policy Engine</span>
+                <span className="truncate">3. Checking Budget</span>
               </div>
             </div>
           </div>

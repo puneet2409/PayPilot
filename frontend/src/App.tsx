@@ -303,10 +303,10 @@ export const App: React.FC = () => {
             <div className="rounded-xl border border-indigo-500/20 bg-indigo-950/20 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
-                  <Sparkles className="w-4 h-4 text-indigo-300" /> Parsed shopping intent
+                  <Sparkles className="w-4 h-4 text-indigo-300" /> What You're Looking For
                 </div>
                 <span className="text-[10px] uppercase tracking-wide text-indigo-200/80">
-                  {intentSource === 'gemini' ? 'Gemini structured parse' : 'Rules fallback'}
+                  {intentSource === 'gemini' ? 'AI Assisted Match' : 'Smart Keyword Match'}
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -316,7 +316,7 @@ export const App: React.FC = () => {
                 {shoppingIntent.avoid.map((term) => <span key={`avoid-${term}`} className="rounded-full bg-rose-900/60 px-2.5 py-1 text-rose-200">Avoid: {term}</span>)}
                 {shoppingIntent.preferences.map((preference) => <span key={`pref-${preference}`} className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-300">Prefers: {preference}</span>)}
               </div>
-              <p className="mt-2 text-[10px] text-slate-500">Required features and exclusions are passed to the deterministic policy check.</p>
+              <p className="mt-2 text-[10px] text-slate-500">Your preferences and budget limit are automatically checked against each item before purchase.</p>
             </div>
           )}
 
@@ -326,17 +326,17 @@ export const App: React.FC = () => {
               <div className="flex items-center gap-2">
                 <ShoppingBag className="w-4 h-4 text-blue-400" />
                 <h3 className="text-sm font-semibold text-white">
-                  Channel3 Multi-Retailer Discovery ({candidates.length})
+                  Stores & Live Price Comparison ({candidates.length})
                 </h3>
               </div>
               <span className="text-xs text-slate-400">
                 {isLoadingSearch ? (
                   <span className="text-sky-300 flex items-center gap-1.5 font-medium animate-pulse">
                     <Loader2 className="w-3 h-3 animate-spin text-sky-400" />
-                    Scanning 25k+ merchants...
+                    Comparing 25k+ stores...
                   </span>
                 ) : (
-                  `${candidates.reduce((sum, c) => sum + (c.offers?.length || 1), 0)} offers ranked by policy fit`
+                  `${candidates.reduce((sum, c) => sum + (c.offers?.length || 1), 0)} store deals ranked for your budget`
                 )}
               </span>
             </div>
@@ -351,10 +351,10 @@ export const App: React.FC = () => {
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold text-sky-200">
-                        Scanning 25,000+ Retailers via Channel3 Discovery
+                        Comparing 25,000+ Online Stores for Best Deals
                       </h4>
                       <p className="text-xs text-sky-300/70 mt-0.5">
-                        Fetching live merchant prices, stock verification, and specs matching your budget.
+                        Checking live store prices, stock availability, and specs matching your budget.
                       </p>
                     </div>
                   </div>
@@ -390,7 +390,7 @@ export const App: React.FC = () => {
               <div className="rounded-xl border border-dashed border-slate-800 bg-slate-900/30 p-8 text-center">
                 <Layers className="w-8 h-8 text-slate-600 mx-auto mb-2" />
                 <p className="text-xs text-slate-400">
-                  Search to compare live Channel3 offers and PayPilot demo-store items. The demo items support the sandbox checkout flow.
+                  Search for any product to compare live store prices, discounts, and instant checkout options.
                 </p>
               </div>
             ) : (

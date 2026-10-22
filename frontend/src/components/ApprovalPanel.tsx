@@ -95,7 +95,7 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
           </div>
           <div>
             <h4 className="text-base font-semibold text-slate-100">PayPal Sandbox Checkout</h4>
-            <span className="text-xs text-slate-400">Consent-First Payment Gateway</span>
+            <span className="text-xs text-slate-400">Secure Buyer-Approved Checkout</span>
           </div>
         </div>
 
@@ -133,12 +133,12 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
           </span>
         </div>
         <div className="pt-2 border-t border-slate-800 flex justify-between text-base font-bold text-white">
-          <span>Authoritative Total</span>
+          <span>Guaranteed Total</span>
           <span className="text-emerald-400">${(quote.landed_cost ?? quote.amount).toFixed(2)} {quote.currency}</span>
         </div>
       </div>
       <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
-        This sandbox order binds a cryptographic HMAC quote ({quote.id}) directly to PayPal Orders v2 with itemized landed cost breakdown.
+        Your price is locked and guaranteed with verified PayPal itemized tax and shipping.
       </p>
 
       {error && (
@@ -163,13 +163,13 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
               </>
             ) : (
               <>
-                <span>1. Generate PayPal Sandbox Order</span>
+                <span>1. Prepare PayPal Checkout</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
           <p className="text-[11px] text-slate-500 text-center mt-2">
-            Server creates order directly with PayPal API using verified quote amount.
+            Prepares a secure PayPal order with verified pricing.
           </p>
         </div>
       )}
@@ -194,7 +194,7 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
           <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-amber-300 flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5" /> Judge Test: Pre-Capture Price Spike
+                <ShieldAlert className="w-3.5 h-3.5" /> Demo Test: Price-Spike Protection
               </span>
               <button
                 type="button"
@@ -202,11 +202,11 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
                 disabled={isProcessing}
                 className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 font-semibold text-[11px] transition-all disabled:opacity-50"
               >
-                Simulate Price Spike (Auto-Void)
+                Simulate Price Spike (Auto-Cancel)
               </button>
             </div>
             <p className="text-[10px] text-slate-400 mt-1">
-              Simulates a sudden merchant price hike ($89.99 → $121.49) before capture. Demonstrates PayPilot auto-voiding the order to protect buyer funds.
+              Simulates what happens if a store hikes prices right before payment. Demonstrates PayPilot auto-cancelling the order to protect your money.
             </p>
           </div>
 

@@ -9,6 +9,18 @@ interface PolicyPanelProps {
   onProceedToCheckout?: () => void;
 }
 
+const formatRuleName = (rule: string): string => {
+  const map: Record<string, string> = {
+    budget_cap: 'Budget Limit',
+    budget_limit: 'Budget Limit',
+    active_status: 'In Stock & Available',
+    currency_match: 'Currency (USD)',
+    feature_verification: 'Verified Features',
+    prompt_injection_shield: 'Price & Safety Shield',
+  };
+  return map[rule.toLowerCase()] || rule.replace(/_/g, ' ');
+};
+
 export const PolicyPanel: React.FC<PolicyPanelProps> = ({
   policyResult,
   isLoading,
@@ -19,9 +31,9 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
     return (
       <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col items-center justify-center text-center animate-pulse">
         <ShieldCheck className="w-8 h-8 text-blue-400 mb-2 animate-bounce" />
-        <h4 className="text-sm font-semibold text-slate-200">Evaluating Purchase Policy</h4>
+        <h4 className="text-sm font-semibold text-slate-200">Checking Budget & Safety</h4>
         <p className="text-xs text-slate-400 mt-1">
-          Executing deterministic budget and attribute constraints...
+          Verifying total cost, tax, shipping, and spending limits...
         </p>
       </div>
     );
@@ -34,13 +46,13 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
           <ShieldCheck className="w-8 h-8 text-blue-400" />
           <span className="w-2.5 h-2.5 rounded-full bg-blue-400 absolute top-2 right-2 animate-ping" />
         </div>
-        <h4 className="text-sm font-semibold text-slate-200">Policy Engine Ready & Primed</h4>
+        <h4 className="text-sm font-semibold text-slate-200">Budget Guard Ready</h4>
         <p className="text-xs text-slate-400 mt-1 max-w-sm">
-          Standing by to evaluate candidate items against deterministic budget ceilings, prompt-injection shields, and landed costs once results arrive.
+          Ready to verify taxes, shipping, budget limits, and price protection as soon as items load.
         </p>
         <div className="mt-4 flex items-center gap-2 text-[11px] text-blue-300 bg-blue-950/40 px-3 py-1.5 rounded-lg border border-blue-500/20">
           <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
-          <span>Awaiting discovery candidate...</span>
+          <span>Waiting for deals to load...</span>
         </div>
       </div>
     );
@@ -50,9 +62,9 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
     return (
       <div className="rounded-xl border border-dashed border-slate-800 bg-slate-900/30 p-6 text-center">
         <ShieldCheck className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-        <h4 className="text-sm font-semibold text-slate-300">Policy Engine Awaiting Candidate</h4>
+        <h4 className="text-sm font-semibold text-slate-300">Select an Item to Check Budget</h4>
         <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-          Select any recommended product to evaluate hard spending limits and store compliance before checkout.
+          Select any product on the left to verify its total price against your budget and unlock checkout.
         </p>
       </div>
     );
@@ -75,10 +87,10 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
           )}
           <div>
             <h4 className="text-base font-semibold text-slate-100">
-              {policyResult.eligible ? 'Policy Checks Passed' : 'Policy Blocked Purchase'}
+              {policyResult.eligible ? 'Safe to Buy (Within Budget)' : 'Spending Alert (Over Budget)'}
             </h4>
             <span className="text-xs text-slate-400">
-              Deterministic Policy Engine • {policyResult.policy_version}
+              Automated Spending Guardrails • {policyResult.policy_version}
             </span>
           </div>
         </div>
@@ -113,8 +125,8 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
               <XCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
             )}
             <div className="flex-1 text-xs">
-              <span className="font-semibold text-slate-200 capitalize">
-                {chk.rule.replace(/_/g, ' ')}:
+              <span className="font-semibold text-slate-200">
+                {formatRuleName(chk.rule)}:
               </span>{' '}
               <span className={chk.passed ? 'text-slate-300' : 'text-rose-300 font-medium'}>
                 {chk.detail}
@@ -129,7 +141,7 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
         <div className="mt-5 p-4 rounded-lg bg-slate-900 border border-slate-800 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs text-slate-400">Deterministic Landed Cost Quote</div>
+              <div className="text-xs text-slate-400">Guaranteed Total (Tax + Shipping)</div>
               <div className="text-lg font-bold text-white">
                 ${(policyResult.landed_cost ?? policyResult.quote.amount).toFixed(2)} {policyResult.quote.currency}
               </div>
@@ -140,7 +152,7 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
                 onClick={onProceedToCheckout}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-md transition-all"
               >
-                Proceed to Approval
+                Proceed to PayPal Checkout
               </button>
             )}
           </div>
