@@ -29,30 +29,92 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col items-center justify-center text-center animate-pulse">
-        <ShieldCheck className="w-8 h-8 text-blue-400 mb-2 animate-bounce" />
-        <h4 className="text-sm font-semibold text-slate-200">Checking Budget & Safety</h4>
-        <p className="text-xs text-slate-400 mt-1">
-          Verifying total cost, tax, shipping, and spending limits...
-        </p>
+      <div className="rounded-2xl border border-blue-500/30 bg-slate-900/70 p-6 flex flex-col justify-between min-h-[310px] shadow-xl animate-pulse">
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/20">
+              <ShieldCheck className="w-5 h-5 text-blue-400 animate-spin" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-slate-100">Checking Budget & Safety</h4>
+              <p className="text-xs text-slate-400">Evaluating product against your rules</p>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-medium border border-blue-500/30">
+            Checking...
+          </span>
+        </div>
+
+        <div className="my-auto py-5 text-center">
+          <ShieldCheck className="w-10 h-10 text-blue-400 mx-auto mb-2.5 animate-bounce" />
+          <h5 className="text-sm font-semibold text-slate-200">Verifying Candidate Compliance</h5>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+            Executing deterministic spending ceilings, landed cost calculations, and prompt protection...
+          </p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2.5 pt-3.5 border-t border-slate-800 text-xs text-slate-400 text-center">
+          <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+            <span className="text-emerald-400 font-semibold block">In-Stock</span>
+            <span className="text-[11px]">Availability</span>
+          </div>
+          <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+            <span className="text-blue-400 font-semibold block">Budget Cap</span>
+            <span className="text-[11px]">Spending limit</span>
+          </div>
+          <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+            <span className="text-purple-400 font-semibold block">Price Shield</span>
+            <span className="text-[11px]">Anti-scam check</span>
+          </div>
+        </div>
       </div>
     );
   }
 
   if (isSearching) {
     return (
-      <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-6 flex flex-col items-center justify-center text-center">
-        <div className="p-3 rounded-full bg-blue-500/10 text-blue-400 mb-3 relative">
-          <ShieldCheck className="w-8 h-8 text-blue-400" />
-          <span className="w-2.5 h-2.5 rounded-full bg-blue-400 absolute top-2 right-2 animate-ping" />
+      <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 flex flex-col justify-between min-h-[310px] shadow-xl">
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/20">
+              <ShieldCheck className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-slate-100">Budget Guard Ready</h4>
+              <p className="text-xs text-slate-400">Automated spending limits primed</p>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-medium border border-blue-500/30 flex items-center gap-1.5">
+            <Loader2 className="w-3 h-3 animate-spin text-blue-300" /> Ready
+          </span>
         </div>
-        <h4 className="text-sm font-semibold text-slate-200">Budget Guard Ready</h4>
-        <p className="text-xs text-slate-400 mt-1 max-w-sm">
-          Ready to verify taxes, shipping, budget limits, and price protection as soon as items load.
-        </p>
-        <div className="mt-4 flex items-center gap-2 text-[11px] text-blue-300 bg-blue-950/40 px-3 py-1.5 rounded-lg border border-blue-500/20">
-          <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-400" />
-          <span>Waiting for deals to load...</span>
+
+        <div className="my-auto py-5 text-center">
+          <div className="relative w-12 h-12 mx-auto mb-2.5 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full bg-blue-500/20 animate-ping"></div>
+            <div className="w-10 h-10 rounded-full bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 relative shadow-md shadow-blue-500/10">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+          </div>
+          <h5 className="text-sm font-semibold text-slate-200">Standing By for Deals</h5>
+          <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto leading-relaxed">
+            Ready to calculate exact taxes, shipping, budget compliance, and price-drift protection the instant products load.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2.5 pt-3.5 border-t border-slate-800 text-xs text-slate-400 text-center">
+          <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+            <span className="text-emerald-400 font-semibold block">In-Stock</span>
+            <span className="text-[11px]">Availability</span>
+          </div>
+          <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+            <span className="text-blue-400 font-semibold block">Budget Cap</span>
+            <span className="text-[11px]">Spending limit</span>
+          </div>
+          <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/80">
+            <span className="text-purple-400 font-semibold block">Price Shield</span>
+            <span className="text-[11px]">Anti-scam check</span>
+          </div>
         </div>
       </div>
     );
@@ -60,19 +122,53 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
 
   if (!policyResult) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-800 bg-slate-900/30 p-6 text-center">
-        <ShieldCheck className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-        <h4 className="text-sm font-semibold text-slate-300">Select an Item to Check Budget</h4>
-        <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-          Select any product on the left to verify its total price against your budget and unlock checkout.
-        </p>
+      <div className="rounded-2xl border border-dashed border-slate-800/90 bg-slate-900/40 p-6 flex flex-col justify-between min-h-[310px] shadow-sm">
+        <div className="flex items-center justify-between pb-3.5 border-b border-slate-800/80">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/20">
+              <ShieldCheck className="w-5 h-5 text-blue-400" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-slate-200">Automated Spending Guardrails</h4>
+              <p className="text-xs text-slate-400">Policy verification engine standing by</p>
+            </div>
+          </div>
+          <span className="px-2.5 py-1 rounded-full bg-slate-800/80 text-slate-400 text-xs font-mono border border-slate-700/50">
+            Awaiting Item
+          </span>
+        </div>
+
+        <div className="my-auto py-5 text-center">
+          <div className="w-12 h-12 rounded-full bg-slate-800/60 flex items-center justify-center text-slate-500 mx-auto mb-2.5">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <h5 className="text-sm font-semibold text-slate-300">Select an Item to Check Budget</h5>
+          <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto leading-relaxed">
+            Click any product on the left to verify your spending limit, calculate tax & shipping, and unlock PayPal checkout.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2.5 pt-3.5 border-t border-slate-800/80 text-xs text-slate-400 text-center">
+          <div className="p-2 rounded-xl bg-slate-950/50 border border-slate-800/60">
+            <span className="text-emerald-400 font-semibold block">In-Stock</span>
+            <span className="text-[11px]">Availability</span>
+          </div>
+          <div className="p-2 rounded-xl bg-slate-950/50 border border-slate-800/60">
+            <span className="text-blue-400 font-semibold block">Budget Cap</span>
+            <span className="text-[11px]">Spending limit</span>
+          </div>
+          <div className="p-2 rounded-xl bg-slate-950/50 border border-slate-800/60">
+            <span className="text-purple-400 font-semibold block">Price Shield</span>
+            <span className="text-[11px]">Anti-scam check</span>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div
-      className={`rounded-xl border p-6 transition-all ${
+      className={`rounded-2xl border p-6 transition-all min-h-[310px] flex flex-col justify-between shadow-xl ${
         policyResult.eligible
           ? 'border-emerald-500/40 bg-emerald-950/20'
           : 'border-rose-500/40 bg-rose-950/20'

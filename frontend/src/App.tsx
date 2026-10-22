@@ -280,8 +280,8 @@ export const App: React.FC = () => {
             <span className={`w-2 h-2 rounded-full ${isPayPalConfigured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
             <span className="text-slate-300 font-medium">{paypalStatus}</span>
           </div>
-          <div className="text-[11px] text-slate-400 font-mono hidden md:block">
-            {session ? <>Session: <span className="text-slate-200">{sessionId}</span></> : 'Securing session…'}
+          <div className="text-[11px] text-slate-400 font-mono hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60">
+            {session ? <>Session: <span className="text-slate-200">{sessionId.slice(0, 11)}...{sessionId.slice(-4)}</span></> : 'Securing…'}
           </div>
         </div>
       </header>
