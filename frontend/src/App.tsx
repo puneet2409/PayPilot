@@ -40,6 +40,7 @@ export const App: React.FC = () => {
   const [rightPanelTab, setRightPanelTab] = useState<'timeline' | 'ledger'>('timeline');
   const [showApprovalStep, setShowApprovalStep] = useState(false);
   const [currentBudget, setCurrentBudget] = useState<number>(100);
+  const [personaView, setPersonaView] = useState<'buyer' | 'cfo'>('buyer');
   const [paypalBackendConfigured, setPaypalBackendConfigured] = useState<boolean | null>(null);
   const [channel3Configured, setChannel3Configured] = useState<boolean | null>(null);
   const policyRequestVersion = useRef(0);
@@ -232,6 +233,32 @@ export const App: React.FC = () => {
           </div>
         </div>
 
+        {/* Dual-Lens Persona Switcher */}
+        <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+          <button
+            onClick={() => setPersonaView('buyer')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              personaView === 'buyer'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <ShoppingBag className="w-3.5 h-3.5" />
+            <span>🛒 Shopper Experience (B2C)</span>
+          </button>
+          <button
+            onClick={() => setPersonaView('cfo')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              personaView === 'cfo'
+                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>📊 Merchant & CFO Command Center (B2B)</span>
+          </button>
+        </div>
+
         <div className="flex items-center gap-2.5">
           <a
             href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
@@ -259,7 +286,8 @@ export const App: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Grid */}
+      {/* Main Persona Content */}
+      {personaView === 'buyer' ? (
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Chat & Candidates (7 cols) */}
         <section className="lg:col-span-7 flex flex-col gap-6">
@@ -408,6 +436,49 @@ export const App: React.FC = () => {
           </div>
         </section>
       </main>
+      ) : (
+      <main className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h3 className="text-base font-bold text-white flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-emerald-400" />
+              Merchant & CFO Command Center
+            </h3>
+            <p className="text-xs text-slate-300 mt-1">
+              Embedded Financial Analytics Blueprint (AG Studio) • PayPal REST Data Ingestion • Webhook Event Reconciliation
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={refreshOrders}
+              className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition-colors"
+            >
+              ↻ Refresh Analytics Data
+            </button>
+          </div>
+        </div>
+
+        <OrdersLedger
+          orders={orders}
+          sessionId={sessionId}
+          onCancelOrder={handleCancelOrder}
+          onRefresh={refreshOrders}
+        />
+
+        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
+          <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
+            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+              <History className="w-4 h-4 text-purple-400" />
+              Immutable Cryptographic Audit Trail
+            </h4>
+            <span className="text-xs text-slate-400 font-mono">
+              {auditEvents.length} events logged with SHA-256 provenance
+            </span>
+          </div>
+          <AuditTimeline events={auditEvents} />
+        </div>
+      </main>
+      )}
 
       {/* Footer */}
       <footer className="border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500">

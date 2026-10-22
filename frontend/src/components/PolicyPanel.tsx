@@ -105,25 +105,37 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
 
       {/* Quote summary if eligible */}
       {policyResult.eligible && policyResult.quote && (
-        <div className="mt-5 p-4 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between">
-          <div>
-            <div className="text-xs text-slate-400">PayPilot Demo Store Quote</div>
-            <div className="text-lg font-bold text-white">
-              ${policyResult.quote.amount.toFixed(2)} {policyResult.quote.currency}
+        <div className="mt-5 p-4 rounded-lg bg-slate-900 border border-slate-800 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-slate-400">Deterministic Landed Cost Quote</div>
+              <div className="text-lg font-bold text-white">
+                ${(policyResult.landed_cost ?? policyResult.quote.amount).toFixed(2)} {policyResult.quote.currency}
+              </div>
             </div>
-            <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-              <Clock className="w-3 h-3" /> Quote ID: {policyResult.quote.id}
-            </div>
+
+            {onProceedToCheckout && (
+              <button
+                onClick={onProceedToCheckout}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-md transition-all"
+              >
+                Proceed to Approval
+              </button>
+            )}
           </div>
 
-          {onProceedToCheckout && (
-            <button
-              onClick={onProceedToCheckout}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-md transition-all"
-            >
-              Proceed to Approval
-            </button>
-          )}
+          <div className="pt-2 border-t border-slate-800 grid grid-cols-3 gap-2 text-[11px] text-slate-400">
+            <div>Item: <span className="text-white font-medium">${policyResult.item_price.toFixed(2)}</span></div>
+            <div>Est. Tax (8.25%): <span className="text-white font-medium">${(policyResult.estimated_tax ?? policyResult.item_price * 0.0825).toFixed(2)}</span></div>
+            <div>Shipping: <span className="text-emerald-400 font-medium">{(policyResult.shipping ?? 0) === 0 ? 'FREE' : `$${(policyResult.shipping ?? 5.99).toFixed(2)}`}</span></div>
+          </div>
+
+          <div className="text-[10px] text-slate-500 font-mono flex items-center justify-between pt-1 border-t border-slate-800/60">
+            <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-slate-400" /> ID: {policyResult.quote.id}</span>
+            {policyResult.quote.quote_signature && (
+              <span className="text-indigo-400">HMAC-SHA256: {policyResult.quote.quote_signature.slice(0, 16)}...</span>
+            )}
+          </div>
         </div>
       )}
 

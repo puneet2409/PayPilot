@@ -377,3 +377,33 @@ def test_analytics_dashboard_endpoint(client, db_session):
     assert data["expressions"][0]["name"] == "collection_rate"
 
 
+def test_pre_capture_price_drift_auto_void(client, db_session):
+    """Simulated price drift before capture must block payment and auto-void order."""
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": client.test_session_id,
+        "demo_sku": "HEADSET-DEMO-01",
+        "max_total": 100.0
+    })
+    assert eval_res.status_code == 200
+    quote_id = eval_res.json()["quote"]["id"]
+
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": client.test_session_id
+    })
+    assert create_res.status_code == 200
+    order_id = create_res.json()["order_id"]
+
+    # Capture with simulate_price_drift=True
+    cap_res = client.post(f"/api/v1/checkout/{order_id}/capture", json={
+        "simulate_price_drift": True
+    })
+    assert cap_res.status_code == 409
+    assert "price spiked" in cap_res.json()["detail"].lower() or "guardian blocked" in cap_res.json()["detail"].lower()
+
+    # Verify order was voided in database
+    from app.models.order import Order
+    order = db_session.query(Order).filter(Order.id == order_id).first()
+    assert order.status == "CANCELLED"
+
+

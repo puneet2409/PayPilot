@@ -105,7 +105,9 @@ class PayPalClient:
             "purchase_units": [
                 {
                     "reference_id": quote_id,
-                    "description": "PayPilot demo-store checkout",
+                    "custom_id": f"{quote_id}:v1",
+                    "soft_descriptor": "PAYPILOT*CH3",
+                    "description": "PayPilot Agentic Commerce checkout",
                     "amount": {
                         "currency_code": currency,
                         "value": f"{amount:.2f}"

@@ -16,6 +16,7 @@ class CheckoutCreateResponse(BaseModel):
 
 class CheckoutCaptureRequest(BaseModel):
     idempotency_key: Optional[str] = Field(default=None, min_length=1, max_length=38)
+    simulate_price_drift: Optional[bool] = False
 
 class PaymentDetails(BaseModel):
     provider: str

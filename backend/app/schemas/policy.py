@@ -11,6 +11,11 @@ class QuoteSummary(BaseModel):
     amount: float
     currency: str
     expires_at: str
+    item_price: Optional[float] = None
+    estimated_tax: Optional[float] = None
+    shipping: Optional[float] = None
+    landed_cost: Optional[float] = None
+    quote_signature: Optional[str] = None
 
 class PolicyEvaluateRequest(BaseModel):
     session_id: str = Field(default="sess_default", min_length=1, max_length=100)
@@ -31,3 +36,6 @@ class PolicyEvaluateResponse(BaseModel):
     checks: List[PolicyCheckItem]
     quote: Optional[QuoteSummary] = None
     reason: Optional[str] = None
+    estimated_tax: Optional[float] = None
+    shipping: Optional[float] = None
+    landed_cost: Optional[float] = None

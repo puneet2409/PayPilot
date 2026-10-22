@@ -130,12 +130,13 @@ export const api = {
 
   async captureCheckout(
     orderId: string,
-    idempotencyKey?: string
+    idempotencyKey?: string,
+    simulatePriceDrift = false
   ): Promise<CheckoutCaptureResponse> {
     const res = await fetchWithAuth(`${API_BASE}/api/v1/checkout/${orderId}/capture`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ idempotency_key: idempotencyKey })
+      body: JSON.stringify({ idempotency_key: idempotencyKey, simulate_price_drift: simulatePriceDrift })
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));

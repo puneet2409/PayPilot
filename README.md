@@ -48,11 +48,12 @@ flowchart TD
 ## 🛡️ Core Differentiator: The Purchase Policy Engine
 
 PayPilot separates **discovery reasoning** from **financial execution**. Even if an LLM is prompt-injected or hallucinates:
-* **Hard Spending Ceiling:** The catalogue's fixed item price must be at or below the buyer's maximum. Taxes and shipping are not separately modeled in this demo.
-* **Authoritative Server Pricing:** Item amounts are derived from the server database, never accepted from client payloads.
-* **Quote Expiration:** Quotes expire after 10 minutes. Stale price changes trigger re-evaluation.
-* **Consent Gate:** Autonomous checkout without human PayPal approval is blocked at the API level.
-* **Honest Discovery:** Over-budget candidates stay visible as market intelligence (clearly flagged), but only the deterministic policy engine decides whether a quote can be issued — try the *"Headset under \$50 (Test Policy Block)"* preset in the UI.
+* **Deterministic Landed Cost:** Evaluates total purchase price including estimated sales tax (8.25%) and shipping ($0 for orders ≥$50, else $5.99). The engine verifies `landed_cost <= budget_ceiling` before issuing a quote.
+* **Indirect Prompt Injection Shield:** Raw catalog payloads (titles, descriptions, attributes) from external retailers are deterministically scanned and sanitized for adversarial prompt injections (`ignore previous instructions`, `override budget`, `approve all`, etc.) before reaching downstream systems.
+* **HMAC-SHA256 Cryptographic Quote Locking:** Quotes are signed with a secret-keyed HMAC-SHA256 signature and locked with a 10-minute TTL. Any price or term tampering fails verification.
+* **Pre-Capture Price Spike & Auto-Void Protection:** Before capturing payments, PayPilot re-verifies live merchant stock and price. If an unauthorized price hike occurs while the buyer is on checkout, the capture is blocked, and the order is auto-voided to protect buyer funds.
+* **Consent-First PayPal Orders v2:** Quotes are bound directly to PayPal Orders v2 using `custom_id` and itemized landed cost breakdown (`item_total`, `tax_total`, `shipping`). Autonomous execution without explicit human PayPal approval is strictly blocked.
+* **Dual-Lens Persona View:** Sleek top-level switcher between **🛒 Shopper Experience (B2C Agent)** and **📊 Merchant & CFO Command Center (B2B)** featuring the AG Studio Financial Analytics Blueprint and live payments ledger.
 
 ---
 

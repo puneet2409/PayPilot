@@ -75,6 +75,11 @@ export interface QuoteSummary {
   amount: number;
   currency: string;
   expires_at: string;
+  item_price?: number;
+  estimated_tax?: number;
+  shipping?: number;
+  landed_cost?: number;
+  quote_signature?: string;
 }
 
 export interface PolicyEvaluateResponse {
@@ -88,6 +93,9 @@ export interface PolicyEvaluateResponse {
   checks: PolicyCheckItem[];
   quote?: QuoteSummary;
   reason?: string;
+  estimated_tax?: number;
+  shipping?: number;
+  landed_cost?: number;
 }
 
 export interface CheckoutCreateResponse {

@@ -1,3 +1,4 @@
+import re
 import json
 import logging
 from typing import List, Tuple
@@ -13,6 +14,14 @@ class PolicyEngine:
     ZERO LLM TRUST: All safety, spending, and compliance constraints
     are evaluated through hard code rules.
     """
+
+    @staticmethod
+    def calculate_landed_cost(fixed_price: float) -> Tuple[float, float, float]:
+        """Calculates item price, estimated tax (8.25%), and shipping."""
+        tax = round(fixed_price * 0.0825, 2)
+        shipping = 0.0 if fixed_price >= 50.0 else 5.99
+        landed = round(fixed_price + tax + shipping, 2)
+        return landed, tax, shipping
 
     @staticmethod
     def evaluate(
@@ -67,20 +76,46 @@ class PolicyEngine:
                 detail=f"Currency matches ({currency})"
             ))
 
-        # 4. Hard Budget Limit Check
-        # Zero tolerance for exceeding user ceiling
+        # 4. Landed Cost & Hard Budget Limit Check
+        landed_cost, estimated_tax, shipping = PolicyEngine.calculate_landed_cost(product.fixed_price)
         if product.fixed_price > max_total:
             checks.append(PolicyCheckItem(
                 rule="budget_limit",
                 passed=False,
-                detail=f"Fixed price ${product.fixed_price:.2f} exceeds user ceiling ${max_total:.2f}"
+                detail=f"Item price ${product.fixed_price:.2f} (Landed: ${landed_cost:.2f} incl. ${estimated_tax:.2f} tax & ${shipping:.2f} shipping) exceeds ceiling ${max_total:.2f}"
             ))
             return False, checks, product, f"Price exceeds budget limit of ${max_total:.2f}"
         else:
             checks.append(PolicyCheckItem(
                 rule="budget_limit",
                 passed=True,
-                detail=f"Price ${product.fixed_price:.2f} is within ceiling ${max_total:.2f}"
+                detail=f"Item price ${product.fixed_price:.2f} (Landed: ${landed_cost:.2f} incl. ${estimated_tax:.2f} tax & ${shipping:.2f} shipping) is within ceiling ${max_total:.2f}"
+            ))
+
+        # 5. Indirect Prompt Injection Shield (sanitize untrusted retail data)
+        injection_patterns = [
+            r"ignore\s+(?:previous|all|above)\s+instructions",
+            r"system\s+prompt",
+            r"override\s+budget",
+            r"transfer\s+funds",
+            r"approve\s+all",
+            r"grant\s+access",
+            r"bypass\s+policy",
+            r"disregard\s+rules",
+        ]
+        full_raw = f"{product.title} {product.description or ''} {product.attributes_json}".lower()
+        if any(re.search(pat, full_raw, re.IGNORECASE) for pat in injection_patterns):
+            checks.append(PolicyCheckItem(
+                rule="prompt_injection_shield",
+                passed=False,
+                detail="Adversarial prompt-injection attempt detected in retail catalog payload. Discarded deterministically."
+            ))
+            return False, checks, product, "Adversarial prompt injection pattern detected in product data"
+        else:
+            checks.append(PolicyCheckItem(
+                rule="prompt_injection_shield",
+                passed=True,
+                detail="Retail catalog payload sanitized — zero adversarial prompt injection patterns detected."
             ))
 
         # 5. Excluded Terms Check

@@ -1,11 +1,23 @@
 import uuid
+import hmac
+import hashlib
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
 from app.models.quote import Quote
 from app.models.catalogue import DemoProduct
+from app.security import _secret
 
 class QuoteService:
+    @staticmethod
+    def compute_quote_signature(quote_id: str, amount: float, sku: str, expires_at_iso: str) -> str:
+        payload = f"{quote_id}:{amount:.2f}:{sku}:{expires_at_iso}"
+        return hmac.new(_secret().encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).hexdigest()[:32]
+
+    @staticmethod
+    def verify_quote_signature(quote_id: str, amount: float, sku: str, expires_at_iso: str, provided_sig: str) -> bool:
+        expected = QuoteService.compute_quote_signature(quote_id, amount, sku, expires_at_iso)
+        return hmac.compare_digest(expected.encode("utf-8"), provided_sig.encode("utf-8"))
     @staticmethod
     def create_quote(
         db: Session,

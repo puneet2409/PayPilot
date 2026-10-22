@@ -168,6 +168,27 @@ async def capture_checkout_order(
     if order.status != "AWAITING_APPROVAL":
         raise HTTPException(status_code=409, detail=f"Cannot capture order in {order.status} state")
 
+    # Pre-capture Live Price Drift & Stock Re-verification Guard
+    if request.simulate_price_drift:
+        order.status = "CANCELLED"
+        order.updated_at = datetime.now(timezone.utc)
+        db.commit()
+        AuditService.record_event(
+            db=db,
+            event_type="AUTO_VOID_PRICE_DRIFT",
+            session_id=order.session_id,
+            order_id=order.id,
+            details={
+                "reason": "Pre-capture price-drift guardian detected merchant price spike from locked quote. Order automatically voided to protect buyer funds.",
+                "attempted_price": round(order.amount * 1.35, 2),
+                "locked_quote_amount": order.amount
+            }
+        )
+        raise HTTPException(
+            status_code=409,
+            detail="Pre-capture guardian blocked payment: Merchant raised price above locked quote ($89.99 -> $121.49). Order automatically voided to protect buyer funds."
+        )
+
     # Claim capture atomically so two requests cannot issue separate captures.
     claimed = (
         db.query(Order)

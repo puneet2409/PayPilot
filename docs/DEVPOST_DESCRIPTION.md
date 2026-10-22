@@ -34,27 +34,29 @@ PayPilot introduces a **four-stage consent-gated pipeline** where AI advises, bu
 [Shopper Brief]
       │
       ▼
-[1. Google Gemini 2.0 Flash] ─── Extracts Category, Budget, Must-Have Features, Avoid Terms
+[1. Google Gemini 3.8 Flash] ─── Extracts Category, Budget, Must-Have Features, Avoid Terms
       │
       ▼
 [2. Channel3 Agentic Engine] ─── Live Search Across 25,000+ Merchants (Best Buy, Walmart, B&H)
       │
       ▼
-[3. Deterministic Policy Engine] ─── Pure Python Rules: Budget Caps, Specs Verification, 10-Min Quote Lock
+[3. Deterministic Policy Engine] ─── Landed Cost Breakdown, Prompt Injection Shield, 10-Min HMAC Quote Lock
       │
       ▼
-[4. PayPal Orders v2 Gateway] ─── Server-side Order Creation, Buyer SDK Approval, Verified Server Capture
+[4. PayPal Orders v2 Gateway] ─── Itemized Breakdown, Pre-Capture Price Re-Verification, Buyer SDK Approval
       │
       ▼
-[5. Transparency & Ledger] ─── Session Audit Timeline + AG Grid Payments Ledger (CSV Export)
+[5. Transparency & Ledger] ─── Session Audit Timeline + AG Studio CFO Command Center + Payments Ledger
 ```
 
 ### Key Capabilities & Architectural Pillars
 
 - **Real-Time Discovery across 25k+ Retailers (Channel3):** Unlike toy demos with static mock data, PayPilot queries the live Channel3 catalog in `agentic` mode to retrieve real-time merchant offers, pricing, availability, and direct retailer links.
-- **Deterministic Policy Guardrails (Zero AI Hallucination):** The LLM is never permitted to authorize spending or override rules. A pure Python rule engine evaluates budget ceilings, required features, and excluded terms against verified product attributes before issuing a cryptographically tracked 10-minute quote lock.
-- **Consent-First PayPal Checkout (`@paypal/react-paypal-js`):** PayPilot adheres to the PayPal AI-Toolkit / Agentic Commerce paradigm. Funds never move autonomously. The backend initiates a PayPal Orders v2 transaction with `intent: CAPTURE`, and the buyer approves via official PayPal SDK buttons.
-- **Payments & Orders Ledger (AG Grid Style):** Alongside an immutable audit trail, PayPilot includes a real-time financial ledger displaying Order IDs, PayPal Order IDs, Capture IDs, SKUs, and amounts with instant status filtering and one-click CSV export.
+- **Deterministic Policy Guardrails (Zero AI Hallucination):** The LLM is never permitted to authorize spending or override rules. A pure Python rule engine evaluates budget ceilings, required features, and excluded terms against verified product attributes before issuing a cryptographically signed (HMAC-SHA256) 10-minute quote lock.
+- **Landed Cost & Prompt Injection Shield:** Evaluates total purchase price including estimated sales tax (8.25%) and shipping ($0 for orders ≥$50, else $5.99). Deterministically sanitizes untrusted retail catalog text against adversarial prompt injections before quote creation.
+- **Consent-First PayPal Checkout (`@paypal/react-paypal-js`):** PayPilot adheres to the PayPal AI-Toolkit / Agentic Commerce paradigm. Funds never move autonomously. The backend initiates a PayPal Orders v2 transaction with itemized breakdown and cryptographic `custom_id` binding.
+- **Pre-Capture Price Spike & Auto-Void Protection:** Re-verifies live merchant price and stock before capture. If a retailer hikes the price while the buyer is on checkout, payment is blocked and the order is automatically voided.
+- **Dual-Lens Persona View:** Seamless top-level switcher between **🛒 Shopper Experience (B2C)** and **📊 Merchant & CFO Command Center (B2B)** with AG Studio financial blueprint metrics and hash-chained audit logs.
 - **APIMatic-Verified OpenAPI 3.1:** All endpoints and payloads are strictly typed with Pydantic v2 and documented via OpenAPI 3.1 (`docs/openapi.json`), enabling instant integration into APIMatic Context Plugins.
 
 ---
