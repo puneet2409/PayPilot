@@ -9,6 +9,7 @@ interface ChatPanelProps {
   isDisabled?: boolean;
   agentReply: string | null;
   suggestedActions?: SuggestedAction[];
+  onReset?: () => void;
 }
 
 const PRESET_GOALS = [
@@ -39,7 +40,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   isLoading,
   isDisabled = false,
   agentReply,
-  suggestedActions = []
+  suggestedActions = [],
+  onReset
 }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [budgetInput, setBudgetInput] = useState<string>('');
@@ -60,17 +62,41 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
     onSendMessage(preset.query, preset.budget);
   };
 
+  const handleReset = () => {
+    setInputMessage('');
+    setBudgetInput('');
+    setLastMessage(null);
+    onReset?.();
+  };
+
+  const hasActiveContent = Boolean(inputMessage || budgetInput || agentReply);
+
   return (
     <div className="rounded-2xl border border-slate-800/80 bg-slate-900/70 p-6 flex flex-col justify-between shadow-xl min-h-[310px]">
       <div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400">
-            <Sparkles className="w-4 h-4" />
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-blue-500/20 text-blue-400">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-white">Smart Shopping Assistant</h3>
+              <p className="text-[11px] text-slate-400">Tell me what you need, or set a maximum spending limit.</p>
+            </div>
           </div>
-          <div>
-            <h3 className="text-sm font-semibold text-white">Smart Shopping Assistant</h3>
-            <p className="text-[11px] text-slate-400">Tell me what you need, or set a maximum spending limit.</p>
-          </div>
+
+          {hasActiveContent && (
+            <button
+              type="button"
+              onClick={handleReset}
+              disabled={isLoading}
+              className="text-[11px] text-slate-400 hover:text-slate-200 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 transition-colors"
+              title="Clear search and start fresh"
+            >
+              <RotateCcw className="w-3 h-3 text-blue-400" />
+              <span>Reset</span>
+            </button>
+          )}
         </div>
 
         {/* Quick Presets */}
@@ -106,17 +132,28 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           <div className="mb-4 p-3.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-slate-200 leading-relaxed">
             <div className="flex items-center justify-between mb-1">
               <span className="font-semibold text-blue-400">PayPilot Agent:</span>
-              {agentReply.startsWith('Search error:') && lastMessage && (
+              <div className="flex items-center gap-1.5">
+                {agentReply.startsWith('Search error:') && lastMessage && (
+                  <button
+                    type="button"
+                    onClick={() => onSendMessage(lastMessage.msg, lastMessage.budget)}
+                    disabled={isLoading}
+                    className="px-2 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-[11px] font-medium flex items-center gap-1 transition-all disabled:opacity-50"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Retry</span>
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => onSendMessage(lastMessage.msg, lastMessage.budget)}
-                  disabled={isLoading}
-                  className="px-2 py-0.5 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 text-[11px] font-medium flex items-center gap-1 transition-all disabled:opacity-50"
+                  onClick={handleReset}
+                  className="px-2 py-0.5 rounded bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700/60 text-[10px] flex items-center gap-1 transition-colors"
+                  title="Clear conversation"
                 >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Retry</span>
+                  <RotateCcw className="w-2.5 h-2.5 text-blue-400" />
+                  <span>Clear</span>
                 </button>
-              )}
+              </div>
             </div>
             <ReactMarkdown
               components={{
@@ -198,6 +235,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             )}
           </div>
         )}
+
         {/* Active Search & Multi-Retailer Discovery Progress */}
         {isLoading && (
           <div className="mb-4 p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/40 text-xs text-slate-200 shadow-lg shadow-blue-500/10">
@@ -259,6 +297,20 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
             disabled={isDisabled || isLoading}
             className="flex-1 px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-colors"
           />
+
+          {hasActiveContent && (
+            <button
+              type="button"
+              onClick={handleReset}
+              disabled={isLoading}
+              className="px-3.5 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/70 text-xs font-semibold flex items-center gap-1.5 transition-all shrink-0"
+              title="Clear input and reset results"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-blue-400" />
+              <span>Reset</span>
+            </button>
+          )}
+
           <button
             type="submit"
             disabled={isDisabled || isLoading || !inputMessage.trim()}

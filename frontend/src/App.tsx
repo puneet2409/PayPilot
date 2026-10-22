@@ -17,7 +17,7 @@ import { ApprovalPanel } from './components/ApprovalPanel';
 import { OrderStatus } from './components/OrderStatus';
 import { AuditTimeline } from './components/AuditTimeline';
 import { OrdersLedger } from './components/OrdersLedger';
-import { History, ShoppingBag, Layers, Sparkles, CreditCard, Code2, Loader2 } from 'lucide-react';
+import { History, ShoppingBag, Layers, Sparkles, CreditCard, Code2, Loader2, RotateCcw } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [session, setSession] = useState<AuthSession | null>(null);
@@ -269,10 +269,12 @@ export const App: React.FC = () => {
     setRightPanelTab('ledger');
   };
 
-  const handleCancelOrder = async (orderId: string) => {
+  const handleCancelOrder = async (orderId?: string) => {
     if (!session) return;
     try {
-      await api.cancelOrder(orderId);
+      if (orderId) {
+        await api.cancelOrder(orderId);
+      }
       await refreshOrders();
       await refreshAuditEvents();
     } catch (err: any) {
@@ -298,13 +300,17 @@ export const App: React.FC = () => {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Header */}
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20">
+        <div
+          onClick={handleReset}
+          className="flex items-center gap-3 cursor-pointer group"
+          title="Reset to PayPilot Home"
+        >
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
             P
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-base tracking-tight text-white">PayPilot</span>
+              <span className="font-bold text-base tracking-tight text-white group-hover:text-blue-300 transition-colors">PayPilot</span>
               <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
                 Agentic Commerce
               </span>
@@ -315,29 +321,40 @@ export const App: React.FC = () => {
           </div>
         </div>
 
-        {/* Dual-Lens Persona Switcher */}
-        <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+        {/* Dual-Lens Persona Switcher + Global Reset */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+            <button
+              onClick={() => setPersonaView('buyer')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                personaView === 'buyer'
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <ShoppingBag className="w-3.5 h-3.5" />
+              <span>🛒 Shopper Experience (B2C)</span>
+            </button>
+            <button
+              onClick={() => setPersonaView('cfo')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                personaView === 'cfo'
+                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>📊 Merchant & CFO Command Center (B2B)</span>
+            </button>
+          </div>
+
           <button
-            onClick={() => setPersonaView('buyer')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              personaView === 'buyer'
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
+            onClick={handleReset}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-xs font-medium text-slate-300 hover:text-white transition-all shadow-sm"
+            title="Reset search, policy evaluation, and start fresh"
           >
-            <ShoppingBag className="w-3.5 h-3.5" />
-            <span>🛒 Shopper Experience (B2C)</span>
-          </button>
-          <button
-            onClick={() => setPersonaView('cfo')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              personaView === 'cfo'
-                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span>📊 Merchant & CFO Command Center (B2B)</span>
+            <RotateCcw className="w-3.5 h-3.5 text-blue-400" />
+            <span className="hidden sm:inline">Reset Search</span>
           </button>
         </div>
 
@@ -379,6 +396,7 @@ export const App: React.FC = () => {
             isDisabled={!session}
             agentReply={agentReply || sessionError}
             suggestedActions={suggestedActions}
+            onReset={handleReset}
           />
 
           {shoppingIntent && (
@@ -411,16 +429,28 @@ export const App: React.FC = () => {
                   Stores & Live Price Comparison ({candidates.length})
                 </h3>
               </div>
-              <span className="text-xs text-slate-400">
-                {isLoadingSearch ? (
-                  <span className="text-sky-300 flex items-center gap-1.5 font-medium animate-pulse">
-                    <Loader2 className="w-3 h-3 animate-spin text-sky-400" />
-                    Comparing 25k+ stores...
-                  </span>
-                ) : (
-                  `${candidates.reduce((sum, c) => sum + (c.offers?.length || 1), 0)} store deals ranked for your budget`
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">
+                  {isLoadingSearch ? (
+                    <span className="text-sky-300 flex items-center gap-1.5 font-medium animate-pulse">
+                      <Loader2 className="w-3 h-3 animate-spin text-sky-400" />
+                      Comparing 25k+ stores...
+                    </span>
+                  ) : (
+                    `${candidates.reduce((sum, c) => sum + (c.offers?.length || 1), 0)} store deals ranked for your budget`
+                  )}
+                </span>
+                {candidates.length > 0 && !isLoadingSearch && (
+                  <button
+                    onClick={handleReset}
+                    className="px-2 py-0.5 rounded text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700/60 transition-colors flex items-center gap-1"
+                    title="Clear current product results"
+                  >
+                    <RotateCcw className="w-2.5 h-2.5 text-blue-400" />
+                    <span>Clear</span>
+                  </button>
                 )}
-              </span>
+              </div>
             </div>
 
             {isLoadingSearch ? (
@@ -507,6 +537,9 @@ export const App: React.FC = () => {
               sku={policyResult.sku}
               sessionId={sessionId}
               onPaymentSuccess={handlePaymentSuccess}
+              onCancelOrder={handleCancelOrder}
+              onBack={() => setShowApprovalStep(false)}
+              onReset={handleReset}
             />
           ) : (
             /* Deterministic Purchase Policy Panel */
