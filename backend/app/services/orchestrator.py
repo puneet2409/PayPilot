@@ -209,16 +209,18 @@ class AgentOrchestrator:
         )
 
         try:
-            response = await asyncio.to_thread(
-                self._client.models.generate_content,
-                model=self.model_name,
-                contents=prompt,
-                config={
-                    "response_mime_type": "application/json",
-                    "response_schema": AgentIntent,
-                    "max_output_tokens": 500,
-                    "thinking_config": {"thinking_budget": 0},
-                },
+            response = await asyncio.wait_for(
+                asyncio.to_thread(
+                    self._client.models.generate_content,
+                    model=self.model_name,
+                    contents=prompt,
+                    config={
+                        "response_mime_type": "application/json",
+                        "response_schema": AgentIntent,
+                        "max_output_tokens": 500,
+                    },
+                ),
+                timeout=3.5
             )
             parsed_value = getattr(response, "parsed", None) if response else None
             if parsed_value is not None:

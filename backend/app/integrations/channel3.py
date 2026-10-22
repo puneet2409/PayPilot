@@ -1,4 +1,5 @@
 import httpx
+import time
 import logging
 import math
 from typing import List, Optional, Dict, Any
@@ -147,6 +148,7 @@ class Channel3Client:
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
         self.api_key = api_key or settings.CHANNEL3_API_KEY
         self.base_url = base_url or settings.CHANNEL3_BASE_URL
+        self._cache: Dict[str, tuple[float, List[ProductItem]]] = {}
 
     @property
     def is_configured(self) -> bool:
@@ -191,6 +193,13 @@ class Channel3Client:
             logger.info("Channel3 API key not configured. Using normalized demo discovery catalogue.")
             return self._fallback_filter(query, max_price, limit)
 
+        cache_key = f"{query.lower().strip()}_{max_price}_{limit}"
+        if cache_key in self._cache:
+            ts, items = self._cache[cache_key]
+            if time.time() - ts < 300:
+                logger.info(f"Serving {len(items)} cached Channel3 results for: {query}")
+                return items
+
         headers = {
             "x-api-key": self.api_key,
             "x-user-id": user_id,
@@ -222,9 +231,12 @@ class Channel3Client:
                     demo_limit = min(2, max(0, limit - 1))
                     demo_results = self._fallback_filter(query, max_price, demo_limit)
                     if not demo_results:
-                        return live_results[:limit]
-                    live_slots = max(0, limit - len(demo_results))
-                    return live_results[:live_slots] + demo_results
+                        final_res = live_results[:limit]
+                    else:
+                        live_slots = max(0, limit - len(demo_results))
+                        final_res = live_results[:live_slots] + demo_results
+                    self._cache[cache_key] = (time.time(), final_res)
+                    return final_res
                 else:
                     logger.warning(f"Channel3 returned HTTP {res.status_code}: {res.text}. Falling back to cached catalog.")
                     return self._fallback_filter(query, max_price, limit)
