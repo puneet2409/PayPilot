@@ -207,12 +207,12 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
           </span>
         </div>
         <div className="pt-2 border-t border-slate-800 flex justify-between text-base font-bold text-white">
-          <span>Guaranteed Total</span>
-          <span className="text-emerald-400">${(quote.landed_cost ?? quote.amount).toFixed(2)} {quote.currency}</span>
+          <span>Authoritative PayPal Charge</span>
+          <span className="text-emerald-400">${quote.amount.toFixed(2)} {quote.currency}</span>
         </div>
       </div>
-      <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
-        Your price is locked and guaranteed with verified PayPal itemized tax and shipping.
+      <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
+        Price locked at <strong>${quote.amount.toFixed(2)} {quote.currency}</strong>. Maximum landed ceiling verified with itemized tax & shipping.
       </p>
 
       {error && (

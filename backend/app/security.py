@@ -1,8 +1,10 @@
+import os
 import base64
 import hashlib
 import hmac
 import secrets
 import time
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import Depends, HTTPException, status
@@ -11,7 +13,25 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from app.config import settings
 
 _bearer = HTTPBearer(auto_error=False)
-_development_secret = secrets.token_urlsafe(48)
+
+def _get_or_create_dev_secret() -> str:
+    # Try reading from a local hidden file to persist secret across restarts & multi-workers
+    try:
+        secret_file = Path(__file__).resolve().parent.parent / ".session_secret"
+        if secret_file.exists():
+            val = secret_file.read_text(encoding="utf-8").strip()
+            if len(val) >= 32:
+                return val
+        new_secret = secrets.token_urlsafe(48)
+        try:
+            secret_file.write_text(new_secret, encoding="utf-8")
+        except Exception:
+            pass
+        return new_secret
+    except Exception:
+        return secrets.token_urlsafe(48)
+
+_development_secret = _get_or_create_dev_secret()
 
 
 def validate_auth_config() -> None:

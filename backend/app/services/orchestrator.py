@@ -69,6 +69,9 @@ class AgentOrchestrator:
         # agent surfaces what the market offers, and the deterministic policy
         # engine is the component that enforces the spending ceiling.
         query = intent.category or request.message
+        if len(self._session_context) >= 200:
+            oldest_sess = next(iter(self._session_context))
+            del self._session_context[oldest_sess]
         self._session_context[session_id] = {
             "query": query,
             "category": intent.category,

@@ -210,6 +210,9 @@ export const App: React.FC = () => {
         currency: cand.currency || 'USD',
         max_total: effectiveBudget,
         eligible: isEligible,
+        is_external_retailer: true,
+        buy_url: cand.buy_url,
+        merchant: cand.merchant,
         reason: !isBudgetPassed
           ? `Price $${itemPrice.toFixed(2)} exceeds budget ceiling of $${effectiveBudget.toFixed(2)}`
           : !allReqsPassed

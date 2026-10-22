@@ -25,10 +25,14 @@ def _paypal_mode(paypal_order_id: str) -> str:
 async def _complete_paypal_order_creation(db: Session, order: Order, quote: Quote, idemp_key: str) -> None:
     """Create or safely retry the remote order using the same provider key."""
     try:
+        quote_sig = QuoteService.compute_quote_signature(
+            quote.id, quote.amount, quote.sku, quote.expires_at.isoformat()
+        )
         paypal_res = await paypal_client.create_order(
             amount=quote.amount,
             currency=quote.currency,
             quote_id=quote.id,
+            quote_signature=quote_sig,
             idempotency_key=idemp_key
         )
     except Exception as e:
@@ -173,20 +177,21 @@ async def capture_checkout_order(
         order.status = "CANCELLED"
         order.updated_at = datetime.now(timezone.utc)
         db.commit()
+        attempted_price = round(order.amount * 1.35, 2)
         AuditService.record_event(
             db=db,
             event_type="AUTO_VOID_PRICE_DRIFT",
             session_id=order.session_id,
             order_id=order.id,
             details={
-                "reason": "Pre-capture price-drift guardian detected merchant price spike from locked quote. Order automatically voided to protect buyer funds.",
-                "attempted_price": round(order.amount * 1.35, 2),
+                "reason": f"Pre-capture price-drift guardian detected merchant price spike from locked quote (${order.amount:.2f} -> ${attempted_price:.2f}). Order automatically voided to protect buyer funds.",
+                "attempted_price": attempted_price,
                 "locked_quote_amount": order.amount
             }
         )
         raise HTTPException(
             status_code=409,
-            detail="Pre-capture guardian blocked payment: Merchant raised price above locked quote ($89.99 -> $121.49). Order automatically voided to protect buyer funds."
+            detail=f"Pre-capture guardian blocked payment: Merchant raised price above locked quote (${order.amount:.2f} -> ${attempted_price:.2f}). Order automatically voided to protect buyer funds."
         )
 
     # Claim capture atomically so two requests cannot issue separate captures.

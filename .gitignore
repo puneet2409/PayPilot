@@ -21,6 +21,8 @@ wheels/
 *.egg
 .env
 .env.local
+.session_secret
+*.secret
 .venv
 venv/
 ENV/

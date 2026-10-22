@@ -70,7 +70,9 @@ def get_order_audit_timeline(
                 id=e.id,
                 event_type=e.event_type,
                 details=json.loads(e.details_json or "{}"),
-                created_at=e.created_at.isoformat()
+                created_at=e.created_at.isoformat(),
+                prev_hash=e.prev_hash,
+                entry_hash=e.entry_hash
             )
             for e in events
         ]
@@ -91,7 +93,9 @@ def get_session_audit_timeline(
                 id=e.id,
                 event_type=e.event_type,
                 details=json.loads(e.details_json or "{}"),
-                created_at=e.created_at.isoformat()
+                created_at=e.created_at.isoformat(),
+                prev_hash=e.prev_hash,
+                entry_hash=e.entry_hash
             )
             for e in events
         ]

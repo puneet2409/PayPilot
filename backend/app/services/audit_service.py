@@ -1,5 +1,6 @@
 import json
 import uuid
+import hashlib
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
@@ -14,13 +15,26 @@ class AuditService:
         session_id: Optional[str] = None,
         order_id: Optional[str] = None
     ) -> AuditEvent:
+        now = datetime.now(timezone.utc)
+        details_str = json.dumps(details, sort_keys=True)
+        
+        # Cryptographic Hash Chaining: fetch latest recorded event
+        latest = db.query(AuditEvent).order_by(AuditEvent.created_at.desc()).first()
+        prev_hash = latest.entry_hash if latest and latest.entry_hash else "0" * 64
+        
+        event_id = f"audit_{uuid.uuid4().hex[:10]}"
+        raw_payload = f"{prev_hash}:{session_id or ''}:{order_id or ''}:{event_type}:{details_str}:{now.isoformat()}"
+        entry_hash = hashlib.sha256(raw_payload.encode("utf-8")).hexdigest()
+
         event = AuditEvent(
-            id=f"audit_{uuid.uuid4().hex[:10]}",
+            id=event_id,
             session_id=session_id,
             order_id=order_id,
             event_type=event_type,
-            details_json=json.dumps(details),
-            created_at=datetime.now(timezone.utc)
+            details_json=details_str,
+            prev_hash=prev_hash,
+            entry_hash=entry_hash,
+            created_at=now
         )
         db.add(event)
         db.commit()

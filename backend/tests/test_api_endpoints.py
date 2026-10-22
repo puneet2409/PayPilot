@@ -407,3 +407,28 @@ def test_pre_capture_price_drift_auto_void(client, db_session):
     assert order.status == "CANCELLED"
 
 
+def test_audit_hash_chaining_integrity(client, db_session):
+    """Verify that consecutive audit events form an unbroken SHA-256 hash chain."""
+    from app.services.audit_service import AuditService
+
+    ev1 = AuditService.record_event(
+        db=db_session,
+        event_type="CHAIN_TEST_1",
+        session_id=client.test_session_id,
+        details={"step": 1}
+    )
+    assert ev1.entry_hash is not None
+    assert len(ev1.entry_hash) == 64
+
+    ev2 = AuditService.record_event(
+        db=db_session,
+        event_type="CHAIN_TEST_2",
+        session_id=client.test_session_id,
+        details={"step": 2}
+    )
+    assert ev2.entry_hash is not None
+    assert len(ev2.entry_hash) == 64
+    assert ev2.prev_hash == ev1.entry_hash
+
+
+

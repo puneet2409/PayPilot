@@ -235,6 +235,9 @@ class Channel3Client:
                     else:
                         live_slots = max(0, limit - len(demo_results))
                         final_res = live_results[:live_slots] + demo_results
+                    if len(self._cache) >= 200:
+                        oldest_k = next(iter(self._cache))
+                        del self._cache[oldest_k]
                     self._cache[cache_key] = (time.time(), final_res)
                     return final_res
                 else:

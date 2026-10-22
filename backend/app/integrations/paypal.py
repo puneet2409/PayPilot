@@ -1,4 +1,5 @@
 import httpx
+import json
 import logging
 import uuid
 from typing import Dict, Any, Optional
@@ -66,23 +67,27 @@ class PayPalClient:
         amount: float,
         currency: str = "USD",
         quote_id: str = "quote_default",
+        quote_signature: Optional[str] = None,
         idempotency_key: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Creates a PayPal Orders v2 record with intent: CAPTURE.
+        Binds cryptographic HMAC quote signature in custom_id.
         """
         req_id = idempotency_key or str(uuid.uuid4())
+        custom_id_val = f"{quote_id}:{quote_signature[:24]}" if quote_signature else f"{quote_id}:v1"
         
         if not self.is_configured:
             # Deterministic Sandbox Simulation for testing without live credentials
             mock_paypal_order_id = f"SANDBOX_ORDER_{uuid.uuid4().hex[:12].upper()}"
-            logger.info(f"[SIMULATED PAYPAL] Created order {mock_paypal_order_id} for {amount} {currency}")
+            logger.info(f"[SIMULATED PAYPAL] Created order {mock_paypal_order_id} for {amount} {currency} with custom_id {custom_id_val}")
             return {
                 "id": mock_paypal_order_id,
                 "status": "CREATED",
                 "intent": "CAPTURE",
                 "purchase_units": [{
                     "reference_id": quote_id,
+                    "custom_id": custom_id_val,
                     "amount": {"currency_code": currency, "value": f"{amount:.2f}"}
                 }],
                 "links": [
@@ -105,7 +110,7 @@ class PayPalClient:
             "purchase_units": [
                 {
                     "reference_id": quote_id,
-                    "custom_id": f"{quote_id}:v1",
+                    "custom_id": custom_id_val,
                     "soft_descriptor": "PAYPILOT*CH3",
                     "description": "PayPilot Agentic Commerce checkout",
                     "amount": {
@@ -211,5 +216,54 @@ class PayPalClient:
                 return res.json()
             else:
                 raise RuntimeError(f"Failed to fetch PayPal order: {res.status_code}")
+
+    async def verify_webhook_signature(
+        self,
+        auth_algo: Optional[str],
+        cert_url: Optional[str],
+        transmission_id: Optional[str],
+        transmission_sig: Optional[str],
+        transmission_time: Optional[str],
+        raw_body: str,
+        webhook_id: Optional[str] = None
+    ) -> bool:
+        """
+        Verifies incoming webhook transmission against PayPal's verification endpoint.
+        """
+        if not self.is_configured:
+            # When PayPal credentials are not configured, allow local sandbox/testing
+            return True
+
+        if not (auth_algo and cert_url and transmission_id and transmission_sig and transmission_time):
+            return False
+
+        try:
+            token = await self.get_access_token()
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}"
+            }
+            body_dict = json.loads(raw_body) if isinstance(raw_body, str) else raw_body
+            payload = {
+                "auth_algo": auth_algo,
+                "cert_url": cert_url,
+                "transmission_id": transmission_id,
+                "transmission_sig": transmission_sig,
+                "transmission_time": transmission_time,
+                "webhook_id": webhook_id or "PAYPILOT_SANDBOX_WEBHOOK",
+                "webhook_event": body_dict
+            }
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                res = await client.post(
+                    f"{self.base_url}/v1/notifications/verify-webhook-signature",
+                    headers=headers,
+                    json=payload
+                )
+                if res.status_code == 200:
+                    status = res.json().get("verification_status")
+                    return status == "SUCCESS"
+        except Exception as e:
+            logger.error(f"Error during PayPal webhook verification: {e}")
+        return False
 
 paypal_client = PayPalClient()

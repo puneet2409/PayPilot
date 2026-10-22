@@ -35,13 +35,18 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
   if (res.status === 401) {
     // Stale or invalidated token. Clear and retry once with a brand new session.
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    const oldSessionId = session.session_id;
     session = await api.getOrCreateSession(true);
     headers = {
       ...((options.headers as Record<string, string>) || {}),
       Authorization: `Bearer ${session.access_token}`,
     };
     const updatedUrl = url.replace(/sessions\/sess_[a-f0-9]+/, `sessions/${session.session_id}`);
-    res = await fetch(updatedUrl, { ...options, headers, signal });
+    let updatedBody = options.body;
+    if (typeof updatedBody === 'string' && oldSessionId) {
+      updatedBody = updatedBody.replace(new RegExp(oldSessionId, 'g'), session.session_id);
+    }
+    res = await fetch(updatedUrl, { ...options, headers, body: updatedBody, signal });
   }
   return res;
 }

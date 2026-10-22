@@ -61,6 +61,18 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
             <pre className="mt-1 text-[11px] text-slate-400 overflow-x-auto whitespace-pre-wrap font-mono bg-slate-950/40 p-1.5 rounded border border-slate-900">
               {JSON.stringify(ev.details, null, 2)}
             </pre>
+            {ev.entry_hash && (
+              <div className="mt-1.5 flex items-center gap-2 text-[10px] font-mono">
+                <span className="px-1.5 py-0.5 rounded bg-purple-950/60 border border-purple-500/30 text-purple-300">
+                  SHA-256: {ev.entry_hash.slice(0, 12)}…
+                </span>
+                {ev.prev_hash && (
+                  <span className="text-slate-500">
+                    prev: {ev.prev_hash.slice(0, 10)}…
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
       ))}

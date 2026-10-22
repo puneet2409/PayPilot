@@ -1,6 +1,6 @@
 import React from 'react';
 import type { PolicyEvaluateResponse } from '../types';
-import { ShieldCheck, ShieldAlert, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
+import { ShieldCheck, ShieldAlert, CheckCircle2, XCircle, Clock, Loader2, ExternalLink } from 'lucide-react';
 
 interface PolicyPanelProps {
   policyResult: PolicyEvaluateResponse | null;
@@ -230,9 +230,17 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
         </div>
       </div>
 
-      <div className="mt-4 rounded-lg border border-indigo-500/20 bg-indigo-950/20 px-3 py-2.5 text-xs text-indigo-100/90">
-        This check uses PayPilot demo-store inventory at <strong>${policyResult.item_price.toFixed(2)} {policyResult.currency}</strong>. A Channel3 retailer offer is separate and is not the price charged by this demo checkout.
-      </div>
+      {policyResult.is_external_retailer ? (
+        <div className="mt-4 rounded-lg border border-sky-500/30 bg-sky-950/20 px-3 py-2.5 text-xs text-sky-200 flex items-center justify-between">
+          <span>
+            Verified live merchant offer from <strong>{policyResult.merchant || 'retail partner'}</strong>. External store purchases are completed directly on the merchant's checkout domain.
+          </span>
+        </div>
+      ) : (
+        <div className="mt-4 rounded-lg border border-indigo-500/20 bg-indigo-950/20 px-3 py-2.5 text-xs text-indigo-100/90">
+          This check uses PayPilot demo-store inventory at <strong>${policyResult.item_price.toFixed(2)} {policyResult.currency}</strong> with instant PayPal sandbox checkout.
+        </div>
+      )}
 
       {/* Rules Checklist */}
       <div className="mt-4 space-y-2.5">
@@ -269,14 +277,30 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
               </div>
             </div>
 
-            {onProceedToCheckout && (
+            {policyResult.is_external_retailer ? (
+              policyResult.buy_url ? (
+                <a
+                  href={policyResult.buy_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-md transition-all flex items-center gap-1.5"
+                >
+                  <span>Buy on {policyResult.merchant || 'Store'}</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              ) : (
+                <span className="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs font-medium border border-slate-700">
+                  Direct Store Fulfillment
+                </span>
+              )
+            ) : onProceedToCheckout ? (
               <button
                 onClick={onProceedToCheckout}
                 className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow-md transition-all"
               >
                 Proceed to PayPal Checkout
               </button>
-            )}
+            ) : null}
           </div>
 
           <div className="pt-2 border-t border-slate-800 grid grid-cols-3 gap-2 text-[11px] text-slate-400">

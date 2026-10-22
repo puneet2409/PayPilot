@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.order import Order, Payment
 from app.services.audit_service import AuditService
+from app.integrations.paypal import paypal_client
 
 logger = logging.getLogger(__name__)
 
@@ -26,22 +27,37 @@ async def handle_paypal_webhook(
     Asynchronous Webhook Receiver for PayPal Events.
     Satisfies Section 5.1 of Embedded Financial Analytics Blueprint:
     - Receives asynchronous event streams (payment captures, order approvals, refunds)
-    - Verifies event headers & transmission metadata
+    - Cryptographically verifies event headers & transmission signature
     - Idempotently reconciles database state
-    - Always returns HTTP 200 OK to signal successful receipt and prevent exponential retry floods
+    - Returns HTTP 200 OK to signal successful receipt and prevent exponential retry floods
     """
+    raw_body_bytes = await request.body()
+    raw_body = raw_body_bytes.decode("utf-8")
     try:
-        payload = await request.json()
+        payload = json.loads(raw_body)
     except Exception as e:
         logger.warning(f"Malformed webhook JSON: {e}")
         return {"status": "ignored", "reason": "invalid_json"}
+
+    # Cryptographic Webhook Signature Verification
+    is_valid = await paypal_client.verify_webhook_signature(
+        auth_algo=paypal_auth_algo,
+        cert_url=paypal_cert_url,
+        transmission_id=paypal_transmission_id,
+        transmission_sig=paypal_transmission_sig,
+        transmission_time=paypal_transmission_time,
+        raw_body=raw_body
+    )
+    if not is_valid:
+        logger.warning(f"[PAYPAL WEBHOOK] Unauthorized: Signature verification failed for transmission {paypal_transmission_id}")
+        raise HTTPException(status_code=401, detail="Invalid PayPal webhook signature")
 
     event_id = payload.get("id", "UNKNOWN_EVENT")
     event_type = payload.get("event_type", "UNKNOWN_TYPE")
     resource = payload.get("resource", {})
     resource_type = payload.get("resource_type", "")
 
-    logger.info(f"[PAYPAL WEBHOOK] Received event {event_id}: {event_type} (type={resource_type})")
+    logger.info(f"[PAYPAL WEBHOOK] Verified event {event_id}: {event_type} (type={resource_type})")
 
     # Locate associated order via PayPal Order ID
     paypal_order_id = None
@@ -93,7 +109,8 @@ async def handle_paypal_webhook(
                 "webhook_event_id": event_id,
                 "capture_id": capture_id,
                 "amount": amount_val,
-                "currency": currency
+                "currency": currency,
+                "signature_verified": True
             }
         )
 
@@ -103,7 +120,7 @@ async def handle_paypal_webhook(
             event_type="WEBHOOK_ORDER_APPROVED",
             session_id=order.session_id,
             order_id=order.id,
-            details={"webhook_event_id": event_id, "paypal_order_id": paypal_order_id}
+            details={"webhook_event_id": event_id, "paypal_order_id": paypal_order_id, "signature_verified": True}
         )
 
     elif order:
@@ -113,7 +130,7 @@ async def handle_paypal_webhook(
             event_type=f"WEBHOOK_{event_type.replace('.', '_')}",
             session_id=order.session_id,
             order_id=order.id,
-            details={"webhook_event_id": event_id, "summary": payload.get("summary")}
+            details={"webhook_event_id": event_id, "summary": payload.get("summary"), "signature_verified": True}
         )
 
     # Mandatory HTTP 200 OK acknowledgment

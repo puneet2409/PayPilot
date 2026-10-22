@@ -18,6 +18,8 @@ class AuditTimelineEvent(BaseModel):
     event_type: str
     details: Dict[str, Any]
     created_at: str
+    prev_hash: Optional[str] = None
+    entry_hash: Optional[str] = None
 
 class AuditTimelineResponse(BaseModel):
     session_id: Optional[str] = None

@@ -98,6 +98,9 @@ export interface PolicyEvaluateResponse {
   estimated_tax?: number;
   shipping?: number;
   landed_cost?: number;
+  is_external_retailer?: boolean;
+  buy_url?: string;
+  merchant?: string;
 }
 
 export interface CheckoutCreateResponse {
@@ -125,6 +128,8 @@ export interface AuditTimelineEvent {
   event_type: string;
   details: Record<string, any>;
   created_at: string;
+  prev_hash?: string;
+  entry_hash?: string;
 }
 
 export interface AuthSession {

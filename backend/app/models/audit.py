@@ -11,4 +11,6 @@ class AuditEvent(Base):
     event_type = Column(String, index=True, nullable=False)
     # Event types include live PayPal captures and separately labelled local simulation completions.
     details_json = Column(Text, nullable=False, default="{}")
+    prev_hash = Column(String, nullable=True, default="GENESIS_HASH")
+    entry_hash = Column(String, nullable=False, default="GENESIS_HASH")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
