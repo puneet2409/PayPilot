@@ -1,15 +1,16 @@
 import React from 'react';
 import {
   ShoppingBag,
+  ShieldCheck,
   CreditCard,
   History,
-  KeyRound,
-  FileText,
+  Layers,
+  FileCode,
   X
 } from 'lucide-react';
 import { PayPalLogo } from './PayPalLogo';
 
-export type NavView = 'home' | 'orders' | 'logs' | 'credentials' | 'docs';
+export type NavView = 'shop' | 'policies' | 'orders' | 'audit' | 'merchant';
 
 interface SidebarProps {
   currentView: NavView;
@@ -30,31 +31,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const navItems: { id: NavView; label: string; icon: React.ReactNode; badge?: string | number }[] = [
     {
-      id: 'home',
-      label: 'Shopping Assistant',
+      id: 'shop',
+      label: 'Shop & Discover',
       icon: <ShoppingBag className="w-4 h-4" />
     },
     {
+      id: 'policies',
+      label: 'Purchase Guardrails',
+      icon: <ShieldCheck className="w-4 h-4" />
+    },
+    {
       id: 'orders',
-      label: 'Orders & Payments',
+      label: 'Orders & Receipts',
       icon: <CreditCard className="w-4 h-4" />,
       badge: ordersCount > 0 ? ordersCount : undefined
     },
     {
-      id: 'logs',
-      label: 'Activity Log',
+      id: 'audit',
+      label: 'Activity & Audit Log',
       icon: <History className="w-4 h-4" />,
       badge: auditCount > 0 ? auditCount : undefined
     },
     {
-      id: 'credentials',
-      label: 'API Credentials',
-      icon: <KeyRound className="w-4 h-4" />
-    },
-    {
-      id: 'docs',
-      label: 'API Documentation',
-      icon: <FileText className="w-4 h-4" />
+      id: 'merchant',
+      label: 'Merchant Analytics',
+      icon: <Layers className="w-4 h-4" />
     },
   ];
 
@@ -76,22 +77,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         <div className="p-5 flex flex-col flex-1 overflow-y-auto">
           {/* Logo & Close Button (mobile) */}
-          <div className="flex items-center justify-between pb-4">
+          <div className="flex items-center justify-between pb-3">
             <div
               onClick={() => {
-                onSelectView('home');
+                onSelectView('shop');
                 onCloseMobile();
               }}
               className="flex items-center gap-2.5 cursor-pointer group"
-              title="PayPilot Home"
+              title="PayPilot — Consent-First Agentic Commerce"
             >
               <PayPalLogo className="w-7 h-8 group-hover:scale-105 transition-transform" />
               <div>
                 <span className="text-xl font-extrabold tracking-tight text-[#001C3D] block leading-none">
-                  PayPal
+                  PayPilot
                 </span>
-                <span className="text-[10px] font-bold text-[#0057FF] tracking-wider uppercase">
-                  PayPilot AI
+                <span className="text-[10px] font-bold text-[#0057FF] tracking-wide uppercase">
+                  Agentic Commerce
                 </span>
               </div>
             </div>
@@ -103,17 +104,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-          {/* Sandbox / Live Toggle Pill (Authentic PayPal Developer Design) */}
+          {/* Environment Status Pill */}
           <div className="mt-1 mb-6 flex items-center bg-slate-100 p-0.5 rounded-full border border-slate-200 w-fit">
-            <span className="px-3.5 py-1 rounded-full bg-[#001435] text-white text-[11px] font-bold shadow-2xs">
+            <span className="px-3 py-1 rounded-full bg-[#003087] text-white text-[11px] font-bold shadow-2xs">
               Sandbox
             </span>
-            <span className="px-3.5 py-1 text-slate-500 text-[11px] font-semibold">
+            <span className="px-3 py-1 text-slate-500 text-[11px] font-semibold">
               Live
             </span>
           </div>
 
-          {/* Navigation Items (Real features only) */}
+          {/* PayPilot Feature Navigation */}
           <nav className="space-y-1">
             {navItems.map((item) => {
               const isActive = currentView === item.id;
@@ -153,15 +154,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        {/* Sidebar Footer: Orders v2 Protocol Status */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/70">
-          <div className="flex items-center gap-2">
+        {/* Sidebar Footer: OpenAPI Docs & Status */}
+        <div className="p-4 border-t border-slate-100 bg-slate-50/70 space-y-2">
+          <a
+            href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-2 text-xs font-semibold text-slate-700 hover:text-[#0057FF] transition-colors"
+          >
+            <FileCode className="w-4 h-4 text-[#0057FF]" />
+            <span>OpenAPI 3.1 Spec</span>
+          </a>
+          <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60 text-[11px] text-slate-500 font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-[11px] font-bold text-slate-800">Orders v2 Sandbox</span>
+            <span>PayPal Orders v2 Connected</span>
           </div>
-          <p className="text-[10px] text-slate-500 mt-0.5">
-            Deterministic Spending Policies Active
-          </p>
         </div>
       </aside>
     </>

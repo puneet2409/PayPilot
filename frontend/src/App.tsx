@@ -11,7 +11,6 @@ import type {
   SuggestedAction
 } from './types';
 import { Sidebar, type NavView } from './components/Sidebar';
-import { CredentialsView } from './components/CredentialsView';
 import { ChatPanel } from './components/ChatPanel';
 import { ProductCard } from './components/ProductCard';
 import { PolicyPanel } from './components/PolicyPanel';
@@ -19,18 +18,21 @@ import { ApprovalPanel } from './components/ApprovalPanel';
 import { OrderStatus } from './components/OrderStatus';
 import { AuditTimeline } from './components/AuditTimeline';
 import { OrdersLedger } from './components/OrdersLedger';
+import { PayPalLogo } from './components/PayPalLogo';
 import {
   Menu,
   Search,
   RotateCcw,
   CreditCard,
-  Code2,
-  ExternalLink,
   History,
   ShoppingBag,
   Layers,
   Sparkles,
-  Loader2
+  Loader2,
+  ShieldCheck,
+  CheckCircle2,
+  Lock,
+  ArrowRight
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -38,7 +40,7 @@ export const App: React.FC = () => {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const sessionId = session?.session_id ?? '';
 
-  const [currentView, setCurrentView] = useState<NavView>('home');
+  const [currentView, setCurrentView] = useState<NavView>('shop');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [globalSearchInput, setGlobalSearchInput] = useState('');
 
@@ -322,7 +324,7 @@ export const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#F5F7FA] text-slate-900 flex font-sans">
-      {/* Authentic PayPal Developer Side Menu */}
+      {/* PayPal Design System Sidebar */}
       <Sidebar
         currentView={currentView}
         onSelectView={setCurrentView}
@@ -334,7 +336,7 @@ export const App: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
+        {/* Header */}
         <header className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between gap-4 shadow-2xs">
           <div className="flex items-center gap-3 shrink-0">
             <button
@@ -344,186 +346,96 @@ export const App: React.FC = () => {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-slate-900 text-sm sm:text-base tracking-tight">
-                Puneet Agarwal
-              </span>
-              <span className="hidden sm:inline px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-[#0057FF] border border-blue-200/80">
-                Developer Portal
-              </span>
+            <div
+              onClick={() => setCurrentView('shop')}
+              className="flex items-center gap-2.5 cursor-pointer"
+            >
+              <PayPalLogo className="w-6 h-7" />
+              <div>
+                <span className="font-black text-lg text-[#001C3D] tracking-tight block leading-none">
+                  PayPilot
+                </span>
+                <span className="text-[10px] font-bold text-[#0057FF] uppercase tracking-wider">
+                  Consent-First AI Commerce
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Centered Pill Search Bar */}
-          <div className="flex-1 max-w-md mx-2 hidden md:block">
+          {/* Centered Product Search Input */}
+          <div className="flex-1 max-w-lg mx-2 hidden md:block">
             <div className="relative">
               <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
               <input
                 type="text"
-                placeholder="Ask us anything or search products, policies, orders..."
+                placeholder="Search 25,000+ stores, products, or budget (e.g. Wireless mouse under $80)..."
                 value={globalSearchInput}
                 onChange={(e) => setGlobalSearchInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && globalSearchInput.trim()) {
-                    setCurrentView('home');
+                    setCurrentView('shop');
                     handleSendMessage(globalSearchInput.trim());
                   }
                 }}
-                className="w-full pl-9 pr-4 py-1.5 bg-slate-50 border border-slate-200 rounded-full text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0057FF] focus:bg-white transition-all shadow-2xs"
+                className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-full text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-[#0057FF] focus:bg-white transition-all shadow-2xs"
               />
             </div>
           </div>
 
-          {/* Top Right Controls & Profile */}
+          {/* Header Status & Actions */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-700 shadow-2xs">
+            <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs">
               <span className={`w-2 h-2 rounded-full ${channel3Configured ? 'bg-sky-500 animate-pulse' : 'bg-slate-400'}`}></span>
-              <span>{channel3Configured ? 'Channel3 Live' : 'Channel3 Cache'}</span>
+              <span>{channel3Configured ? 'Channel3 Live (25k+ Stores)' : 'Channel3 Cache'}</span>
             </div>
 
-            <div className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 text-[11px] font-semibold text-slate-700 shadow-2xs">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs">
               <span className={`w-2 h-2 rounded-full ${isPayPalConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
               <span>{paypalStatus}</span>
             </div>
 
             <button
               onClick={handleReset}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
               title="Reset search and selection"
             >
-              <RotateCcw className="w-4 h-4 text-[#0057FF]" />
+              <RotateCcw className="w-3.5 h-3.5 text-[#0057FF]" />
+              <span className="hidden sm:inline">Reset</span>
             </button>
 
-            {/* Profile Avatar Circle */}
-            <div
-              onClick={() => setCurrentView('credentials')}
-              className="w-8 h-8 rounded-full bg-[#2C2E2F] text-white flex items-center justify-center text-xs font-bold shadow-2xs cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all shrink-0"
-              title="Puneet Agarwal — Sandbox Developer Account"
-            >
-              PA
+            <div className="hidden xl:flex items-center text-[11px] text-slate-500 font-mono px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200">
+              {session ? `Session: ${sessionId.slice(0, 10)}...` : 'Securing…'}
             </div>
           </div>
         </header>
 
-        {/* Purple Sandbox Mode Strip */}
-        <div className="w-full bg-[#7B61FF] text-white py-1.5 px-4 text-center text-xs font-semibold shadow-2xs flex items-center justify-center gap-2">
-          <span>You're in sandbox mode.</span>
-          <span className="hidden sm:inline text-white/80">•</span>
-          <span className="hidden sm:inline text-white/95 text-[11px] font-medium">
-            Orders v2 Sandbox Protocol • Deterministic AI Guardrails Active
-          </span>
+        {/* PayPal Signature Gradient Accent Ribbon */}
+        <div className="w-full bg-gradient-to-r from-[#003087] via-[#0057FF] to-[#0070BA] text-white py-2 px-6 flex flex-wrap items-center justify-between text-xs font-medium shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="font-extrabold uppercase text-[10px] bg-white/20 px-2 py-0.5 rounded shadow-2xs">
+              Autonomous Commerce Architecture
+            </span>
+            <span className="hidden md:inline text-white/90">
+              Multi-Store Discovery • Deterministic Guardrails • Orders v2 Human Consent
+            </span>
+          </div>
+          <div className="flex items-center gap-3 text-[11px] text-white/95 font-medium">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              Orders v2 Sandbox: Active
+            </span>
+            <span className="hidden md:inline text-white/60">•</span>
+            <span className="hidden md:flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-sky-300"></span>
+              Policy Guardrails: Enforced
+            </span>
+          </div>
         </div>
 
-        {/* Content Container */}
+        {/* Main Application Content */}
         <main className="flex-1 p-4 sm:p-6 max-w-7xl w-full mx-auto">
-          {currentView === 'credentials' && (
-            <CredentialsView
-              paypalConfigured={isPayPalConfigured}
-              channel3Configured={channel3Configured ?? false}
-            />
-          )}
-
-          {currentView === 'logs' && (
-            <div className="space-y-5">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-[#001C3D]">Activity Log & Provenance Trail</h1>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Immutable cryptographically-chained SHA-256 event provenance records.
-                  </p>
-                </div>
-                <button
-                  onClick={refreshAuditEvents}
-                  className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0057FF] border border-blue-200 text-xs font-bold transition-colors shadow-2xs"
-                >
-                  ↻ Refresh Events ({auditEvents.length})
-                </button>
-              </div>
-              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
-                <AuditTimeline events={auditEvents} />
-              </div>
-            </div>
-          )}
-
-          {currentView === 'orders' && (
-            <div className="space-y-5">
-              <div className="rounded-2xl border border-blue-200 bg-white p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-[#001C3D] flex items-center gap-2">
-                    <CreditCard className="w-6 h-6 text-[#0057FF]" />
-                    Orders & Payments Ledger
-                  </h1>
-                  <p className="text-xs text-slate-600 mt-0.5">
-                    Live PayPal Sandbox Transactions • Orders v2 Captures & Status Reconciliation
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={refreshOrders}
-                    className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0057FF] border border-blue-200 text-xs font-bold transition-colors shadow-2xs"
-                  >
-                    ↻ Refresh Orders ({orders.length})
-                  </button>
-                </div>
-              </div>
-
-              <OrdersLedger
-                orders={orders}
-                sessionId={sessionId}
-                onCancelOrder={handleCancelOrder}
-                onRefresh={refreshOrders}
-              />
-            </div>
-          )}
-
-          {currentView === 'docs' && (
-            <div className="space-y-5">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-[#001C3D] flex items-center gap-2">
-                    <Code2 className="w-6 h-6 text-[#0057FF]" />
-                    PayPilot Agentic Commerce API
-                  </h1>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    APIMatic-compliant OpenAPI 3.1 specification and endpoint documentation.
-                  </p>
-                </div>
-                <a
-                  href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-4 py-2 rounded-xl bg-[#0057FF] hover:bg-[#0047D4] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs"
-                >
-                  <span>Open Interactive Swagger UI</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                  <h3 className="font-bold text-sm text-[#001C3D] mb-1">POST /api/v1/agent/turn</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    AI agent shopping turn combining live Channel3 product search and Gemini 2.0 Flash intent analysis.
-                  </p>
-                </div>
-                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                  <h3 className="font-bold text-sm text-[#001C3D] mb-1">POST /api/v1/policies/evaluate</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    Deterministic policy verification enforcing strict price limits, landed cost calculation, and locked HMAC quotes.
-                  </p>
-                </div>
-                <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
-                  <h3 className="font-bold text-sm text-[#001C3D] mb-1">POST /api/v1/checkout/create</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    Server-to-server PayPal Orders v2 creation bound to verified quote with drift auto-void defense.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentView === 'home' && (
-            /* Main 2-Column Shopping & Checkout Grid */
+          {/* VIEW: Shop & Discover (Core PayPilot Agentic Experience) */}
+          {currentView === 'shop' && (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* Left Column (7 cols): Chat Assistant & Product Discovery */}
               <section className="lg:col-span-7 flex flex-col gap-6">
@@ -764,9 +676,173 @@ export const App: React.FC = () => {
               </section>
             </div>
           )}
+
+          {/* VIEW: Purchase Guardrails (Deterministic Policy Rules & Testbed) */}
+          {currentView === 'policies' && (
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-blue-200 bg-white p-6 shadow-xs">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#0057FF]">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl sm:text-2xl font-bold text-[#001C3D]">
+                      Deterministic Purchase Policy Engine
+                    </h1>
+                    <p className="text-xs text-slate-600">
+                      Code-level financial safety guardrails that execute BEFORE any funds move. The AI recommends — the policy engine permits or blocks.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="text-xs font-bold text-[#003087] flex items-center gap-1.5 mb-1">
+                      <Lock className="w-3.5 h-3.5 text-[#0057FF]" /> Strict Budget Ceilings
+                    </span>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Every candidate is tested against <code className="font-mono bg-white px-1 py-0.5 rounded text-slate-800">price &lt;= budget</code>. If exceeded, the purchase quote is rejected.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="text-xs font-bold text-[#003087] flex items-center gap-1.5 mb-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> True Landed Cost Calculation
+                    </span>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Calculates state tax (8.25%) + standard shipping. Pre-capture checks prevent price-drift manipulation.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="text-xs font-bold text-[#003087] flex items-center gap-1.5 mb-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-purple-600" /> Anti-Prompt-Injection Shield
+                    </span>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      External catalog data from Channel3 is sanitized against prompt attacks to protect payment parameters.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Interactive Tests */}
+                <div className="mt-6 pt-5 border-t border-slate-200 flex flex-wrap items-center gap-3">
+                  <span className="text-xs font-bold text-slate-700">Quick Test Scenarios:</span>
+                  <button
+                    onClick={() => {
+                      setCurrentView('shop');
+                      handleSendMessage('Find a wireless headset under $50 with active noise cancelling', 50);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors flex items-center gap-1.5"
+                  >
+                    <span>Test $50 Budget Block Rejection</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrentView('shop');
+                      handleSendMessage('Find a wireless headset under $100 with multipoint Bluetooth', 100);
+                    }}
+                    className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0057FF] border border-blue-200 text-xs font-bold transition-colors flex items-center gap-1.5"
+                  >
+                    <span>Test $100 Approved Checkout Flow</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: Orders & Receipts */}
+          {currentView === 'orders' && (
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-blue-200 bg-white p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#001C3D] flex items-center gap-2">
+                    <CreditCard className="w-6 h-6 text-[#0057FF]" />
+                    Orders & Receipts Ledger
+                  </h1>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Live PayPal Sandbox Transactions • Orders v2 Captures & Status Reconciliation
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={refreshOrders}
+                    className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0057FF] border border-blue-200 text-xs font-bold transition-colors shadow-2xs"
+                  >
+                    ↻ Refresh Orders ({orders.length})
+                  </button>
+                </div>
+              </div>
+
+              <OrdersLedger
+                orders={orders}
+                sessionId={sessionId}
+                onCancelOrder={handleCancelOrder}
+                onRefresh={refreshOrders}
+              />
+            </div>
+          )}
+
+          {/* VIEW: Activity & Audit Log */}
+          {currentView === 'audit' && (
+            <div className="space-y-5">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-200">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#001C3D]">
+                    Activity Log & Cryptographic Provenance
+                  </h1>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Immutable SHA-256 hash-chained event timeline recording every recommendation, policy check, and capture.
+                  </p>
+                </div>
+                <button
+                  onClick={refreshAuditEvents}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0057FF] border border-blue-200 text-xs font-bold transition-colors shadow-2xs"
+                >
+                  ↻ Refresh Events ({auditEvents.length})
+                </button>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs">
+                <AuditTimeline events={auditEvents} />
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: Merchant Analytics (AG Studio Blueprint) */}
+          {currentView === 'merchant' && (
+            <div className="space-y-5">
+              <div className="rounded-2xl border border-blue-200 bg-white p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-bold text-[#001C3D] flex items-center gap-2">
+                    <Layers className="w-6 h-6 text-[#0057FF]" />
+                    Merchant & B2B Command Center
+                  </h1>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Embedded Financial Analytics Blueprint (AG Studio) • In-Memory Relational Joins & Real-Time Metrics
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={refreshOrders}
+                    className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0057FF] border border-blue-200 text-xs font-bold transition-colors shadow-2xs"
+                  >
+                    ↻ Refresh Analytics Data
+                  </button>
+                </div>
+              </div>
+
+              <OrdersLedger
+                orders={orders}
+                sessionId={sessionId}
+                onCancelOrder={handleCancelOrder}
+                onRefresh={refreshOrders}
+              />
+            </div>
+          )}
         </main>
 
-        {/* Authentic PayPal Bottom Footer (Matching Screenshot 3) */}
+        {/* PayPal Developer Portal Style Minimalist Footer */}
         <footer className="border-t border-slate-200 bg-white py-8 px-6 mt-12 text-center text-xs text-slate-500 shadow-2xs">
           <div className="flex flex-wrap items-center justify-center gap-6 mb-3 font-semibold text-slate-600 text-xs">
             <a href="#reference" className="hover:underline hover:text-[#0057FF]">Reference</a>
