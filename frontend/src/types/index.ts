@@ -93,6 +93,8 @@ export interface PolicyEvaluateResponse {
   checks: PolicyCheckItem[];
   quote?: QuoteSummary;
   reason?: string;
+  rejection_reason?: string;
+  session_id?: string;
   estimated_tax?: number;
   shipping?: number;
   landed_cost?: number;

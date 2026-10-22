@@ -9,16 +9,42 @@ interface PolicyPanelProps {
   onProceedToCheckout?: () => void;
 }
 
+const getRejectionTitle = (reason?: string): string => {
+  if (!reason) return 'Purchase Policy Blocked';
+  const lower = reason.toLowerCase();
+  if (lower.includes('missing required attribute') || lower.includes('attribute') || lower.includes('feature')) {
+    return 'Feature Mismatch Alert (Missing Feature)';
+  }
+  if (lower.includes('prompt injection') || lower.includes('adversarial')) {
+    return 'Security Alert (Blocked by Shield)';
+  }
+  if (lower.includes('currency')) {
+    return 'Currency Mismatch Alert';
+  }
+  if (lower.includes('price') || lower.includes('budget') || lower.includes('ceiling') || lower.includes('exceeds')) {
+    return 'Spending Alert (Over Budget)';
+  }
+  return 'Purchase Policy Blocked';
+};
+
 const formatRuleName = (rule: string): string => {
+  const lower = rule.toLowerCase();
+  if (lower.startsWith('feature_req_')) {
+    const feat = lower.replace('feature_req_', '').replace(/_/g, ' ');
+    return `Required Feature (${feat})`;
+  }
   const map: Record<string, string> = {
     budget_cap: 'Budget Limit',
     budget_limit: 'Budget Limit',
-    active_status: 'In Stock & Available',
-    currency_match: 'Currency (USD)',
+    demo_catalogue_active: 'Product In-Stock',
+    store_inventory_active: 'Product In-Stock',
+    active_status: 'Product In-Stock',
+    currency_match: 'Currency Match (USD)',
     feature_verification: 'Verified Features',
     prompt_injection_shield: 'Price & Safety Shield',
+    buyer_approval_required: 'Buyer Approval Gate',
   };
-  return map[rule.toLowerCase()] || rule.replace(/_/g, ' ');
+  return map[lower] || rule.replace(/_/g, ' ');
 };
 
 export const PolicyPanel: React.FC<PolicyPanelProps> = ({
@@ -183,7 +209,7 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
           )}
           <div>
             <h4 className="text-base font-semibold text-slate-100">
-              {policyResult.eligible ? 'Safe to Buy (Within Budget)' : 'Spending Alert (Over Budget)'}
+              {policyResult.eligible ? 'Safe to Buy (Within Budget)' : getRejectionTitle(policyResult.rejection_reason || policyResult.reason)}
             </h4>
             <span className="text-xs text-slate-400">
               Automated Spending Guardrails • {policyResult.policy_version}

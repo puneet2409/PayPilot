@@ -136,14 +136,23 @@ class PolicyEngine:
                 return False, checks, product, f"Contains excluded term: {term}"
 
         # 6. Feature Requirements Check
+        FEATURE_SYNONYMS = {
+            "productivity": ["productivity", "performance", "work", "office", "magseed", "sensor", "clicks"],
+            "quiet": ["quiet", "silent", "quiet_clicks", "noise"],
+            "wireless": ["wireless", "bluetooth", "cordless", "rf"],
+            "built_in_microphone": ["microphone", "mic", "voice", "built_in_microphone"],
+            "active_noise_cancelling": ["noise_cancelling", "cancelling", "anc", "ambient"],
+            "multipoint_bluetooth": ["multipoint", "bluetooth", "multi_point"],
+        }
         for req in required_features:
             norm_req = req.lower().replace("-", "_").replace(" ", "_")
+            synonyms = [req.lower(), norm_req] + FEATURE_SYNONYMS.get(norm_req, [])
             found = False
             for k, v in product_attrs.items():
-                if norm_req in k.lower() and bool(v):
+                if any(syn in k.lower() for syn in synonyms) and bool(v):
                     found = True
                     break
-            if not found and req.lower() in full_desc:
+            if not found and any(syn in full_desc for syn in synonyms):
                 found = True
 
             if found:

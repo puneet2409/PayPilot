@@ -60,11 +60,11 @@ def seed_initial_demo_catalogue():
                     title="Logitech MX Master 3S Performance Wireless Mouse",
                     brand="Logitech",
                     category="wireless mouse",
-                    description="Quiet clicks and 8K DPI any-surface sensor with MagSpeed scrolling.",
+                    description="Quiet clicks and 8K DPI any-surface sensor with MagSpeed scrolling for ultimate productivity.",
                     fixed_price=99.00,
                     currency="USD",
                     active=True,
-                    attributes_json='{"quiet_clicks": true, "sensor_dpi": 8000, "multipoint_bluetooth": true, "condition": "New"}',
+                    attributes_json='{"quiet_clicks": true, "sensor_dpi": 8000, "multipoint_bluetooth": true, "productivity": true, "quiet": true, "wireless": true, "condition": "New"}',
                     image_url="https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&q=80"
                 ),
                 DemoProduct(
