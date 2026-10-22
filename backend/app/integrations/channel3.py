@@ -231,10 +231,16 @@ class Channel3Client:
                     observed_at=o.get("observed_at") or datetime.now(timezone.utc).isoformat()
                 ))
 
-            # Extract image url (singular or array)
-            image_url = p.get("image_url") or p.get("image")
-            if not image_url and p.get("images"):
-                image_url = p["images"][0] if isinstance(p["images"], list) else p["images"]
+            # Extract image url (singular, array, or dict with url)
+            raw_img = p.get("image_url") or p.get("image")
+            if not raw_img and p.get("images"):
+                raw_img = p["images"][0] if isinstance(p["images"], list) else p["images"]
+            if isinstance(raw_img, dict):
+                image_url = raw_img.get("url") or raw_img.get("src") or raw_img.get("link")
+            elif isinstance(raw_img, str):
+                image_url = raw_img
+            else:
+                image_url = None
 
             title = p.get("title", "Untitled Product")
             brand = p.get("brand")

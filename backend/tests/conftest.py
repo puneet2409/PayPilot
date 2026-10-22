@@ -1,8 +1,12 @@
 import os
 
-# Point the suite at a dedicated scratch database before any app module
-# (and therefore the engine) is imported, so tests never touch the dev DB.
+# Point the suite at a dedicated scratch database and isolated test credentials
+# so automated test runs execute deterministically without external approval blockers.
 os.environ["DATABASE_URL"] = "sqlite:///./paypilot_test.db"
+os.environ["PAYPAL_CLIENT_ID"] = ""
+os.environ["PAYPAL_CLIENT_SECRET"] = ""
+os.environ["CHANNEL3_API_KEY"] = ""
+os.environ["GEMINI_API_KEY"] = ""
 
 import pytest
 from fastapi.testclient import TestClient

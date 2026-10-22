@@ -173,7 +173,8 @@ class AgentOrchestrator:
                 config={
                     "response_mime_type": "application/json",
                     "response_schema": AgentIntent,
-                    "max_output_tokens": 300,
+                    "max_output_tokens": 500,
+                    "thinking_config": {"thinking_budget": 0},
                 },
             )
             parsed_value = getattr(response, "parsed", None) if response else None

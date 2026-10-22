@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+from unittest.mock import patch, PropertyMock
 
 def test_health_check(client):
     res = client.get("/health")
@@ -19,49 +20,52 @@ def test_discovery_search(client):
 
 def test_fallback_discovery_relevance(client):
     """Fallback catalogue must not leak unrelated items into narrow queries."""
-    res = client.post("/api/v1/discovery/search", json={
-        "query": "quiet wireless mouse",
-        "limit": 10
-    })
-    assert res.status_code == 200
-    titles = [r["title"] for r in res.json()["results"]]
-    assert titles, "expected at least one mouse match"
-    assert all("Mouse" in t for t in titles)
+    with patch("app.integrations.channel3.Channel3Client.is_configured", new_callable=PropertyMock, return_value=False):
+        res = client.post("/api/v1/discovery/search", json={
+            "query": "quiet wireless mouse",
+            "limit": 10
+        })
+        assert res.status_code == 200
+        titles = [r["title"] for r in res.json()["results"]]
+        assert titles, "expected at least one mouse match"
+        assert all("Mouse" in t for t in titles)
 
-    res2 = client.post("/api/v1/discovery/search", json={
-        "query": "wireless headset",
-        "limit": 10
-    })
-    titles2 = [r["title"] for r in res2.json()["results"]]
-    assert len(titles2) == 2
-    assert all("Mouse" not in t and "Dock" not in t for t in titles2)
+        res2 = client.post("/api/v1/discovery/search", json={
+            "query": "wireless headset",
+            "limit": 10
+        })
+        titles2 = [r["title"] for r in res2.json()["results"]]
+        assert len(titles2) == 2
+        assert all("Mouse" not in t and "Dock" not in t for t in titles2)
 
 def test_agent_turn_top_pick_within_budget(client):
-    res = client.post(f"/api/v1/agent/sessions/{client.test_session_id}/turn", json={
-        "message": "Find a wireless headset under $100 with multipoint Bluetooth and a good mic",
-        "user_budget": 100.0
-    })
-    assert res.status_code == 200
-    data = res.json()
-    assert data["recommendations"], "expected recommendations"
-    top = data["recommendations"][0]
-    assert top["within_budget"] is True
-    assert top["demo_sku"] == "HEADSET-DEMO-01"
-    feats = [f.lower() for f in top["verified_features"]]
-    assert any("multipoint" in f for f in feats)
-    assert any("microphone" in f for f in feats)
+    with patch("app.integrations.channel3.Channel3Client.is_configured", new_callable=PropertyMock, return_value=False):
+        res = client.post(f"/api/v1/agent/sessions/{client.test_session_id}/turn", json={
+            "message": "Find a wireless headset under $100 with multipoint Bluetooth and a good mic",
+            "user_budget": 100.0
+        })
+        assert res.status_code == 200
+        data = res.json()
+        assert data["recommendations"], "expected recommendations"
+        top = data["recommendations"][0]
+        assert top["within_budget"] is True
+        assert top["demo_sku"] == "HEADSET-DEMO-01"
+        feats = [f.lower() for f in top["verified_features"]]
+        assert any("multipoint" in f for f in feats)
+        assert any("microphone" in f for f in feats)
 
 def test_agent_turn_over_budget_top_pick_flagged(client):
     """Discovery surfaces candidates above budget; the policy engine blocks them."""
-    res = client.post(f"/api/v1/agent/sessions/{client.test_session_id}/turn", json={
-        "message": "Find a wireless headset under $50 with active noise cancelling",
-        "user_budget": 50.0
-    })
-    assert res.status_code == 200
-    data = res.json()
-    assert data["recommendations"], "over-budget candidates should still be visible"
-    assert data["recommendations"][0]["within_budget"] is False
-    assert "budget" in data["reply_text"].lower()
+    with patch("app.integrations.channel3.Channel3Client.is_configured", new_callable=PropertyMock, return_value=False):
+        res = client.post(f"/api/v1/agent/sessions/{client.test_session_id}/turn", json={
+            "message": "Find a wireless headset under $50 with active noise cancelling",
+            "user_budget": 50.0
+        })
+        assert res.status_code == 200
+        data = res.json()
+        assert data["recommendations"], "over-budget candidates should still be visible"
+        assert data["recommendations"][0]["within_budget"] is False
+        assert "budget" in data["reply_text"].lower()
 
 def test_policy_evaluation_success_and_quote(client):
     res = client.post("/api/v1/policies/evaluate", json={
