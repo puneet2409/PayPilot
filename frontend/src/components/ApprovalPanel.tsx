@@ -3,6 +3,7 @@ import type { QuoteSummary, CheckoutCreateResponse, CheckoutCaptureResponse } fr
 import { api } from '../api/client';
 import { ShieldAlert, Lock, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Ban, RotateCcw, X } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { PayPalLogo } from './PayPalLogo';
 
 interface ApprovalPanelProps {
   quote: QuoteSummary;
@@ -141,32 +142,32 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
   };
 
   return (
-    <div className="rounded-xl border border-blue-500/30 bg-slate-900/90 p-6 shadow-xl relative">
-      <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-600/20 text-blue-400 flex items-center justify-center font-bold">
-            P
+    <div className="rounded-2xl border border-blue-200/90 bg-white p-6 shadow-xs relative">
+      <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center p-1.5 shadow-2xs">
+            <PayPalLogo className="w-6 h-7" />
           </div>
           <div>
-            <h4 className="text-base font-semibold text-slate-100">PayPal Sandbox Checkout</h4>
-            <span className="text-xs text-slate-400">Secure Buyer-Approved Checkout</span>
+            <h4 className="text-base font-bold text-[#001C3D]">PayPal Sandbox Checkout</h4>
+            <span className="text-xs text-slate-500 font-medium">Consent-First Payment Gateway</span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className={`px-2.5 py-1 rounded text-xs font-semibold flex items-center gap-1 border ${
+          <span className={`px-2.5 py-1 rounded text-xs font-bold flex items-center gap-1 border ${
             isVoidedOrCancelled
-              ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-              : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+              ? 'bg-rose-50 text-rose-700 border-rose-300'
+              : 'bg-blue-50 text-[#0057FF] border-blue-200'
           }`}>
             <Lock className="w-3 h-3" />
-            {isVoidedOrCancelled ? 'ORDER CANCELLED' : isRealSandboxOrder ? 'Sandbox Mode' : 'Simulated Mode'}
+            {isVoidedOrCancelled ? 'ORDER CANCELLED' : isRealSandboxOrder ? 'Sandbox Live' : 'Simulated Mode'}
           </span>
 
           <button
             type="button"
             onClick={onBack}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
             title="Back to Product Selection"
           >
             <X className="w-4 h-4" />
@@ -175,10 +176,10 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
       </div>
 
       {/* Order Summary */}
-      <div className="mt-5 space-y-2 text-sm bg-slate-950/60 p-4 rounded-lg border border-slate-800">
+      <div className="mt-5 space-y-2.5 text-sm bg-slate-50 p-4 rounded-xl border border-slate-200">
         {(imageUrl || quote.image_url) && (
-          <div className="flex items-center gap-3 pb-3 border-b border-slate-800/80">
-            <div className="w-14 h-14 rounded-lg bg-slate-900 border border-slate-800 p-1 flex items-center justify-center shrink-0 overflow-hidden">
+          <div className="flex items-center gap-3 pb-3 border-b border-slate-200/80">
+            <div className="w-14 h-14 rounded-lg bg-white border border-slate-200 p-1 flex items-center justify-center shrink-0 overflow-hidden shadow-2xs">
               <img
                 src={imageUrl || quote.image_url}
                 alt={itemTitle}
@@ -187,55 +188,55 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
               />
             </div>
             <div className="flex-1 min-w-0">
-              <h5 className="text-xs font-semibold text-slate-200 truncate">{itemTitle}</h5>
-              <div className="text-[11px] text-slate-400 font-mono mt-0.5">SKU: {sku}</div>
+              <h5 className="text-xs font-bold text-slate-900 truncate">{itemTitle}</h5>
+              <div className="text-[11px] text-slate-500 font-mono mt-0.5">SKU: {sku}</div>
             </div>
           </div>
         )}
-        <div className="flex justify-between text-xs text-slate-400">
+        <div className="flex justify-between text-xs text-slate-500">
           <span>Merchant</span>
-          <span className="text-slate-200 font-medium">PayPilot Demo Store</span>
+          <span className="text-slate-800 font-bold">PayPilot Demo Store</span>
         </div>
-        <div className="flex justify-between text-xs text-slate-400">
+        <div className="flex justify-between text-xs text-slate-500">
           <span>Item</span>
-          <span className="text-slate-200 font-medium truncate max-w-[200px]">{itemTitle}</span>
+          <span className="text-slate-800 font-semibold truncate max-w-[200px]">{itemTitle}</span>
         </div>
-        <div className="flex justify-between text-xs text-slate-400">
+        <div className="flex justify-between text-xs text-slate-500">
           <span>SKU</span>
-          <span className="text-slate-200 font-mono">{sku}</span>
+          <span className="text-slate-700 font-mono">{sku}</span>
         </div>
-        <div className="flex justify-between text-xs text-slate-400">
+        <div className="flex justify-between text-xs text-slate-500">
           <span>Item Subtotal</span>
-          <span className="text-slate-200 font-medium">
+          <span className="text-slate-800 font-semibold">
             ${(quote.item_price ?? quote.amount).toFixed(2)} {quote.currency}
           </span>
         </div>
-        <div className="flex justify-between text-xs text-slate-400">
+        <div className="flex justify-between text-xs text-slate-500">
           <span>Est. Sales Tax (8.25%)</span>
-          <span className="text-slate-200 font-medium">
+          <span className="text-slate-800 font-semibold">
             ${(quote.estimated_tax ?? quote.amount * 0.0825).toFixed(2)}
           </span>
         </div>
-        <div className="flex justify-between text-xs text-slate-400">
+        <div className="flex justify-between text-xs text-slate-500">
           <span>Shipping</span>
-          <span className="text-emerald-400 font-medium">
+          <span className="text-emerald-700 font-bold">
             {(quote.shipping ?? (quote.amount >= 50 ? 0 : 5.99)) === 0
               ? 'FREE ($50+ promo)'
               : `$${(quote.shipping ?? 5.99).toFixed(2)}`}
           </span>
         </div>
-        <div className="pt-2 border-t border-slate-800 flex justify-between text-base font-bold text-white">
-          <span>Authoritative PayPal Charge</span>
-          <span className="text-emerald-400">${quote.amount.toFixed(2)} {quote.currency}</span>
+        <div className="pt-2.5 border-t border-slate-200 flex justify-between text-base font-extrabold text-[#001C3D]">
+          <span>Authoritative Total Charge</span>
+          <span className="text-[#003087] text-lg font-black">${quote.amount.toFixed(2)} {quote.currency}</span>
         </div>
       </div>
-      <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
-        Price locked at <strong>${quote.amount.toFixed(2)} {quote.currency}</strong>. Maximum landed ceiling verified with itemized tax & shipping.
+      <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+        Price locked at <strong>${quote.amount.toFixed(2)} {quote.currency}</strong>. Guaranteed with verified itemized landed cost ceiling.
       </p>
 
       {error && (
-        <div className="mt-4 p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-xs text-rose-300 flex items-center gap-2">
-          <ShieldAlert className="w-4 h-4 shrink-0" />
+        <div className="mt-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center gap-2">
+          <ShieldAlert className="w-4 h-4 shrink-0 text-rose-600" />
           <span>{error}</span>
         </div>
       )}
@@ -243,18 +244,18 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
       {/* Case 1: Order Voided by Guardian or Cancelled by User */}
       {isVoidedOrCancelled ? (
         <div className="mt-6 space-y-4">
-          <div className="p-4 rounded-xl bg-rose-950/30 border border-rose-500/30 text-xs text-rose-200 space-y-2">
-            <div className="flex items-center gap-2 font-semibold text-rose-300 text-sm">
-              <Ban className="w-4 h-4 text-rose-400" />
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 space-y-2">
+            <div className="flex items-center gap-2 font-bold text-rose-800 text-sm">
+              <Ban className="w-4 h-4 text-rose-600" />
               <span>
                 {autoVoidMessage ? 'Order Auto-Voided by Price Protection' : 'Checkout Order Cancelled'}
               </span>
             </div>
-            <p className="text-[11px] leading-relaxed text-slate-300">
+            <p className="text-xs leading-relaxed text-rose-700">
               {autoVoidMessage || 'This checkout order has been safely cancelled. No funds were captured or transferred from your PayPal account.'}
             </p>
             {createdOrder && (
-              <div className="text-[10px] text-slate-400 font-mono pt-1">
+              <div className="text-[10px] text-slate-500 font-mono pt-1">
                 Reference ID: {createdOrder.paypal_order_id} ({createdOrder.order_id})
               </div>
             )}
@@ -264,7 +265,7 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
             <button
               type="button"
               onClick={onBack}
-              className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-md flex items-center justify-center gap-1.5"
+              className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-[#0057FF] hover:bg-[#0043CE] text-white transition-all shadow-xs flex items-center justify-center gap-1.5"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back to Store Items</span>
@@ -273,9 +274,9 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
               <button
                 type="button"
                 onClick={onReset}
-                className="w-full py-2.5 px-4 rounded-xl font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 px-4 rounded-xl font-bold text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition-all flex items-center justify-center gap-1.5"
               >
-                <RotateCcw className="w-3.5 h-3.5 text-blue-400" />
+                <RotateCcw className="w-3.5 h-3.5 text-[#0057FF]" />
                 <span>Start New Search</span>
               </button>
             )}
@@ -287,16 +288,16 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
           <button
             onClick={handleInitiatePayPalOrder}
             disabled={isProcessing}
-            className="w-full py-3 px-4 rounded-xl font-semibold text-sm bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3.5 px-4 rounded-xl font-extrabold text-sm bg-[#0057FF] hover:bg-[#0043CE] active:bg-[#003087] text-white transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isProcessing ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin text-white" />
                 <span>Preparing PayPal Orders v2 Session...</span>
               </>
             ) : (
               <>
-                <span>1. Prepare PayPal Checkout</span>
+                <span>1. Generate PayPal Sandbox Order</span>
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
@@ -306,55 +307,55 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
             type="button"
             onClick={onBack}
             disabled={isProcessing}
-            className="w-full py-2 px-3 text-xs text-slate-400 hover:text-slate-200 transition-colors flex items-center justify-center gap-1.5"
+            className="w-full py-2 px-3 text-xs text-slate-600 hover:text-slate-900 transition-colors flex items-center justify-center gap-1.5 font-medium"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Back to Product Selection</span>
           </button>
 
           <p className="text-[11px] text-slate-500 text-center">
-            Prepares a secure PayPal order with verified pricing.
+            Creates verified PayPal order via PayPal Orders v2 REST API.
           </p>
         </div>
       ) : (
         /* Case 3: Step 2 - Buyer Approval via PayPal SDK or Simulated */
         <div className="mt-6 space-y-4">
-          <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-300 flex items-center justify-between">
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
               <span>
-                <span className="font-semibold">PayPal Order Created:</span>{' '}
-                <code className="text-white font-mono">{createdOrder.paypal_order_id}</code>
+                <span className="font-bold">PayPal Order Created:</span>{' '}
+                <code className="text-emerald-950 font-mono font-semibold">{createdOrder.paypal_order_id}</code>
               </span>
             </div>
-            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[10px]">
+            <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono text-[10px] font-bold">
               {createdOrder.status}
             </span>
           </div>
 
           {/* Pre-Capture Price Spike Test Guardian */}
-          <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="font-semibold text-amber-300 flex items-center gap-1.5">
-                <ShieldAlert className="w-3.5 h-3.5" /> Demo Test: Price-Spike Protection
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-bold text-amber-900 flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4 text-amber-600" /> Price-Spike Protection
               </span>
               <button
                 type="button"
                 onClick={handleSimulatePriceDrift}
                 disabled={isProcessing}
-                className="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 border border-amber-500/30 font-semibold text-[11px] transition-all disabled:opacity-50"
+                className="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 font-bold text-[11px] transition-all disabled:opacity-50"
               >
-                Simulate Price Spike (Auto-Cancel)
+                Test Price Spike (Auto-Cancel)
               </button>
             </div>
-            <p className="text-[10px] text-slate-400 mt-1">
-              Simulates what happens if a store hikes prices right before payment. Demonstrates PayPilot auto-cancelling the order to protect your money.
+            <p className="text-[11px] text-amber-800 mt-1 leading-relaxed">
+              Demonstrates what happens if a store unexpectedly hikes prices right before payment capture. PayPilot auto-voids the order to safeguard buyer funds.
             </p>
           </div>
 
           {canShowPayPalApproval ? (
             /* Real PayPal Buttons SDK */
-            <div className="rounded-lg bg-white p-4">
+            <div className="rounded-xl bg-slate-50 border border-slate-200 p-4">
               <PayPalScriptProvider options={paypalInitOptions}>
                 <PayPalButtons
                   style={{ layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' }}
@@ -384,60 +385,60 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
                 />
               </PayPalScriptProvider>
               <p className="text-[11px] text-slate-500 text-center mt-2">
-                PayPal JS SDK handles buyer authentication and consent.
+                Official PayPal JS SDK handles buyer authentication and consent.
               </p>
             </div>
           ) : isRealSandboxOrder ? (
-            <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-xs text-amber-200">
+            <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-xs text-amber-900">
               The backend created a real PayPal Sandbox order, but this frontend is missing
-              <code className="mx-1 rounded bg-slate-950/70 px-1 py-0.5">VITE_PAYPAL_CLIENT_ID</code>.
-              Add the matching Sandbox client ID and rebuild the frontend to show the buyer approval button.
+              <code className="mx-1 rounded bg-amber-100 px-1 py-0.5 font-bold">VITE_PAYPAL_CLIENT_ID</code>.
+              Add the matching Sandbox client ID to show the buyer approval button.
             </div>
           ) : (
             /* Simulated mode for local dev without credentials */
-            <>
+            <div className="space-y-2">
               <button
                 onClick={handleSimulatedCapture}
                 disabled={isProcessing}
-                className="w-full py-3.5 px-4 rounded-xl font-bold text-sm bg-[#FFC439] hover:bg-[#F2BA36] text-[#003087] transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3.5 px-4 rounded-xl font-black text-sm bg-[#FFC439] hover:bg-[#F2BA36] active:bg-[#E5A822] text-[#003087] transition-all shadow-sm flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {isProcessing ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin text-[#003087]" />
                     <span>Capturing Payment on PayPal Server...</span>
                   </>
                 ) : (
                   <>
-                    <span className="italic font-extrabold text-base">PayPal</span>
+                    <span className="italic font-black text-base tracking-tighter">PayPal</span>
                     <span>Approve &amp; Pay ${quote.amount.toFixed(2)}</span>
                   </>
                 )}
               </button>
-              <p className="text-[10px] text-amber-400/70 text-center">
-                Simulated checkout — configure PayPal Sandbox credentials to demonstrate a real PayPal approval
+              <p className="text-[11px] text-slate-500 text-center">
+                Simulated checkout mode — set <code className="text-[#0057FF] font-semibold">VITE_PAYPAL_CLIENT_ID</code> to enable live PayPal buttons.
               </p>
-            </>
+            </div>
           )}
 
           {/* Cancellation Option for User */}
-          <div className="pt-2 border-t border-slate-800">
+          <div className="pt-2 border-t border-slate-200">
             <button
               type="button"
               onClick={handleUserCancel}
               disabled={isProcessing}
-              className="w-full py-2.5 px-3 rounded-xl border border-slate-700/80 hover:border-rose-500/50 bg-slate-800/40 hover:bg-rose-950/20 text-slate-300 hover:text-rose-300 text-xs font-medium transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              className="w-full py-2.5 px-3 rounded-xl border border-slate-300 hover:border-rose-400 bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-700 text-xs font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isProcessing ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <Ban className="w-3.5 h-3.5 text-rose-400" />
+                <Ban className="w-3.5 h-3.5 text-rose-500" />
               )}
               <span>Cancel This Order &amp; Return</span>
             </button>
           </div>
 
-          <p className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1">
-            <Lock className="w-3 h-3 text-emerald-400" />
+          <p className="text-[11px] text-slate-500 text-center flex items-center justify-center gap-1">
+            <Lock className="w-3 h-3 text-emerald-600" />
             Explicit buyer approval consent is required. No funds move autonomously.
           </p>
         </div>

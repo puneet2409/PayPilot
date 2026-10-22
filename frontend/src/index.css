@@ -1,7 +1,17 @@
 @import "tailwindcss";
 
 @layer base {
+  :root {
+    --paypal-navy: #003087;
+    --paypal-blue: #0057FF;
+    --paypal-bright: #0070E0;
+    --paypal-gold: #FFC439;
+    --paypal-dark: #001C3D;
+  }
+
   body {
-    @apply bg-slate-950 text-slate-100 antialiased font-sans min-h-screen;
+    @apply bg-[#F5F7FA] text-slate-900 antialiased font-sans min-h-screen selection:bg-blue-100 selection:text-blue-900;
+    background-color: #F5F7FA;
+    color: #0F172A;
   }
 }

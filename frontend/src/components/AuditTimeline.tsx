@@ -49,7 +49,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
 
   if (events.length === 0) {
     return (
-      <div className="text-center py-8 text-xs text-slate-500">
+      <div className="text-center py-8 text-xs text-slate-400">
         No activity recorded for this session yet.
       </div>
     );
@@ -77,19 +77,19 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
     switch (type) {
       case 'AGENT_TURN_PROCESSED':
       case 'SEARCH_REQUESTED':
-        return <Activity className="w-4 h-4 text-sky-400" />;
+        return <Activity className="w-4 h-4 text-[#0057FF]" />;
       case 'POLICY_EVALUATED':
-        return <ShieldCheck className="w-4 h-4 text-emerald-400" />;
+        return <ShieldCheck className="w-4 h-4 text-emerald-600" />;
       case 'REJECTED_BY_POLICY':
-        return <ShieldAlert className="w-4 h-4 text-rose-400" />;
+        return <ShieldAlert className="w-4 h-4 text-rose-600" />;
       case 'PAYPAL_ORDER_CREATED':
-        return <CreditCard className="w-4 h-4 text-purple-400" />;
+        return <CreditCard className="w-4 h-4 text-[#003087]" />;
       case 'PAYMENT_CAPTURED':
       case 'SIMULATED_CHECKOUT_COMPLETED':
-        return <CheckCircle2 className="w-4 h-4 text-emerald-400" />;
+        return <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
       case 'ORDER_CANCELLED':
       case 'PRE_CAPTURE_PRICE_DRIFT_VOIDED':
-        return <XCircle className="w-4 h-4 text-amber-400" />;
+        return <XCircle className="w-4 h-4 text-amber-600" />;
       default:
         return <ArrowRight className="w-4 h-4 text-slate-400" />;
     }
@@ -104,7 +104,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
         return {
           title: 'Product Deals Discovered',
           badge: 'Search',
-          badgeColor: 'bg-sky-500/10 text-sky-400 border-sky-500/20',
+          badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
           summary: `Found ${count} live store option${count === 1 ? '' : 's'} matching "${msg}".`,
           pills: [
             ...(details.budget ? [{ label: 'Budget Cap', value: budget }] : []),
@@ -119,7 +119,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
         return {
           title: 'Purchase Approved (Within Budget)',
           badge: 'Eligible',
-          badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+          badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
           summary: `Passed all spending limits and attribute checks for ${sku}. Total locked at $${Number(landed).toFixed(2)}.`,
           pills: [
             { label: 'SKU', value: sku },
@@ -135,7 +135,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
         return {
           title: 'Purchase Blocked by Safety Guardrail',
           badge: 'Blocked',
-          badgeColor: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+          badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',
           summary: `Safety guardrail blocked purchase of ${sku}: ${reason}`,
           pills: [
             { label: 'SKU', value: sku },
@@ -150,7 +150,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
         return {
           title: 'PayPal Checkout Session Prepared',
           badge: 'Checkout',
-          badgeColor: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20',
+          badgeColor: 'bg-blue-50 text-[#003087] border-blue-200',
           summary: `Created secure order on PayPal gateway for ${amount}. Awaiting buyer approval.`,
           pills: [
             { label: 'Order ID', value: String(orderId).slice(0, 16) },
@@ -165,7 +165,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
         return {
           title: 'Payment Confirmed & Captured',
           badge: 'Captured',
-          badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+          badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
           summary: `Payment ${amount} captured and verified on PayPal server. Transaction complete.`,
           pills: [
             { label: 'Capture ID', value: String(capId).slice(0, 16) },
@@ -178,7 +178,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
         return {
           title: 'Simulated Payment Completed',
           badge: 'Simulated',
-          badgeColor: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+          badgeColor: 'bg-amber-50 text-amber-800 border-amber-200',
           summary: `Test payment of $${Number(details.amount || 0).toFixed(2)} simulated successfully. No actual funds moved.`,
           pills: [
             { label: 'Mode', value: 'Local Simulation' },
@@ -190,7 +190,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
         return {
           title: 'Order Cancelled',
           badge: 'Cancelled',
-          badgeColor: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+          badgeColor: 'bg-slate-100 text-slate-700 border-slate-200',
           summary: 'The order was cancelled by shopper or expired. No charges were made.',
           pills: [
             ...(details.order_id ? [{ label: 'Order ID', value: String(details.order_id).slice(0, 14) }] : [])
@@ -201,7 +201,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
         return {
           title: 'Price Spike Detected — Auto-Voided',
           badge: 'Price Shield',
-          badgeColor: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+          badgeColor: 'bg-rose-50 text-rose-700 border-rose-200',
           summary: 'Merchant price spiked before final capture. Pre-capture shield automatically voided checkout.',
           pills: [
             ...(details.attempted_price ? [{ label: 'Detected Price', value: `$${details.attempted_price}` }] : []),
@@ -213,7 +213,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
         return {
           title: type.replace(/_/g, ' '),
           badge: 'Action',
-          badgeColor: 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+          badgeColor: 'bg-slate-100 text-slate-700 border-slate-200',
           summary: 'Action recorded in secure provenance log.',
           pills: []
         };
@@ -225,17 +225,17 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
     <div className="space-y-3">
       {/* Header Bar with Count & Developer View Toggle */}
       <div className="flex items-center justify-between pb-1 text-xs">
-        <span className="text-slate-400 text-[11px] flex items-center gap-1">
-          <Lock className="w-3 h-3 text-purple-400" />
+        <span className="text-slate-500 text-[11px] flex items-center gap-1 font-medium">
+          <Lock className="w-3 h-3 text-[#0057FF]" />
           <span>Page {currentPage} of {totalPages} ({sortedEvents.length} total)</span>
         </span>
         <button
           type="button"
           onClick={() => setDeveloperMode(!developerMode)}
-          className={`px-2 py-0.5 rounded text-[10px] font-medium transition-colors flex items-center gap-1 border ${
+          className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold transition-colors flex items-center gap-1 border ${
             developerMode
-              ? 'bg-purple-600/20 text-purple-300 border-purple-500/30'
-              : 'bg-slate-800/60 text-slate-400 hover:text-slate-200 border-slate-700/50'
+              ? 'bg-blue-50 text-[#0057FF] border-blue-200'
+              : 'bg-slate-100 text-slate-600 hover:text-slate-900 border-slate-200'
           }`}
           title="Toggle technical JSON and cryptographic SHA-256 view"
         >
@@ -260,30 +260,30 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
           return (
             <div
               key={ev.id || idx}
-              className="p-3.5 rounded-xl bg-slate-900/60 border border-slate-800 text-xs transition-all hover:border-slate-700/80"
+              className="p-3.5 rounded-xl bg-white border border-slate-200/90 text-xs transition-all hover:border-slate-300 shadow-2xs"
             >
               <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-slate-800/80 shrink-0 mt-0.5">
+                <div className="p-2 rounded-lg bg-slate-50 border border-slate-100 shrink-0 mt-0.5">
                   {getEventIcon(ev.event_type)}
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-semibold text-slate-100">
+                      <span className="font-bold text-slate-900">
                         {meta.title}
                       </span>
-                      <span className={`px-2 py-0.2 rounded text-[10px] font-medium border ${meta.badgeColor}`}>
+                      <span className={`px-2 py-0.2 rounded text-[10px] font-semibold border ${meta.badgeColor}`}>
                         {meta.badge}
                       </span>
                     </div>
-                    <span className="text-[10px] text-slate-500 font-mono shrink-0">
+                    <span className="text-[10px] text-slate-400 font-mono shrink-0">
                       {new Date(ev.created_at).toLocaleTimeString()}
                     </span>
                   </div>
 
                   {/* Friendly Layman Summary */}
-                  <p className="mt-1 text-slate-300 text-xs leading-relaxed">
+                  <p className="mt-1 text-slate-600 text-xs leading-relaxed">
                     {meta.summary}
                   </p>
 
@@ -293,10 +293,10 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
                       {meta.pills.map((pill, pidx) => (
                         <span
                           key={pidx}
-                          className="px-2 py-0.5 rounded bg-slate-950/70 border border-slate-800 text-[11px] text-slate-300 font-medium"
+                          className="px-2 py-0.5 rounded-md bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-medium"
                         >
-                          <span className="text-slate-500 mr-1">{pill.label}:</span>
-                          <span className="text-slate-200">{pill.value}</span>
+                          <span className="text-slate-400 mr-1">{pill.label}:</span>
+                          <span className="text-slate-900 font-semibold">{pill.value}</span>
                         </span>
                       ))}
                     </div>
@@ -305,15 +305,15 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
                   {/* Expandable Technical Details (JSON & Cryptographic Hashes) */}
                   {(developerMode || ev.entry_hash) && (
                     <details
-                      className="mt-2.5 pt-2 border-t border-slate-800/60 group"
+                      className="mt-2.5 pt-2 border-t border-slate-100 group"
                       open={developerMode}
                     >
-                      <summary className="text-[11px] text-slate-500 hover:text-slate-300 cursor-pointer flex items-center justify-between select-none">
-                        <span className="flex items-center gap-1 font-medium">
-                          <Code2 className="w-3 h-3 text-slate-500 group-open:text-purple-400" />
+                      <summary className="text-[11px] text-slate-500 hover:text-slate-800 cursor-pointer flex items-center justify-between select-none font-medium">
+                        <span className="flex items-center gap-1">
+                          <Code2 className="w-3 h-3 text-slate-400 group-open:text-[#0057FF]" />
                           <span>Technical Details & Hashes</span>
                         </span>
-                        <span className="text-[10px] text-slate-600 font-mono group-open:hidden">
+                        <span className="text-[10px] text-slate-400 font-mono group-open:hidden">
                           click to view
                         </span>
                       </summary>
@@ -321,7 +321,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
                       <div className="mt-2 space-y-2">
                         {ev.entry_hash && (
                           <div className="flex flex-wrap items-center gap-1.5 text-[10px] font-mono">
-                            <span className="px-1.5 py-0.5 rounded bg-purple-950/60 border border-purple-500/30 text-purple-300">
+                            <span className="px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-blue-700 font-semibold">
                               SHA-256: {ev.entry_hash.slice(0, 16)}…
                             </span>
                             {ev.prev_hash && (
@@ -332,7 +332,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
                           </div>
                         )}
 
-                        <pre className="text-[10px] text-slate-400 overflow-x-auto whitespace-pre-wrap font-mono bg-slate-950 p-2 rounded border border-slate-800/80">
+                        <pre className="text-[10px] text-slate-300 overflow-x-auto whitespace-pre-wrap font-mono bg-slate-950 p-2.5 rounded-lg border border-slate-800">
                           {JSON.stringify(ev.details, null, 2)}
                         </pre>
                       </div>
@@ -347,9 +347,9 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
 
       {/* Pagination Bar: < 1 2 3 4 > */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-800 text-xs">
-          <span className="text-[11px] text-slate-400">
-            Showing <strong className="text-slate-200">{startIndex + 1}–{Math.min(startIndex + ITEMS_PER_PAGE, sortedEvents.length)}</strong> of <strong className="text-slate-200">{sortedEvents.length}</strong>
+        <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-200 text-xs">
+          <span className="text-[11px] text-slate-500">
+            Showing <strong className="text-slate-800">{startIndex + 1}–{Math.min(startIndex + ITEMS_PER_PAGE, sortedEvents.length)}</strong> of <strong className="text-slate-800">{sortedEvents.length}</strong>
           </span>
 
           <div className="flex items-center gap-1">
@@ -357,7 +357,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
               type="button"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 transition-colors"
               title="Previous page"
               aria-label="Previous page"
             >
@@ -367,7 +367,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
             {getPageNumbers().map((pageItem, pidx) => {
               if (pageItem === '...') {
                 return (
-                  <span key={`ellipsis-${pidx}`} className="px-1 text-slate-500 font-mono text-xs">
+                  <span key={`ellipsis-${pidx}`} className="px-1 text-slate-400 font-mono text-xs">
                     …
                   </span>
                 );
@@ -378,10 +378,10 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
                   key={pageNum}
                   type="button"
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-semibold transition-all ${
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${
                     currentPage === pageNum
-                      ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30 ring-1 ring-purple-400'
-                      : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-700'
+                      ? 'bg-[#0057FF] text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
                   }`}
                 >
                   {pageNum}
@@ -393,7 +393,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
               type="button"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed text-slate-300 transition-colors"
+              className="w-7 h-7 flex items-center justify-center rounded-lg bg-slate-100 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700 transition-colors"
               title="Next page"
               aria-label="Next page"
             >

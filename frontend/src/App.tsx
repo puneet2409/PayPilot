@@ -17,6 +17,7 @@ import { ApprovalPanel } from './components/ApprovalPanel';
 import { OrderStatus } from './components/OrderStatus';
 import { AuditTimeline } from './components/AuditTimeline';
 import { OrdersLedger } from './components/OrdersLedger';
+import { PayPalLogo } from './components/PayPalLogo';
 import { History, ShoppingBag, Layers, Sparkles, CreditCard, Code2, Loader2, RotateCcw } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -304,25 +305,27 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[#F5F7FA] text-slate-900 flex flex-col font-sans">
       {/* Header */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-3.5 flex items-center justify-between">
+      <header className="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-50 px-6 py-3 shadow-2xs flex items-center justify-between">
         <div
           onClick={handleReset}
           className="flex items-center gap-3 cursor-pointer group"
           title="Reset to PayPilot Home"
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20 group-hover:scale-105 transition-transform">
-            P
+          <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center p-1.5 shadow-2xs group-hover:scale-105 transition-transform">
+            <PayPalLogo className="w-7 h-8" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-base tracking-tight text-white group-hover:text-blue-300 transition-colors">PayPilot</span>
-              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              <span className="font-extrabold text-base tracking-tight text-[#001C3D] group-hover:text-[#0057FF] transition-colors">
+                PayPilot
+              </span>
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-[#0057FF] border border-blue-200/80">
                 Agentic Commerce
               </span>
             </div>
-            <span className="text-[11px] text-slate-400">
+            <span className="text-[11px] text-slate-500 font-medium">
               Consent-First AI Shopping & Purchase Policy Guardrails
             </span>
           </div>
@@ -330,24 +333,24 @@ export const App: React.FC = () => {
 
         {/* Dual-Lens Persona Switcher + Global Reset */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
             <button
               onClick={() => setPersonaView('buyer')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 personaView === 'buyer'
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-white text-[#003087] shadow-xs border border-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
-              <ShoppingBag className="w-3.5 h-3.5" />
+              <ShoppingBag className="w-3.5 h-3.5 text-[#0057FF]" />
               <span>🛒 Shopper Experience (B2C)</span>
             </button>
             <button
               onClick={() => setPersonaView('cfo')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 personaView === 'cfo'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30'
-                  : 'text-slate-400 hover:text-slate-200'
+                  ? 'bg-[#003087] text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Layers className="w-3.5 h-3.5" />
@@ -357,10 +360,10 @@ export const App: React.FC = () => {
 
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-xs font-medium text-slate-300 hover:text-white transition-all shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-all shadow-2xs"
             title="Reset search, policy evaluation, and start fresh"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-blue-400" />
+            <RotateCcw className="w-3.5 h-3.5 text-[#0057FF]" />
             <span className="hidden sm:inline">Reset Search</span>
           </button>
         </div>
@@ -370,27 +373,50 @@ export const App: React.FC = () => {
             href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
             target="_blank"
             rel="noreferrer"
-            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 text-xs text-slate-300 transition-colors"
+            className="hidden md:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700 hover:text-[#0057FF] transition-colors shadow-2xs"
             title="Open interactive OpenAPI 3.1 Swagger docs (APIMatic compliant)"
           >
-            <Code2 className="w-3.5 h-3.5 text-indigo-400" />
+            <Code2 className="w-3.5 h-3.5 text-[#0057FF]" />
             <span>OpenAPI 3.1</span>
           </a>
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
-            <span className={`w-2 h-2 rounded-full ${channel3Configured ? 'bg-sky-400 animate-pulse' : 'bg-slate-400'}`}></span>
-            <span className="text-slate-300 font-medium">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs shadow-2xs">
+            <span className={`w-2 h-2 rounded-full ${channel3Configured ? 'bg-sky-500 animate-pulse' : 'bg-slate-400'}`}></span>
+            <span className="text-slate-700 font-medium">
               {channel3Configured ? 'Channel3 Live (25k+ Retailers)' : 'Channel3 Catalog Cache'}
             </span>
           </div>
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-xs">
-            <span className={`w-2 h-2 rounded-full ${isPayPalConfigured ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`}></span>
-            <span className="text-slate-300 font-medium">{paypalStatus}</span>
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs shadow-2xs">
+            <span className={`w-2 h-2 rounded-full ${isPayPalConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+            <span className="text-slate-700 font-medium">{paypalStatus}</span>
           </div>
-          <div className="text-[11px] text-slate-400 font-mono hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60">
-            {session ? <>Session: <span className="text-slate-200">{sessionId.slice(0, 11)}...{sessionId.slice(-4)}</span></> : 'Securing…'}
+          <div className="text-[11px] text-slate-500 font-mono hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 border border-slate-200 shadow-2xs">
+            {session ? <>Session: <span className="text-slate-800 font-semibold">{sessionId.slice(0, 11)}...{sessionId.slice(-4)}</span></> : 'Securing…'}
           </div>
         </div>
       </header>
+
+      {/* Signature PayPal Horizontal Accent Bar */}
+      <div className="w-full bg-gradient-to-r from-[#003087] via-[#0057FF] to-[#0070BA] text-white px-6 py-2 flex flex-wrap items-center justify-between text-xs font-medium shadow-xs">
+        <div className="flex items-center gap-2">
+          <span className="font-extrabold tracking-wider uppercase text-[10px] bg-white/20 px-2 py-0.5 rounded shadow-2xs">
+            PayPal AI Architecture
+          </span>
+          <span className="hidden sm:inline text-white/90">
+            Autonomous Discovery • Deterministic Guardrails • Orders v2 Human Consent
+          </span>
+        </div>
+        <div className="flex items-center gap-3 text-[11px] text-white/95 font-medium">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            Orders v2 Gateway: Active
+          </span>
+          <span className="hidden md:inline text-white/60">•</span>
+          <span className="hidden md:flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-sky-300"></span>
+            Deterministic Policy: Enforced
+          </span>
+        </div>
+      </div>
 
       {/* Main Persona Content */}
       {personaView === 'buyer' ? (
@@ -407,23 +433,45 @@ export const App: React.FC = () => {
           />
 
           {shoppingIntent && (
-            <div className="rounded-xl border border-indigo-500/20 bg-indigo-950/20 p-4">
+            <div className="rounded-2xl border border-blue-200/80 bg-white p-5 shadow-xs">
               <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-100">
-                  <Sparkles className="w-4 h-4 text-indigo-300" /> What You're Looking For
+                <div className="flex items-center gap-2 text-sm font-bold text-[#001C3D]">
+                  <Sparkles className="w-4 h-4 text-[#0057FF]" /> What You're Looking For
                 </div>
-                <span className="text-[10px] uppercase tracking-wide text-indigo-200/80">
+                <span className="text-[10px] uppercase font-bold tracking-wide text-[#0057FF] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200/80">
                   {intentSource === 'gemini' ? 'AI Assisted Match' : 'Smart Keyword Match'}
                 </span>
               </div>
               <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                {shoppingIntent.category && <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-200">{shoppingIntent.category}</span>}
-                {shoppingIntent.budget !== undefined && <span className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-200">Max ${shoppingIntent.budget.toFixed(2)} {shoppingIntent.currency}</span>}
-                {shoppingIntent.must_have.map((feature) => <span key={`need-${feature}`} className="rounded-full bg-emerald-900/60 px-2.5 py-1 text-emerald-200">Needs: {feature}</span>)}
-                {shoppingIntent.avoid.map((term) => <span key={`avoid-${term}`} className="rounded-full bg-rose-900/60 px-2.5 py-1 text-rose-200">Avoid: {term}</span>)}
-                {shoppingIntent.preferences.map((preference) => <span key={`pref-${preference}`} className="rounded-full bg-slate-800 px-2.5 py-1 text-slate-300">Prefers: {preference}</span>)}
+                {shoppingIntent.category && (
+                  <span className="rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1 text-slate-800 font-medium">
+                    {shoppingIntent.category}
+                  </span>
+                )}
+                {shoppingIntent.budget !== undefined && (
+                  <span className="rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1 text-slate-800 font-medium">
+                    Max ${shoppingIntent.budget.toFixed(2)} {shoppingIntent.currency}
+                  </span>
+                )}
+                {shoppingIntent.must_have.map((feature) => (
+                  <span key={`need-${feature}`} className="rounded-lg bg-emerald-50 border border-emerald-200 px-2.5 py-1 text-emerald-800 font-semibold">
+                    Needs: {feature}
+                  </span>
+                ))}
+                {shoppingIntent.avoid.map((term) => (
+                  <span key={`avoid-${term}`} className="rounded-lg bg-rose-50 border border-rose-200 px-2.5 py-1 text-rose-800 font-semibold">
+                    Avoid: {term}
+                  </span>
+                ))}
+                {shoppingIntent.preferences.map((preference) => (
+                  <span key={`pref-${preference}`} className="rounded-lg bg-slate-100 border border-slate-200 px-2.5 py-1 text-slate-700">
+                    Prefers: {preference}
+                  </span>
+                ))}
               </div>
-              <p className="mt-2 text-[10px] text-slate-500">Your preferences and budget limit are automatically checked against each item before purchase.</p>
+              <p className="mt-2.5 text-[11px] text-slate-500 font-medium">
+                Your preferences and budget limit are automatically checked against each item before purchase.
+              </p>
             </div>
           )}
 
@@ -431,16 +479,16 @@ export const App: React.FC = () => {
           <div>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-blue-400" />
-                <h3 className="text-sm font-semibold text-white">
+                <ShoppingBag className="w-4 h-4 text-[#0057FF]" />
+                <h3 className="text-base font-bold text-[#001C3D]">
                   Stores & Live Price Comparison ({candidates.length})
                 </h3>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">
+                <span className="text-xs text-slate-500 font-medium">
                   {isLoadingSearch ? (
-                    <span className="text-sky-300 flex items-center gap-1.5 font-medium animate-pulse">
-                      <Loader2 className="w-3 h-3 animate-spin text-sky-400" />
+                    <span className="text-[#0057FF] flex items-center gap-1.5 font-semibold animate-pulse">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0057FF]" />
                       Comparing 25k+ stores...
                     </span>
                   ) : (
@@ -450,10 +498,10 @@ export const App: React.FC = () => {
                 {candidates.length > 0 && !isLoadingSearch && (
                   <button
                     onClick={handleReset}
-                    className="px-2 py-0.5 rounded text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700/60 transition-colors flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200 shadow-2xs transition-colors flex items-center gap-1"
                     title="Clear current product results"
                   >
-                    <RotateCcw className="w-2.5 h-2.5 text-blue-400" />
+                    <RotateCcw className="w-2.5 h-2.5 text-[#0057FF]" />
                     <span>Clear</span>
                   </button>
                 )}
@@ -463,21 +511,21 @@ export const App: React.FC = () => {
             {isLoadingSearch ? (
               /* Live Multi-Retailer Discovery Skeleton State */
               <div className="space-y-4">
-                <div className="rounded-xl border border-sky-500/30 bg-sky-950/20 p-4 flex items-center justify-between shadow-lg shadow-sky-500/5">
+                <div className="rounded-2xl border border-blue-200 bg-blue-50/70 p-5 flex items-center justify-between shadow-xs">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-sky-500/20 text-sky-400 shrink-0">
+                    <div className="p-2.5 rounded-xl bg-white text-[#0057FF] border border-blue-100 shadow-2xs shrink-0">
                       <Loader2 className="w-5 h-5 animate-spin" />
                     </div>
                     <div>
-                      <h4 className="text-sm font-semibold text-sky-200">
+                      <h4 className="text-sm font-bold text-[#001C3D]">
                         Comparing 25,000+ Online Stores for Best Deals
                       </h4>
-                      <p className="text-xs text-sky-300/70 mt-0.5">
+                      <p className="text-xs text-slate-600 mt-0.5">
                         Checking live store prices, stock availability, and specs matching your budget.
                       </p>
                     </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/30 text-[11px] font-mono animate-pulse">
+                  <span className="px-3 py-1 rounded-full bg-white text-[#0057FF] border border-blue-200 text-xs font-semibold animate-pulse shadow-2xs">
                     Querying...
                   </span>
                 </div>
@@ -486,29 +534,29 @@ export const App: React.FC = () => {
                   {[1, 2].map((i) => (
                     <div
                       key={i}
-                      className="rounded-xl border border-slate-800 bg-slate-900/50 p-5 space-y-4 animate-pulse shadow-md"
+                      className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4 animate-pulse shadow-xs"
                     >
                       <div className="flex justify-between items-center">
-                        <div className="h-5 w-24 bg-slate-800 rounded-md"></div>
-                        <div className="h-6 w-16 bg-slate-800 rounded-md"></div>
+                        <div className="h-5 w-24 bg-slate-100 rounded-md"></div>
+                        <div className="h-6 w-16 bg-slate-100 rounded-md"></div>
                       </div>
-                      <div className="h-5 w-3/4 bg-slate-800 rounded-md"></div>
+                      <div className="h-5 w-3/4 bg-slate-100 rounded-md"></div>
                       <div className="space-y-2">
-                        <div className="h-3 w-full bg-slate-800/60 rounded"></div>
-                        <div className="h-3 w-5/6 bg-slate-800/60 rounded"></div>
+                        <div className="h-3 w-full bg-slate-100 rounded"></div>
+                        <div className="h-3 w-5/6 bg-slate-100 rounded"></div>
                       </div>
-                      <div className="space-y-2 pt-2 border-t border-slate-800/60">
-                        <div className="h-3.5 w-1/2 bg-slate-800 rounded"></div>
-                        <div className="h-3.5 w-2/3 bg-slate-800 rounded"></div>
+                      <div className="space-y-2 pt-2 border-t border-slate-100">
+                        <div className="h-3.5 w-1/2 bg-slate-100 rounded"></div>
+                        <div className="h-3.5 w-2/3 bg-slate-100 rounded"></div>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
             ) : candidates.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-slate-800 bg-slate-900/30 p-8 text-center">
-                <Layers className="w-8 h-8 text-slate-600 mx-auto mb-2" />
-                <p className="text-xs text-slate-400">
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center shadow-xs">
+                <Layers className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                <p className="text-xs text-slate-500 font-medium">
                   Search for any product to compare live store prices, discounts, and instant checkout options.
                 </p>
               </div>
@@ -559,42 +607,42 @@ export const App: React.FC = () => {
             />
           )}
 
-          {/* Tabbed Right Panel: Provenance Trail & Payments Ledger */}
-          <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
-            <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
-              <div className="flex items-center gap-1 bg-slate-950/70 p-1 rounded-lg border border-slate-800">
+          {/* Tabbed Right Panel: Activity Log & Payments Ledger */}
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
                 <button
                   onClick={() => setRightPanelTab('timeline')}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     rightPanelTab === 'timeline'
-                      ? 'bg-purple-600/30 text-purple-300 border border-purple-500/40 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-white text-[#003087] border border-slate-200 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <History className="w-3.5 h-3.5 text-purple-400" />
+                  <History className="w-3.5 h-3.5 text-[#0057FF]" />
                   <span>Activity Log</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-[10px] font-mono text-slate-300">
+                  <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[10px] font-mono text-slate-700 font-bold">
                     {auditEvents.length}
                   </span>
                 </button>
 
                 <button
                   onClick={() => setRightPanelTab('ledger')}
-                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     rightPanelTab === 'ledger'
-                      ? 'bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? 'bg-white text-[#003087] border border-slate-200 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <CreditCard className="w-3.5 h-3.5 text-emerald-400" />
+                  <CreditCard className="w-3.5 h-3.5 text-[#0057FF]" />
                   <span>Payments Ledger</span>
-                  <span className="px-1.5 py-0.2 rounded-full bg-slate-800 text-[10px] font-mono text-slate-300">
+                  <span className="px-1.5 py-0.2 rounded-full bg-slate-200 text-[10px] font-mono text-slate-700 font-bold">
                     {orders.length}
                   </span>
                 </button>
               </div>
 
-              <span className="text-[10px] text-slate-500 font-mono hidden sm:inline">
+              <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
                 {rightPanelTab === 'timeline' ? 'Real-time action history' : 'Orders & payments overview'}
               </span>
             </div>
@@ -614,20 +662,20 @@ export const App: React.FC = () => {
       </main>
       ) : (
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="rounded-2xl border border-blue-200/90 bg-white p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-emerald-400" />
+            <h3 className="text-base font-extrabold text-[#001C3D] flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-[#0057FF]" />
               Merchant & CFO Command Center
             </h3>
-            <p className="text-xs text-slate-300 mt-1">
+            <p className="text-xs text-slate-600 mt-1">
               Embedded Financial Analytics Blueprint (AG Studio) • PayPal REST Data Ingestion • Webhook Event Reconciliation
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={refreshOrders}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold transition-colors"
+              className="px-4 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0057FF] border border-blue-200 text-xs font-bold transition-colors shadow-2xs"
             >
               ↻ Refresh Analytics Data
             </button>
@@ -641,13 +689,13 @@ export const App: React.FC = () => {
           onRefresh={refreshOrders}
         />
 
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-5">
-          <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-800">
-            <h4 className="text-sm font-semibold text-white flex items-center gap-2">
-              <History className="w-4 h-4 text-purple-400" />
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+            <h4 className="text-sm font-bold text-[#001C3D] flex items-center gap-2">
+              <History className="w-4 h-4 text-[#0057FF]" />
               Immutable Cryptographic Audit Trail
             </h4>
-            <span className="text-xs text-slate-400 font-mono">
+            <span className="text-xs text-slate-500 font-mono">
               {auditEvents.length} events logged with SHA-256 provenance
             </span>
           </div>
@@ -657,7 +705,7 @@ export const App: React.FC = () => {
       )}
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 py-4 px-6 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-200 bg-white py-4 px-6 text-center text-xs text-slate-500 font-medium">
         PayPilot • Built for the PayPal AI Hackathon 2026 • Deterministic Guardrails & PayPal Sandbox Integration
       </footer>
     </div>
