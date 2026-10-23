@@ -152,7 +152,7 @@ A comprehensive end-to-end audit of all backend services, database migrations, f
 
 | Area | Status | Verified Capabilities |
 |---|---|---|
-| **Backend & FastAPI Core** | ✅ 100% Pass | 34/34 Pytest tests passing. Database-agnostic schema migrations added for both SQLite & PostgreSQL using SQLAlchemy `inspect`. |
+| **Backend & FastAPI Core** | ✅ 100% Pass | 37/37 Pytest tests passing. Database-agnostic schema migrations added for both SQLite & PostgreSQL using SQLAlchemy `inspect`. |
 | **Deterministic Security** | ✅ Hardened | HMAC-SHA256 64-char cryptographic quote signing, constant-time `hmac.compare_digest` verification, indirect prompt injection regex shielding, pre-capture live price/stock drift auto-void. |
 | **Audit Provenance** | ✅ Cryptographic | Unbroken SHA-256 hash chaining with thread mutex lock (`_audit_lock`) eliminating race conditions across concurrent writers. |
 | **Frontend & AG Grid** | ✅ Verified | AG Grid Community v36 integrated with quartz theme, pinned columns, sorting, filtering, and AG Studio Blueprint view; 7/7 Vitest tests passing; production build (`tsc -b && vite build`) compiles with zero errors. |
@@ -166,10 +166,11 @@ A comprehensive end-to-end audit of all backend services, database migrations, f
    - In `ApprovalPanel.tsx`, the item subtotal, estimated tax, shipping, and total charge are displayed with mathematical consistency.
    - Updated `get_valid_quote` in `quote_service.py` to compare expected landed cost against `quote.amount`.
 
-2. **P1: Registered Webhook ID & Unsigned Webhook Rejection** (RESOLVED)
-   - Added `PAYPAL_WEBHOOK_ID` to `backend/app/config.py`, `.env.example`, and `backend/.env.example`.
+2. **P1: Registered Webhook ID & Unsigned/Forged Webhook Rejection** (RESOLVED)
+   - Added `PAYPAL_WEBHOOK_ID` to `backend/app/config.py`, `.env.example`, `backend/.env.example`, and `render.yaml`.
    - In `paypal.py`, `verify_webhook_signature` now uses `settings.PAYPAL_WEBHOOK_ID` rather than a hardcoded dummy string.
-   - Added mandatory validation of transmission headers in `verify_webhook_signature` regardless of configuration mode, rejecting unsigned public webhooks with HTTP 401. Tested via `test_paypal_webhook_unsigned_rejected`.
+   - Added mandatory validation of transmission headers in `verify_webhook_signature` regardless of configuration mode, rejecting unsigned public webhooks with HTTP 401.
+   - Hardened dev/test verification: strictly rejects forged signature strings while accepting valid simulated tokens or HMAC-SHA256 test tokens. In production, unconfigured credentials reject signatures immediately. Tested via `test_paypal_webhook_forged_sig_rejected`.
 
 3. **P1: Webhook Capture Reconciliation & Amount Matching** (RESOLVED)
    - In `webhooks.py`, the `PAYMENT.CAPTURE.COMPLETED` handler now strictly parses the received amount and currency from the webhook payload.
@@ -179,14 +180,26 @@ A comprehensive end-to-end audit of all backend services, database migrations, f
    - Rewrote `ensure_schema_migrations()` in `main.py` using database-agnostic SQLAlchemy `inspect(engine).get_columns(...)` instead of SQLite-only `PRAGMA table_info` queries.
    - Works across both PostgreSQL (Render production) and SQLite (local dev/test) without swallowing errors.
 
-5. **P2: External Retailer Policy Check in Frontend** (RESOLVED)
+5. **P2: External Retailer Policy Check & Deep Metadata Scanning** (RESOLVED)
    - In `App.tsx`, updated the live Channel3 external retailer item policy check to validate `landedCost <= effectiveBudget` (instead of raw item price).
-   - Added evaluation of `excludedTerms` against retailer title and explanation.
+   - Deep metadata scan: evaluation of `excludedTerms` now scans brand, merchant, verified and unverified feature lists, and candidate offer metadata in addition to title and explanation (catching conditions like `"refurbished"`).
 
-6. **P2: Thread Mutex for Hash-Chained Audit Trail** (RESOLVED)
-   - Added `_audit_lock = threading.Lock()` around the hash computation and write operations in `AuditService.record_event()`, ensuring strictly sequential chain progression without hash collisions or forks under concurrent load.
+6. **P2: Multi-Worker & Distributed Database Lock for Hash Chain** (RESOLVED)
+   - In `AuditService.record_event()`, enhanced concurrency protection beyond in-process threading locks by adding cross-process database transaction locks: `pg_advisory_xact_lock(hashtext('paypilot_audit_lock'))` on PostgreSQL and `BEGIN IMMEDIATE` on SQLite.
+   - Prevents separate Uvicorn workers or scaled instances from reading the same latest hash and branching the audit chain.
 
-7. **P2: Financial Analytics Fee Transparency** (RESOLVED)
+7. **P2: Unsigned Quote Self-Signing Removal** (RESOLVED)
+   - In `checkout.py`, eliminated dangerous fallback that generated a new signature on unsigned quotes during verification. If `quote.quote_signature` is missing or invalid, the order is cancelled, a security alert is recorded, and the request is aborted with HTTP 400. Tested via `test_pre_capture_missing_quote_sig_rejected`.
+
+8. **P2: Webhook Missing Capture ID Rejection** (RESOLVED)
+   - In `webhooks.py`, capture events missing `resource.id` are no longer marked `PAID`. Instead, the order is marked `RECONCILIATION_REQUIRED`, `WEBHOOK_ANOMALY_MISSING_CAPTURE_ID` is recorded, and execution returns early. Tested via `test_paypal_webhook_missing_capture_id_flagged`.
+
+9. **P2: Financial Analytics Fee Transparency** (RESOLVED)
    - In `analytics.py`, the dashboard inspects `Payment.raw_response_json` for provider-reported PayPal fees (`seller_receivable_breakdown.paypal_fee`).
    - If absent, it provides standard rate calculations (2.9% + $0.30) and explicitly labels the fee with `"fee_type": "estimated"` and `"fee_basis": "Standard Rate Estimate (2.9% + $0.30)"`.
+
+10. **Hygiene & Frontend Bundle Optimization** (RESOLVED)
+    - Code-split `frontend/vite.config.ts` into distinct vendor chunks (`vendor-ag-grid`, `vendor-react`, `vendor-paypal`, `vendor-icons`), eliminating bundle size warnings.
+    - Zero trailing whitespace errors across git repository (`git diff --check` passes cleanly).
+    - Total test coverage: 37/37 passing backend pytest tests (100%), 7/7 passing frontend vitest tests (100%).
 

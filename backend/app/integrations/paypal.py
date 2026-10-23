@@ -2,9 +2,12 @@ import httpx
 import json
 import logging
 import uuid
+import hmac
+import hashlib
 from typing import Dict, Any, Optional
 from datetime import datetime, timezone, timedelta
 from app.config import settings
+from app.security import _secret
 
 logger = logging.getLogger(__name__)
 
@@ -266,11 +269,23 @@ class PayPalClient:
             return False
 
         if not self.is_configured:
-            # When PayPal credentials are not configured (local dev / simulated test mode):
-            # require non-empty transmission headers and recognized cert_url or sig
-            if not transmission_sig or len(transmission_sig) < 8:
+            if settings.APP_ENV.lower() == "production":
+                logger.error("[PAYPAL WEBHOOK] Security Alert: Webhook verification rejected because live PayPal credentials are not configured in production.")
                 return False
-            return True
+
+            # In development / simulated testing: verify the transmission signature against the
+            # test signature token OR an HMAC signed with the server's session secret.
+            # Arbitrary forged signatures are strictly rejected.
+            raw_payload_sig = hmac.new(
+                _secret().encode("utf-8"),
+                f"{transmission_id}:{transmission_time}:{raw_body}".encode("utf-8"),
+                hashlib.sha256
+            ).hexdigest()
+            if hmac.compare_digest(transmission_sig, "simulated_webhook_sig") or hmac.compare_digest(transmission_sig, raw_payload_sig):
+                return True
+
+            logger.warning("[PAYPAL WEBHOOK] Unauthorized: Forged or invalid webhook signature in simulated mode.")
+            return False
 
         if not effective_webhook_id:
             logger.error("[PAYPAL WEBHOOK] Configuration Error: PAYPAL_WEBHOOK_ID is required to verify webhooks with live PayPal credentials.")

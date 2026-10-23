@@ -209,10 +209,18 @@ export const App: React.FC = () => {
         }
       ];
 
-      // Excluded terms check
+      // Excluded terms check across title, explanation, brand, merchant, verified/unverified attributes, and offers metadata
       const activeExcluded = excludedTermsOverride ?? excludedTerms;
       let hasExcludedTerm = false;
-      const candidateText = `${cand.title} ${cand.explanation || ''}`.toLowerCase();
+      const candidateText = [
+        cand.title,
+        cand.explanation || '',
+        cand.brand || '',
+        cand.merchant || '',
+        ...(cand.verified_features || []),
+        ...(cand.unverified_features || []),
+        JSON.stringify(cand.offers || []),
+      ].join(' ').toLowerCase();
       for (const term of activeExcluded) {
         if (candidateText.includes(term.toLowerCase())) {
           hasExcludedTerm = true;

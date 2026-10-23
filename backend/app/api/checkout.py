@@ -203,16 +203,26 @@ async def capture_checkout_order(
             raise HTTPException(status_code=400, detail="Quote expired before payment capture. Please re-evaluate purchase policy.")
 
         # b) Check cryptographic HMAC signature integrity
-        sig_to_verify = quote.quote_signature or QuoteService.compute_quote_signature(
-            quote.id, quote.sku, quote.merchant or "PayPilot Demo Store", quote.landed_cost or quote.amount, quote.expires_at.isoformat()
-        )
+        if not quote.quote_signature:
+            order.status = "CANCELLED"
+            order.updated_at = now
+            db.commit()
+            AuditService.record_event(
+                db=db,
+                event_type="SECURITY_ALERT_SIGNATURE_MISSING",
+                session_id=order.session_id,
+                order_id=order.id,
+                details={"quote_id": quote.id, "sku": quote.sku, "reason": "Quote lacks cryptographic HMAC signature"}
+            )
+            raise HTTPException(status_code=400, detail="Quote cryptographic signature missing; cannot verify quote integrity")
+
         if not QuoteService.verify_quote_signature(
             quote_id=quote.id,
             sku=quote.sku,
             merchant=quote.merchant or "PayPilot Demo Store",
             landed_cost=quote.landed_cost or quote.amount,
             expires_at_iso=quote.expires_at.isoformat(),
-            provided_sig=sig_to_verify
+            provided_sig=quote.quote_signature
         ):
             order.status = "CANCELLED"
             order.updated_at = now

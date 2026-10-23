@@ -25,5 +25,26 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  build: {
+    chunkSizeWarningLimit: 1300,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('ag-grid')) {
+            return 'vendor-ag-grid'
+          }
+          if (id.includes('@paypal/react-paypal-js')) {
+            return 'vendor-paypal'
+          }
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('react-markdown')) {
+            return 'vendor-react'
+          }
+          if (id.includes('lucide-react')) {
+            return 'vendor-icons'
+          }
+        }
+      }
+    }
   }
 })

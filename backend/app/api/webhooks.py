@@ -88,6 +88,27 @@ async def handle_paypal_webhook(
     # Event handling switch
     if event_type == "PAYMENT.CAPTURE.COMPLETED" and order:
         capture_id = resource.get("id")
+        if not capture_id:
+            order.status = "RECONCILIATION_REQUIRED"
+            order.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            AuditService.record_event(
+                db=db,
+                event_type="WEBHOOK_ANOMALY_MISSING_CAPTURE_ID",
+                session_id=order.session_id,
+                order_id=order.id,
+                details={
+                    "webhook_event_id": event_id,
+                    "reason": "Missing capture id in PAYMENT.CAPTURE.COMPLETED webhook resource",
+                    "signature_verified": True
+                }
+            )
+            return {
+                "status": "reconciliation_required",
+                "event_id": event_id,
+                "reason": "Missing capture id in webhook resource",
+                "matched_order_id": order.id
+            }
 
         # 1. Guard against capture arriving on already-cancelled or failed orders
         if order.status in ("CANCELLED", "FAILED"):

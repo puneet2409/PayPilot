@@ -136,6 +136,9 @@ backend/tests/test_api_endpoints.py::test_pre_capture_price_drift_auto_void PASS
 backend/tests/test_api_endpoints.py::test_audit_hash_chaining_integrity PASSED
 backend/tests/test_api_endpoints.py::test_pre_capture_tampered_quote_rejected PASSED
 backend/tests/test_api_endpoints.py::test_pre_capture_expired_quote_rejected PASSED
+backend/tests/test_api_endpoints.py::test_paypal_webhook_forged_sig_rejected PASSED
+backend/tests/test_api_endpoints.py::test_paypal_webhook_missing_capture_id_flagged PASSED
+backend/tests/test_api_endpoints.py::test_pre_capture_missing_quote_sig_rejected PASSED
 backend/tests/test_policy_engine.py::test_policy_budget_pass PASSED
 backend/tests/test_policy_engine.py::test_policy_budget_exceeded PASSED
 backend/tests/test_policy_engine.py::test_policy_inactive_sku PASSED
@@ -147,7 +150,7 @@ backend/tests/test_policy_engine.py::test_policy_landed_cost_budget_exceeded PAS
 backend/tests/test_policy_engine.py::test_quote_hmac_tampering_rejected_full_payload PASSED
 backend/tests/test_ranking.py::test_ranking_flags_and_demotes_over_budget_candidates PASSED
 backend/tests/test_ranking.py::test_ranking_within_budget_default_true PASSED
-34 passed in backend (100%)
+37 passed in backend (100%)
 
 frontend/src/__tests__/paypilot.test.ts
 ✓ builds valid AG Studio relational sources (orders, transactions, customers)

@@ -546,5 +546,98 @@ def test_pre_capture_expired_quote_rejected(client, db_session):
     assert "quote expired before payment capture" in cap_res.json()["detail"].lower()
 
 
+def test_paypal_webhook_forged_sig_rejected(client):
+    """Verify that forged webhook transmission signature is rejected with 401."""
+    wh_headers = {
+        "paypal-auth-algo": "SHA256withRSA",
+        "paypal-cert-url": "https://api.sandbox.paypal.com/cert",
+        "paypal-transmission-id": "tx_forged_test",
+        "paypal-transmission-sig": "forged_random_signature",
+        "paypal-transmission-time": "2026-10-23T08:00:00Z"
+    }
+    wh_payload = {
+        "id": "WH-TEST-FORGED",
+        "event_type": "PAYMENT.CAPTURE.COMPLETED",
+        "resource_type": "capture",
+        "resource": {"id": "CAP-FORGED"}
+    }
+    res = client.post("/api/v1/webhooks/paypal", json=wh_payload, headers=wh_headers)
+    assert res.status_code == 401
+
+
+def test_paypal_webhook_missing_capture_id_flagged(client, db_session):
+    """Verify capture webhook missing capture ID flags order for reconciliation."""
+    session_id = client.test_session_id
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": session_id,
+        "demo_sku": "HEADSET-DEMO-02",
+        "max_total": 100.0
+    })
+    quote_id = eval_res.json()["quote"]["id"]
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": session_id
+    })
+    order_data = create_res.json()
+    order_id = order_data["order_id"]
+    paypal_order_id = order_data["paypal_order_id"]
+
+    wh_headers = {
+        "paypal-auth-algo": "SHA256withRSA",
+        "paypal-cert-url": "https://api.sandbox.paypal.com/cert",
+        "paypal-transmission-id": "tx_missing_cap_id",
+        "paypal-transmission-sig": "simulated_webhook_sig",
+        "paypal-transmission-time": "2026-10-23T08:00:00Z"
+    }
+    wh_payload = {
+        "id": "WH-TEST-NO-CAP-ID",
+        "event_type": "PAYMENT.CAPTURE.COMPLETED",
+        "resource_type": "capture",
+        "resource": {
+            # Omits "id"
+            "status": "COMPLETED",
+            "amount": {"value": f"{order_data['amount']:.2f}", "currency_code": "USD"},
+            "supplementary_data": {
+                "related_ids": {"order_id": paypal_order_id}
+            }
+        }
+    }
+    wh_res = client.post("/api/v1/webhooks/paypal", json=wh_payload, headers=wh_headers)
+    assert wh_res.status_code == 200
+    assert wh_res.json()["status"] == "reconciliation_required"
+    assert "missing capture id" in wh_res.json()["reason"].lower()
+
+    # Order must not be marked PAID
+    order_res = client.get(f"/api/v1/orders/{order_id}")
+    assert order_res.status_code == 200
+    assert order_res.json()["status"] == "RECONCILIATION_REQUIRED"
+
+
+def test_pre_capture_missing_quote_sig_rejected(client, db_session):
+    """Verify that unsigned quote is rejected and cannot be captured."""
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": client.test_session_id,
+        "demo_sku": "HEADSET-DEMO-01",
+        "max_total": 100.0
+    })
+    quote_id = eval_res.json()["quote"]["id"]
+
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": client.test_session_id
+    })
+    order_id = create_res.json()["order_id"]
+
+    # Nullify quote signature in database
+    from app.models.quote import Quote
+    quote = db_session.query(Quote).filter(Quote.id == quote_id).first()
+    quote.quote_signature = None
+    db_session.commit()
+
+    cap_res = client.post(f"/api/v1/checkout/{order_id}/capture", json={})
+    assert cap_res.status_code == 400
+    assert "cryptographic signature missing" in cap_res.json()["detail"].lower()
+
+
 
 
