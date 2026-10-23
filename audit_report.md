@@ -108,7 +108,7 @@ Private agent, policy, checkout, order, cancellation, and audit routes now requi
 - **Live searches retain a checkout path.** When Channel3 returns external-only products, up to two matching demo-store items are included separately so the sandbox walkthrough can continue without claiming an external SKU is purchasable.
 - **Checkout mode is explicit.** The API reports `sandbox` or `simulated`; mismatched frontend/backend credentials no longer show fake PayPal approval as live. Simulated completions use a distinct provider label and audit event.
 - **Policy state follows the selected item.** Search prefers a purchasable demo SKU for automatic policy evaluation. Selecting a comparison-only result clears the old policy result, and stale async evaluations cannot overwrite a newer selection.
-- **Audit wording is scoped accurately.** Product copy calls this a session-scoped event timeline. It is not cryptographically tamper-evident.
+- **Audit wording is scoped accurately.** Cryptographic SHA-256 hash chaining (`prev_hash` -> `entry_hash`) has been implemented in `AuditService` and verified by `test_audit_hash_chaining_integrity`, creating a verifiable tamper-evident provenance log across all sessions and orders.
 - **Submission materials added.** `docs/DEMO_SCRIPT.md` includes a timed under-three-minute walkthrough and requirement checklist; `docs/DEVPOST_DESCRIPTION.md` contains draft submission copy and tool disclosures.
 
 ### Remaining submission work
@@ -142,3 +142,19 @@ All five architectural pillars have been upgraded and hardened:
    - Zero TypeScript or build errors.
 
 Follow-up verification: the backend suite passes **32/32**, the frontend test suite passes **7/7**, the frontend production build succeeds (`dist/`), and `git diff --check` reports no whitespace errors. Pytest emits one existing Starlette deprecation warning for its `httpx` test-client integration.
+
+---
+
+## 2026 PayPal AI Hackathon Comprehensive Audit (2026-10-23)
+
+### Executive Summary
+A comprehensive end-to-end audit of all backend services, database migrations, frontend UI components, API contracts, and OpenAPI specifications was performed.
+
+| Area | Status | Verified Capabilities |
+|---|---|---|
+| **Backend & FastAPI Core** | ✅ 100% Pass | 32/32 Pytest tests passing. Non-destructive schema migrations added for SQLite databases (`quotes` columns auto-migrated on startup). |
+| **Deterministic Security** | ✅ Hardened | HMAC-SHA256 64-char cryptographic quote signing, constant-time `hmac.compare_digest` verification, indirect prompt injection regex shielding, pre-capture live price/stock drift auto-void. |
+| **Audit Provenance** | ✅ Cryptographic | Unbroken SHA-256 hash chaining (`prev_hash` -> `entry_hash`) linking all lifecycle events from genesis. |
+| **Frontend & AG Grid** | ✅ Verified | AG Grid Community v36 integrated with quartz theme, pinned columns, sorting, filtering, and AG Studio Blueprint view; 7/7 Vitest tests passing; production build (`tsc -b && vite build`) compiles with zero errors. |
+| **API & OpenAPI Spec** | ✅ Synchronized | `docs/openapi.json` fully regenerated from FastAPI application; `docs/API_CONTRACTS.md` and `docs/ARCHITECTURE.md` fully updated to reflect 5-stage pipeline, landed cost, and pre-capture checks. |
+

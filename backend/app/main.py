@@ -102,6 +102,21 @@ def ensure_schema_migrations():
                 conn.execute(text("ALTER TABLE audit_events ADD COLUMN entry_hash VARCHAR DEFAULT 'GENESIS_HASH';"))
                 conn.commit()
                 logger.info("Migrated audit_events: added entry_hash column.")
+
+            q_cols = [c[1] for c in conn.execute(text("PRAGMA table_info(quotes)")).fetchall()]
+            new_quote_cols = [
+                ("item_price", "FLOAT"),
+                ("estimated_tax", "FLOAT"),
+                ("shipping_cost", "FLOAT"),
+                ("landed_cost", "FLOAT"),
+                ("merchant", "VARCHAR"),
+                ("quote_signature", "VARCHAR"),
+            ]
+            for col_name, col_type in new_quote_cols:
+                if q_cols and col_name not in q_cols:
+                    conn.execute(text(f"ALTER TABLE quotes ADD COLUMN {col_name} {col_type};"))
+                    conn.commit()
+                    logger.info(f"Migrated quotes: added {col_name} column.")
     except Exception as e:
         logger.warning(f"Schema migration check notice: {e}")
 

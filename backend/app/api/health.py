@@ -13,5 +13,6 @@ def health_check():
         "paypal_env": settings.PAYPAL_ENV,
         "paypal_configured": paypal_client.is_configured,
         "channel3_configured": channel3_client.is_configured,
-        "ai_provider": settings.AI_PROVIDER
+        "ai_provider": settings.AI_PROVIDER,
+        "gemini_model": settings.GEMINI_MODEL
     }

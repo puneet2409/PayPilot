@@ -557,7 +557,7 @@
           "Webhooks"
         ],
         "summary": "Handle Paypal Webhook",
-        "description": "Asynchronous Webhook Receiver for PayPal Events.\nSatisfies Section 5.1 of Embedded Financial Analytics Blueprint:\n- Receives asynchronous event streams (payment captures, order approvals, refunds)\n- Verifies event headers & transmission metadata\n- Idempotently reconciles database state\n- Always returns HTTP 200 OK to signal successful receipt and prevent exponential retry floods",
+        "description": "Asynchronous Webhook Receiver for PayPal Events.\nSatisfies Section 5.1 of Embedded Financial Analytics Blueprint:\n- Receives asynchronous event streams (payment captures, order approvals, refunds)\n- Cryptographically verifies event headers & transmission signature\n- Idempotently reconciles database state\n- Returns HTTP 200 OK to signal successful receipt and prevent exponential retry floods",
         "operationId": "handle_paypal_webhook_api_v1_webhooks_paypal_post",
         "parameters": [
           {
@@ -829,6 +829,13 @@
               }
             ],
             "title": "Clarification Question"
+          },
+          "suggested_actions": {
+            "items": {
+              "$ref": "#/components/schemas/SuggestedAction"
+            },
+            "type": "array",
+            "title": "Suggested Actions"
           }
         },
         "type": "object",
@@ -856,6 +863,28 @@
           "created_at": {
             "type": "string",
             "title": "Created At"
+          },
+          "prev_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prev Hash"
+          },
+          "entry_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entry Hash"
           }
         },
         "type": "object",
@@ -919,6 +948,18 @@
               }
             ],
             "title": "Idempotency Key"
+          },
+          "simulate_price_drift": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Simulate Price Drift",
+            "default": false
           }
         },
         "type": "object",
@@ -1480,6 +1521,73 @@
               }
             ],
             "title": "Reason"
+          },
+          "estimated_tax": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Tax"
+          },
+          "shipping": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shipping"
+          },
+          "shipping_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shipping Cost"
+          },
+          "landed_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landed Cost"
+          },
+          "merchant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant",
+            "default": "PayPilot Demo Store"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
           }
         },
         "type": "object",
@@ -1579,6 +1687,95 @@
           "expires_at": {
             "type": "string",
             "title": "Expires At"
+          },
+          "item_price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Price"
+          },
+          "estimated_tax": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Tax"
+          },
+          "shipping": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shipping"
+          },
+          "shipping_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shipping Cost"
+          },
+          "landed_cost": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Landed Cost"
+          },
+          "merchant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant",
+            "default": "PayPilot Demo Store"
+          },
+          "image_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Url"
+          },
+          "quote_signature": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quote Signature"
           }
         },
         "type": "object",
@@ -1746,6 +1943,35 @@
           "expires_at"
         ],
         "title": "SessionCreateResponse"
+      },
+      "SuggestedAction": {
+        "properties": {
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "query": {
+            "type": "string",
+            "title": "Query"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget"
+          }
+        },
+        "type": "object",
+        "required": [
+          "label",
+          "query"
+        ],
+        "title": "SuggestedAction"
       },
       "ValidationError": {
         "properties": {
