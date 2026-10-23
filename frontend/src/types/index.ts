@@ -78,7 +78,9 @@ export interface QuoteSummary {
   item_price?: number;
   estimated_tax?: number;
   shipping?: number;
+  shipping_cost?: number;
   landed_cost?: number;
+  merchant?: string;
   image_url?: string;
   quote_signature?: string;
 }

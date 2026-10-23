@@ -208,25 +208,25 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
         <div className="flex justify-between text-xs text-slate-500">
           <span>Item Subtotal</span>
           <span className="text-slate-800 font-semibold">
-            ${(quote.item_price ?? quote.amount).toFixed(2)} {quote.currency}
+            ${(quote.item_price ?? (quote.amount - (quote.estimated_tax ?? 0) - (quote.shipping_cost ?? quote.shipping ?? 0))).toFixed(2)} {quote.currency}
           </span>
         </div>
         <div className="flex justify-between text-xs text-slate-500">
           <span>Est. Sales Tax (8.25%)</span>
           <span className="text-slate-800 font-semibold">
-            ${(quote.estimated_tax ?? quote.amount * 0.0825).toFixed(2)}
+            ${(quote.estimated_tax ?? 0).toFixed(2)}
           </span>
         </div>
         <div className="flex justify-between text-xs text-slate-500">
           <span>Shipping</span>
           <span className="text-emerald-700 font-bold">
-            {(quote.shipping ?? (quote.amount >= 50 ? 0 : 5.99)) === 0
+            {(quote.shipping_cost ?? quote.shipping ?? 0) === 0
               ? 'FREE ($50+ promo)'
-              : `$${(quote.shipping ?? 5.99).toFixed(2)}`}
+              : `$${(quote.shipping_cost ?? quote.shipping ?? 5.99).toFixed(2)}`}
           </span>
         </div>
         <div className="pt-2.5 border-t border-slate-200 flex justify-between text-base font-extrabold text-[#001C3D]">
-          <span>Authoritative Total Charge</span>
+          <span>Authoritative Total Charge (Landed Cost)</span>
           <span className="text-[#003087] text-lg font-black">${quote.amount.toFixed(2)} {quote.currency}</span>
         </div>
       </div>

@@ -228,16 +228,18 @@ async def capture_checkout_order(
 
     # d) Live Merchant Price/Stock Drift Re-verification Guard
     from app.models.catalogue import DemoProduct
+    from app.services.policy_engine import PolicyEngine
     product = db.query(DemoProduct).filter(DemoProduct.sku == order.sku).first()
     price_drifted = False
     live_price = order.amount
     if product:
+        live_landed = PolicyEngine.calculate_landed_cost(product.fixed_price)[0]
         if not product.active:
             price_drifted = True
-            live_price = product.fixed_price
-        elif product.fixed_price > order.amount:
+            live_price = live_landed
+        elif live_landed > order.amount:
             price_drifted = True
-            live_price = product.fixed_price
+            live_price = live_landed
 
     if request.simulate_price_drift or price_drifted:
         order.status = "CANCELLED"

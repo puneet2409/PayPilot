@@ -88,10 +88,91 @@ async def handle_paypal_webhook(
     # Event handling switch
     if event_type == "PAYMENT.CAPTURE.COMPLETED" and order:
         capture_id = resource.get("id")
-        amount_val = float(resource.get("amount", {}).get("value", order.amount))
-        currency = resource.get("amount", {}).get("currency_code", order.currency)
 
-        # Reconcile order state to PAID if not already marked
+        # 1. Guard against capture arriving on already-cancelled or failed orders
+        if order.status in ("CANCELLED", "FAILED"):
+            order.status = "RECONCILIATION_REQUIRED"
+            order.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            AuditService.record_event(
+                db=db,
+                event_type="WEBHOOK_ANOMALY_CAPTURE_ON_TERMINAL_ORDER",
+                session_id=order.session_id,
+                order_id=order.id,
+                details={
+                    "webhook_event_id": event_id,
+                    "previous_status": order.status,
+                    "reason": "Payment capture webhook received for already-cancelled/failed order",
+                    "signature_verified": True
+                }
+            )
+            return {
+                "status": "reconciliation_required",
+                "event_id": event_id,
+                "reason": "Capture received for cancelled or failed order",
+                "matched_order_id": order.id
+            }
+
+        # 2. Strict amount and currency validation against order quote
+        amount_dict = resource.get("amount")
+        if not amount_dict or "value" not in amount_dict:
+            order.status = "RECONCILIATION_REQUIRED"
+            order.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            AuditService.record_event(
+                db=db,
+                event_type="WEBHOOK_ANOMALY_MISSING_AMOUNT",
+                session_id=order.session_id,
+                order_id=order.id,
+                details={"webhook_event_id": event_id, "signature_verified": True}
+            )
+            return {
+                "status": "reconciliation_required",
+                "event_id": event_id,
+                "reason": "Missing amount object in capture webhook payload",
+                "matched_order_id": order.id
+            }
+
+        try:
+            amount_val = float(amount_dict["value"])
+            currency = str(amount_dict.get("currency_code", "")).upper()
+        except (ValueError, TypeError):
+            order.status = "RECONCILIATION_REQUIRED"
+            order.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            return {
+                "status": "reconciliation_required",
+                "event_id": event_id,
+                "reason": "Malformed amount value in webhook payload",
+                "matched_order_id": order.id
+            }
+
+        if round(amount_val, 2) != round(order.amount, 2) or currency != order.currency.upper():
+            order.status = "RECONCILIATION_REQUIRED"
+            order.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            AuditService.record_event(
+                db=db,
+                event_type="WEBHOOK_ANOMALY_AMOUNT_MISMATCH",
+                session_id=order.session_id,
+                order_id=order.id,
+                details={
+                    "webhook_event_id": event_id,
+                    "expected_amount": order.amount,
+                    "received_amount": amount_val,
+                    "expected_currency": order.currency,
+                    "received_currency": currency,
+                    "signature_verified": True
+                }
+            )
+            return {
+                "status": "reconciliation_required",
+                "event_id": event_id,
+                "reason": f"Captured amount ({amount_val} {currency}) does not match locked order amount ({order.amount} {order.currency})",
+                "matched_order_id": order.id
+            }
+
+        # 3. Valid Capture: reconcile order state to PAID
         if order.status != "PAID":
             order.status = "PAID"
             order.updated_at = datetime.now(timezone.utc)

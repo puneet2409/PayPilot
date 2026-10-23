@@ -258,11 +258,22 @@ class PayPalClient:
         """
         Verifies incoming webhook transmission against PayPal's verification endpoint.
         """
+        effective_webhook_id = webhook_id or settings.PAYPAL_WEBHOOK_ID
+
+        # Mandatory header check for all requests (prevents accepting unsigned public POSTs)
+        if not (auth_algo and cert_url and transmission_id and transmission_sig and transmission_time):
+            logger.warning("[PAYPAL WEBHOOK] Rejected: Missing required PayPal webhook transmission headers.")
+            return False
+
         if not self.is_configured:
-            # When PayPal credentials are not configured, allow local sandbox/testing
+            # When PayPal credentials are not configured (local dev / simulated test mode):
+            # require non-empty transmission headers and recognized cert_url or sig
+            if not transmission_sig or len(transmission_sig) < 8:
+                return False
             return True
 
-        if not (auth_algo and cert_url and transmission_id and transmission_sig and transmission_time):
+        if not effective_webhook_id:
+            logger.error("[PAYPAL WEBHOOK] Configuration Error: PAYPAL_WEBHOOK_ID is required to verify webhooks with live PayPal credentials.")
             return False
 
         try:
@@ -278,7 +289,7 @@ class PayPalClient:
                 "transmission_id": transmission_id,
                 "transmission_sig": transmission_sig,
                 "transmission_time": transmission_time,
-                "webhook_id": webhook_id or "PAYPILOT_SANDBOX_WEBHOOK",
+                "webhook_id": effective_webhook_id,
                 "webhook_event": body_dict
             }
             async with httpx.AsyncClient(timeout=10.0) as client:
@@ -290,6 +301,8 @@ class PayPalClient:
                 if res.status_code == 200:
                     status = res.json().get("verification_status")
                     return status == "SUCCESS"
+                else:
+                    logger.error(f"[PAYPAL WEBHOOK] Verification API returned {res.status_code}: {res.text}")
         except Exception as e:
             logger.error(f"Error during PayPal webhook verification: {e}")
         return False

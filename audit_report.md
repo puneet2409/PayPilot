@@ -152,9 +152,41 @@ A comprehensive end-to-end audit of all backend services, database migrations, f
 
 | Area | Status | Verified Capabilities |
 |---|---|---|
-| **Backend & FastAPI Core** | ✅ 100% Pass | 32/32 Pytest tests passing. Non-destructive schema migrations added for SQLite databases (`quotes` columns auto-migrated on startup). |
+| **Backend & FastAPI Core** | ✅ 100% Pass | 34/34 Pytest tests passing. Database-agnostic schema migrations added for both SQLite & PostgreSQL using SQLAlchemy `inspect`. |
 | **Deterministic Security** | ✅ Hardened | HMAC-SHA256 64-char cryptographic quote signing, constant-time `hmac.compare_digest` verification, indirect prompt injection regex shielding, pre-capture live price/stock drift auto-void. |
-| **Audit Provenance** | ✅ Cryptographic | Unbroken SHA-256 hash chaining (`prev_hash` -> `entry_hash`) linking all lifecycle events from genesis. |
+| **Audit Provenance** | ✅ Cryptographic | Unbroken SHA-256 hash chaining with thread mutex lock (`_audit_lock`) eliminating race conditions across concurrent writers. |
 | **Frontend & AG Grid** | ✅ Verified | AG Grid Community v36 integrated with quartz theme, pinned columns, sorting, filtering, and AG Studio Blueprint view; 7/7 Vitest tests passing; production build (`tsc -b && vite build`) compiles with zero errors. |
 | **API & OpenAPI Spec** | ✅ Synchronized | `docs/openapi.json` fully regenerated from FastAPI application; `docs/API_CONTRACTS.md` and `docs/ARCHITECTURE.md` fully updated to reflect 5-stage pipeline, landed cost, and pre-capture checks. |
+
+### Resolved Audit Findings (P1 & P2 Remediation)
+
+1. **P1: Landed Cost Authoritative Charge Alignment** (RESOLVED)
+   - `Quote.amount` now directly reflects the true calculated `landed_cost` ($97.41) rather than raw item price ($89.99).
+   - In `checkout.py` and `paypal.py`, the order amount charged to PayPal equals `quote.amount` ($97.41), and the item breakdown (`item_total: 89.99` + `tax_total: 7.42` + `shipping: 0.00`) exactly sums to the total amount without artificial subtraction.
+   - In `ApprovalPanel.tsx`, the item subtotal, estimated tax, shipping, and total charge are displayed with mathematical consistency.
+   - Updated `get_valid_quote` in `quote_service.py` to compare expected landed cost against `quote.amount`.
+
+2. **P1: Registered Webhook ID & Unsigned Webhook Rejection** (RESOLVED)
+   - Added `PAYPAL_WEBHOOK_ID` to `backend/app/config.py`, `.env.example`, and `backend/.env.example`.
+   - In `paypal.py`, `verify_webhook_signature` now uses `settings.PAYPAL_WEBHOOK_ID` rather than a hardcoded dummy string.
+   - Added mandatory validation of transmission headers in `verify_webhook_signature` regardless of configuration mode, rejecting unsigned public webhooks with HTTP 401. Tested via `test_paypal_webhook_unsigned_rejected`.
+
+3. **P1: Webhook Capture Reconciliation & Amount Matching** (RESOLVED)
+   - In `webhooks.py`, the `PAYMENT.CAPTURE.COMPLETED` handler now strictly parses the received amount and currency from the webhook payload.
+   - If the captured amount or currency does not match the locked order, or if the order is already in a terminal state (`CANCELLED` or `FAILED`), the order is flagged as `RECONCILIATION_REQUIRED` and an audit anomaly event is recorded. Tested via `test_paypal_webhook_amount_mismatch_flagged`.
+
+4. **P1: PostgreSQL Migration Compatibility** (RESOLVED)
+   - Rewrote `ensure_schema_migrations()` in `main.py` using database-agnostic SQLAlchemy `inspect(engine).get_columns(...)` instead of SQLite-only `PRAGMA table_info` queries.
+   - Works across both PostgreSQL (Render production) and SQLite (local dev/test) without swallowing errors.
+
+5. **P2: External Retailer Policy Check in Frontend** (RESOLVED)
+   - In `App.tsx`, updated the live Channel3 external retailer item policy check to validate `landedCost <= effectiveBudget` (instead of raw item price).
+   - Added evaluation of `excludedTerms` against retailer title and explanation.
+
+6. **P2: Thread Mutex for Hash-Chained Audit Trail** (RESOLVED)
+   - Added `_audit_lock = threading.Lock()` around the hash computation and write operations in `AuditService.record_event()`, ensuring strictly sequential chain progression without hash collisions or forks under concurrent load.
+
+7. **P2: Financial Analytics Fee Transparency** (RESOLVED)
+   - In `analytics.py`, the dashboard inspects `Payment.raw_response_json` for provider-reported PayPal fees (`seller_receivable_breakdown.paypal_fee`).
+   - If absent, it provides standard rate calculations (2.9% + $0.30) and explicitly labels the fee with `"fee_type": "estimated"` and `"fee_basis": "Standard Rate Estimate (2.9% + $0.30)"`.
 

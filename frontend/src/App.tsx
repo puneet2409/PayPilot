@@ -184,7 +184,7 @@ export const App: React.FC = () => {
       const estimatedTax = Number((itemPrice * 0.0825).toFixed(2));
       const shipping = itemPrice >= 50.0 ? 0 : 5.99;
       const landedCost = Number((itemPrice + estimatedTax + shipping).toFixed(2));
-      const isBudgetPassed = itemPrice <= effectiveBudget;
+      const isBudgetPassed = landedCost <= effectiveBudget;
 
       const checks = [
         {
@@ -200,7 +200,7 @@ export const App: React.FC = () => {
         {
           rule: 'budget_limit',
           passed: isBudgetPassed,
-          detail: `Item price $${itemPrice.toFixed(2)} (Landed: $${landedCost.toFixed(2)} incl. $${estimatedTax.toFixed(2)} tax & $${shipping.toFixed(2)} shipping) ${isBudgetPassed ? 'is within' : 'exceeds'} ceiling $${effectiveBudget.toFixed(2)}`
+          detail: `Landed cost $${landedCost.toFixed(2)} (Item: $${itemPrice.toFixed(2)} + Tax: $${estimatedTax.toFixed(2)} + Shipping: $${shipping.toFixed(2)}) ${isBudgetPassed ? 'is within' : 'exceeds'} ceiling $${effectiveBudget.toFixed(2)}`
         },
         {
           rule: 'prompt_injection_shield',
@@ -208,6 +208,22 @@ export const App: React.FC = () => {
           detail: 'Retail catalog payload sanitized — zero adversarial prompt patterns detected.'
         }
       ];
+
+      // Excluded terms check
+      const activeExcluded = excludedTermsOverride ?? excludedTerms;
+      let hasExcludedTerm = false;
+      const candidateText = `${cand.title} ${cand.explanation || ''}`.toLowerCase();
+      for (const term of activeExcluded) {
+        if (candidateText.includes(term.toLowerCase())) {
+          hasExcludedTerm = true;
+          checks.push({
+            rule: 'exclusion_policy',
+            passed: false,
+            detail: `Product contains excluded term: '${term}'`
+          });
+          break;
+        }
+      }
 
       const activeReqs = requiredFeaturesOverride ?? requiredFeatures;
       let allReqsPassed = true;
@@ -221,7 +237,7 @@ export const App: React.FC = () => {
         if (!hasFeat) allReqsPassed = false;
       }
 
-      const isEligible = isBudgetPassed && allReqsPassed;
+      const isEligible = isBudgetPassed && allReqsPassed && !hasExcludedTerm;
 
       setPolicyResult({
         session_id: sessionId,
@@ -236,15 +252,19 @@ export const App: React.FC = () => {
         merchant: cand.merchant,
         image_url: cand.image_url,
         reason: !isBudgetPassed
-          ? `Price $${itemPrice.toFixed(2)} exceeds budget ceiling of $${effectiveBudget.toFixed(2)}`
-          : !allReqsPassed
-            ? 'Missing required feature attributes'
-            : undefined,
+          ? `Landed cost $${landedCost.toFixed(2)} exceeds budget ceiling of $${effectiveBudget.toFixed(2)}`
+          : hasExcludedTerm
+            ? 'Contains excluded term'
+            : !allReqsPassed
+              ? 'Missing required feature attributes'
+              : undefined,
         rejection_reason: !isBudgetPassed
-          ? `Price $${itemPrice.toFixed(2)} exceeds budget ceiling of $${effectiveBudget.toFixed(2)}`
-          : !allReqsPassed
-            ? 'Missing required feature attributes'
-            : undefined,
+          ? `Landed cost $${landedCost.toFixed(2)} exceeds budget ceiling of $${effectiveBudget.toFixed(2)}`
+          : hasExcludedTerm
+            ? 'Contains excluded term'
+            : !allReqsPassed
+              ? 'Missing required feature attributes'
+              : undefined,
         policy_version: 'v1.0 (Store Deal Check)',
         landed_cost: landedCost,
         estimated_tax: estimatedTax,

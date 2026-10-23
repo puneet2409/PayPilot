@@ -78,7 +78,10 @@ def test_policy_evaluation_success_and_quote(client):
     data = res.json()
     assert data["eligible"] is True
     assert data["quote"] is not None
-    assert data["quote"]["amount"] == 89.99
+    assert data["quote"]["amount"] == 97.41
+    assert data["quote"]["item_price"] == 89.99
+    assert data["quote"]["estimated_tax"] == 7.42
+    assert data["quote"]["landed_cost"] == 97.41
 
 def test_policy_evaluation_budget_exceeded(client):
     res = client.post("/api/v1/policies/evaluate", json={
@@ -274,7 +277,7 @@ def test_session_orders_listing(client, db_session):
     assert orders[0]["status"] == "AWAITING_APPROVAL"
     assert orders[0]["sku"] == "HEADSET-DEMO-01"
     assert "Anker Soundcore Space Q45" in orders[0]["item_title"]
-    assert orders[0]["amount"] == 89.99
+    assert orders[0]["amount"] == 97.41
 
     # Capture the order
     cap_res = client.post(f"/api/v1/checkout/{order_id}/capture", json={})
@@ -308,7 +311,14 @@ def test_paypal_webhook_reconciliation(client, db_session):
     order_id = order_data["order_id"]
     paypal_order_id = order_data["paypal_order_id"]
 
-    # Post asynchronous webhook
+    # Post asynchronous webhook with required PayPal transmission headers and matching landed cost (86.55)
+    wh_headers = {
+        "paypal-auth-algo": "SHA256withRSA",
+        "paypal-cert-url": "https://api.sandbox.paypal.com/cert",
+        "paypal-transmission-id": "tx_test_12345678",
+        "paypal-transmission-sig": "simulated_webhook_sig",
+        "paypal-transmission-time": "2026-10-23T08:00:00Z"
+    }
     wh_payload = {
         "id": "WH-TEST-EVENT-001",
         "event_type": "PAYMENT.CAPTURE.COMPLETED",
@@ -316,13 +326,13 @@ def test_paypal_webhook_reconciliation(client, db_session):
         "resource": {
             "id": "CAP-WH-TEST-999",
             "status": "COMPLETED",
-            "amount": {"value": "79.95", "currency_code": "USD"},
+            "amount": {"value": f"{order_data['amount']:.2f}", "currency_code": "USD"},
             "supplementary_data": {
                 "related_ids": {"order_id": paypal_order_id}
             }
         }
     }
-    wh_res = client.post("/api/v1/webhooks/paypal", json=wh_payload)
+    wh_res = client.post("/api/v1/webhooks/paypal", json=wh_payload, headers=wh_headers)
     assert wh_res.status_code == 200
     res_json = wh_res.json()
     assert res_json["status"] == "received"
@@ -333,6 +343,59 @@ def test_paypal_webhook_reconciliation(client, db_session):
     assert order_res.status_code == 200
     assert order_res.json()["status"] == "PAID"
     assert order_res.json()["payment"]["capture_id"] == "CAP-WH-TEST-999"
+
+
+def test_paypal_webhook_unsigned_rejected(client):
+    """Verify unsigned webhook requests missing transmission headers are rejected with 401."""
+    wh_res = client.post("/api/v1/webhooks/paypal", json={"id": "WH-TEST-FAKE"})
+    assert wh_res.status_code == 401
+
+
+def test_paypal_webhook_amount_mismatch_flagged(client, db_session):
+    """Verify webhook capture with mismatched amount flags order for reconciliation."""
+    session_id = client.test_session_id
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": session_id,
+        "demo_sku": "HEADSET-DEMO-02",
+        "max_total": 100.0
+    })
+    quote_id = eval_res.json()["quote"]["id"]
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": session_id
+    })
+    order_data = create_res.json()
+    order_id = order_data["order_id"]
+    paypal_order_id = order_data["paypal_order_id"]
+
+    wh_headers = {
+        "paypal-auth-algo": "SHA256withRSA",
+        "paypal-cert-url": "https://api.sandbox.paypal.com/cert",
+        "paypal-transmission-id": "tx_test_mismatch",
+        "paypal-transmission-sig": "simulated_webhook_sig",
+        "paypal-transmission-time": "2026-10-23T08:00:00Z"
+    }
+    wh_payload = {
+        "id": "WH-TEST-MISMATCH",
+        "event_type": "PAYMENT.CAPTURE.COMPLETED",
+        "resource_type": "capture",
+        "resource": {
+            "id": "CAP-WH-TEST-MISMATCH",
+            "status": "COMPLETED",
+            "amount": {"value": "10.00", "currency_code": "USD"},
+            "supplementary_data": {
+                "related_ids": {"order_id": paypal_order_id}
+            }
+        }
+    }
+    wh_res = client.post("/api/v1/webhooks/paypal", json=wh_payload, headers=wh_headers)
+    assert wh_res.status_code == 200
+    assert wh_res.json()["status"] == "reconciliation_required"
+
+    # Order must not be marked PAID
+    order_res = client.get(f"/api/v1/orders/{order_id}")
+    assert order_res.status_code == 200
+    assert order_res.json()["status"] == "RECONCILIATION_REQUIRED"
 
 
 def test_analytics_dashboard_endpoint(client, db_session):
@@ -366,8 +429,8 @@ def test_analytics_dashboard_endpoint(client, db_session):
 
     # Check metrics
     metrics = data["metrics"]
-    assert metrics["total_issued_amount"] == 89.99
-    assert metrics["total_paid_amount"] == 89.99
+    assert metrics["total_issued_amount"] == 97.41
+    assert metrics["total_paid_amount"] == 97.41
     assert metrics["collection_rate_percent"] == 100.0
     assert metrics["paid_orders"] == 1
 

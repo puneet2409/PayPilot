@@ -71,11 +71,33 @@ def get_dashboard_api_data(
         })
 
     # Transform payments into AG Studio "transactions" source
+    import json
     transactions_data = []
     for p in payments:
         created_iso = p.created_at.isoformat() if p.created_at else ""
         if p.created_at:
             timestamps.append(p.created_at)
+
+        fee_val = None
+        fee_type = "estimated"
+        if p.raw_response_json:
+            try:
+                raw_payload = json.loads(p.raw_response_json)
+                for pu in raw_payload.get("purchase_units", []):
+                    for cap in pu.get("payments", {}).get("captures", []):
+                        pp_fee = cap.get("seller_receivable_breakdown", {}).get("paypal_fee", {}).get("value")
+                        if pp_fee is not None:
+                            fee_val = round(float(pp_fee), 2)
+                            fee_type = "provider_reported"
+                            break
+            except Exception:
+                pass
+
+        if fee_val is None:
+            # Standard PayPal merchant processing formula (2.9% + $0.30)
+            fee_val = round(p.captured_amount * 0.029 + 0.30, 2)
+
+        net_val = round(p.captured_amount - fee_val, 2)
 
         transactions_data.append({
             "transaction_id": p.capture_id,
@@ -83,8 +105,10 @@ def get_dashboard_api_data(
             "provider": p.provider,
             "transaction_status": p.status,
             "gross_amount": round(p.captured_amount, 2),
-            "fee_amount": round(p.captured_amount * 0.029 + 0.30, 2), # Standard PayPal processing rate
-            "net_amount": round(p.captured_amount - (p.captured_amount * 0.029 + 0.30), 2),
+            "fee_amount": fee_val,
+            "fee_type": fee_type,
+            "fee_basis": "PayPal API Reported" if fee_type == "provider_reported" else "Standard Rate Estimate (2.9% + $0.30)",
+            "net_amount": net_val,
             "currency": p.currency,
             "transaction_initiation_date": created_iso,
         })

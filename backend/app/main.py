@@ -89,36 +89,41 @@ def seed_initial_demo_catalogue():
         db.close()
 
 def ensure_schema_migrations():
-    """Applies non-destructive schema migrations for existing SQLite databases."""
-    from sqlalchemy import text
+    """Applies non-destructive schema migrations for existing SQLite and PostgreSQL databases."""
+    from sqlalchemy import inspect, text
     try:
+        inspector = inspect(engine)
+        tables = inspector.get_table_names()
         with engine.connect() as conn:
-            cols = [c[1] for c in conn.execute(text("PRAGMA table_info(audit_events)")).fetchall()]
-            if cols and "prev_hash" not in cols:
-                conn.execute(text("ALTER TABLE audit_events ADD COLUMN prev_hash VARCHAR;"))
-                conn.commit()
-                logger.info("Migrated audit_events: added prev_hash column.")
-            if cols and "entry_hash" not in cols:
-                conn.execute(text("ALTER TABLE audit_events ADD COLUMN entry_hash VARCHAR DEFAULT 'GENESIS_HASH';"))
-                conn.commit()
-                logger.info("Migrated audit_events: added entry_hash column.")
-
-            q_cols = [c[1] for c in conn.execute(text("PRAGMA table_info(quotes)")).fetchall()]
-            new_quote_cols = [
-                ("item_price", "FLOAT"),
-                ("estimated_tax", "FLOAT"),
-                ("shipping_cost", "FLOAT"),
-                ("landed_cost", "FLOAT"),
-                ("merchant", "VARCHAR"),
-                ("quote_signature", "VARCHAR"),
-            ]
-            for col_name, col_type in new_quote_cols:
-                if q_cols and col_name not in q_cols:
-                    conn.execute(text(f"ALTER TABLE quotes ADD COLUMN {col_name} {col_type};"))
+            if "audit_events" in tables:
+                cols = [c["name"] for c in inspector.get_columns("audit_events")]
+                if "prev_hash" not in cols:
+                    conn.execute(text("ALTER TABLE audit_events ADD COLUMN prev_hash VARCHAR;"))
                     conn.commit()
-                    logger.info(f"Migrated quotes: added {col_name} column.")
+                    logger.info("Migrated audit_events: added prev_hash column.")
+                if "entry_hash" not in cols:
+                    conn.execute(text("ALTER TABLE audit_events ADD COLUMN entry_hash VARCHAR DEFAULT 'GENESIS_HASH';"))
+                    conn.commit()
+                    logger.info("Migrated audit_events: added entry_hash column.")
+
+            if "quotes" in tables:
+                q_cols = [c["name"] for c in inspector.get_columns("quotes")]
+                new_quote_cols = [
+                    ("item_price", "FLOAT"),
+                    ("estimated_tax", "FLOAT"),
+                    ("shipping_cost", "FLOAT"),
+                    ("landed_cost", "FLOAT"),
+                    ("merchant", "VARCHAR"),
+                    ("quote_signature", "VARCHAR"),
+                ]
+                for col_name, col_type in new_quote_cols:
+                    if col_name not in q_cols:
+                        conn.execute(text(f"ALTER TABLE quotes ADD COLUMN {col_name} {col_type};"))
+                        conn.commit()
+                        logger.info(f"Migrated quotes: added {col_name} column.")
     except Exception as e:
-        logger.warning(f"Schema migration check notice: {e}")
+        logger.error(f"Schema migration error: {e}")
+        raise
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):

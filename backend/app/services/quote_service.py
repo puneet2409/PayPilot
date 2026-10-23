@@ -110,7 +110,7 @@ class QuoteService:
             id=quote_id,
             session_id=session_id,
             sku=product.sku,
-            amount=product.fixed_price,
+            amount=landed_cost,
             currency=product.currency,
             policy_version="v1",
             status="ACTIVE",
@@ -140,11 +140,13 @@ class QuoteService:
         # Quotes are tied to the catalogue terms that passed policy evaluation.
         # If inventory or the authoritative price changed, require a new check.
         product = db.query(DemoProduct).filter(DemoProduct.sku == quote.sku).first()
+        from app.services.policy_engine import PolicyEngine
+        exp_landed = PolicyEngine.calculate_landed_cost(product.fixed_price)[0] if product else 0.0
         if (
             not product
             or not product.active
             or product.currency.upper() != quote.currency.upper()
-            or round(product.fixed_price, 2) != round(quote.amount, 2)
+            or round(exp_landed, 2) != round(quote.amount, 2)
         ):
             quote.status = "STALE"
             db.commit()

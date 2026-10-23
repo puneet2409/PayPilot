@@ -129,6 +129,8 @@ backend/tests/test_api_endpoints.py::test_order_cancellation PASSED
 backend/tests/test_api_endpoints.py::test_channel3_sku_matching PASSED
 backend/tests/test_api_endpoints.py::test_session_orders_listing PASSED
 backend/tests/test_api_endpoints.py::test_paypal_webhook_reconciliation PASSED
+backend/tests/test_api_endpoints.py::test_paypal_webhook_unsigned_rejected PASSED
+backend/tests/test_api_endpoints.py::test_paypal_webhook_amount_mismatch_flagged PASSED
 backend/tests/test_api_endpoints.py::test_analytics_dashboard_endpoint PASSED
 backend/tests/test_api_endpoints.py::test_pre_capture_price_drift_auto_void PASSED
 backend/tests/test_api_endpoints.py::test_audit_hash_chaining_integrity PASSED
@@ -145,7 +147,7 @@ backend/tests/test_policy_engine.py::test_policy_landed_cost_budget_exceeded PAS
 backend/tests/test_policy_engine.py::test_quote_hmac_tampering_rejected_full_payload PASSED
 backend/tests/test_ranking.py::test_ranking_flags_and_demotes_over_budget_candidates PASSED
 backend/tests/test_ranking.py::test_ranking_within_budget_default_true PASSED
-32 passed in backend (100%)
+34 passed in backend (100%)
 
 frontend/src/__tests__/paypilot.test.ts
 ✓ builds valid AG Studio relational sources (orders, transactions, customers)
