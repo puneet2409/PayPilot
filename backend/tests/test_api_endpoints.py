@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone, timedelta
 from unittest.mock import patch, PropertyMock
 
@@ -672,6 +673,147 @@ def test_pre_capture_missing_quote_sig_rejected(client, db_session):
     assert cap_res.status_code == 400
     assert "cryptographic signature missing" in cap_res.json()["detail"].lower()
 
+def test_paypal_webhook_live_credentials_verified_success(client, monkeypatch):
+    """Verify that live PayPal webhook verification API path succeeds and marks order PAID when status is SUCCESS."""
+    from app.integrations.paypal import paypal_client
+    from app.config import settings
+
+    session_id = client.test_session_id
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": session_id,
+        "demo_sku": "HEADSET-DEMO-02",
+        "max_total": 100.0
+    })
+    quote_id = eval_res.json()["quote"]["id"]
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": session_id
+    })
+    order_data = create_res.json()
+    order_id = order_data["order_id"]
+    paypal_order_id = order_data["paypal_order_id"]
+
+    monkeypatch.setattr(paypal_client, "client_id", "live_test_client_id")
+    monkeypatch.setattr(paypal_client, "client_secret", "live_test_client_secret")
+    monkeypatch.setattr(settings, "PAYPAL_WEBHOOK_ID", "WH-REGISTERED-LIVE-123")
+
+    # Mock httpx AsyncClient post for OAuth token and verify-webhook-signature
+    class MockResponse:
+        def __init__(self, status_code, json_data):
+            self.status_code = status_code
+            self._json = json_data
+            self.text = json.dumps(json_data)
+
+        def json(self):
+            return self._json
+
+    async def mock_async_post(self, url, *args, **kwargs):
+        if "oauth2/token" in url:
+            return MockResponse(200, {"access_token": "live_oauth_token", "expires_in": 3600})
+        if "verify-webhook-signature" in url:
+            return MockResponse(200, {"verification_status": "SUCCESS"})
+        return MockResponse(404, {})
+
+    import httpx
+    monkeypatch.setattr(httpx.AsyncClient, "post", mock_async_post)
+
+    wh_headers = {
+        "paypal-auth-algo": "SHA256withRSA",
+        "paypal-cert-url": "https://api.sandbox.paypal.com/cert",
+        "paypal-transmission-id": "tx_live_verified",
+        "paypal-transmission-sig": "valid_rsa_transmission_sig",
+        "paypal-transmission-time": "2026-10-25T12:00:00Z"
+    }
+    wh_payload = {
+        "id": "WH-LIVE-EVENT-001",
+        "event_type": "PAYMENT.CAPTURE.COMPLETED",
+        "resource_type": "capture",
+        "resource": {
+            "id": "CAP-WH-LIVE-001",
+            "status": "COMPLETED",
+            "amount": {"value": f"{order_data['amount']:.2f}", "currency_code": "USD"},
+            "supplementary_data": {
+                "related_ids": {"order_id": paypal_order_id}
+            }
+        }
+    }
+    wh_res = client.post("/api/v1/webhooks/paypal", json=wh_payload, headers=wh_headers)
+    assert wh_res.status_code == 200
+    assert wh_res.json()["status"] == "received"
+    assert wh_res.json()["matched_order_id"] == order_id
+
+    order_res = client.get(f"/api/v1/orders/{order_id}")
+    assert order_res.status_code == 200
+    assert order_res.json()["status"] == "PAID"
+    assert order_res.json()["payment"]["capture_id"] == "CAP-WH-LIVE-001"
 
 
+def test_paypal_webhook_live_credentials_rejected_on_failure(client, monkeypatch):
+    """Verify that live PayPal webhook verification API path rejects with 401 when status is FAILURE."""
+    from app.integrations.paypal import paypal_client
+    from app.config import settings
 
+    monkeypatch.setattr(paypal_client, "client_id", "live_test_client_id")
+    monkeypatch.setattr(paypal_client, "client_secret", "live_test_client_secret")
+    monkeypatch.setattr(settings, "PAYPAL_WEBHOOK_ID", "WH-REGISTERED-LIVE-123")
+
+    class MockResponse:
+        def __init__(self, status_code, json_data):
+            self.status_code = status_code
+            self._json = json_data
+            self.text = json.dumps(json_data)
+
+        def json(self):
+            return self._json
+
+    async def mock_async_post(self, url, *args, **kwargs):
+        if "oauth2/token" in url:
+            return MockResponse(200, {"access_token": "live_oauth_token", "expires_in": 3600})
+        if "verify-webhook-signature" in url:
+            return MockResponse(200, {"verification_status": "FAILURE"})
+        return MockResponse(404, {})
+
+    import httpx
+    monkeypatch.setattr(httpx.AsyncClient, "post", mock_async_post)
+
+    wh_headers = {
+        "paypal-auth-algo": "SHA256withRSA",
+        "paypal-cert-url": "https://api.sandbox.paypal.com/cert",
+        "paypal-transmission-id": "tx_live_failed",
+        "paypal-transmission-sig": "invalid_rsa_sig",
+        "paypal-transmission-time": "2026-10-25T12:00:00Z"
+    }
+    wh_payload = {
+        "id": "WH-LIVE-FAIL-001",
+        "event_type": "PAYMENT.CAPTURE.COMPLETED",
+        "resource_type": "capture",
+        "resource": {"id": "CAP-FAIL"}
+    }
+    wh_res = client.post("/api/v1/webhooks/paypal", json=wh_payload, headers=wh_headers)
+    assert wh_res.status_code == 401
+
+
+def test_paypal_webhook_live_credentials_missing_webhook_id_rejected(client, monkeypatch):
+    """Verify that when live credentials exist but PAYPAL_WEBHOOK_ID is unset, requests are rejected with 401."""
+    from app.integrations.paypal import paypal_client
+    from app.config import settings
+
+    monkeypatch.setattr(paypal_client, "client_id", "live_test_client_id")
+    monkeypatch.setattr(paypal_client, "client_secret", "live_test_client_secret")
+    monkeypatch.setattr(settings, "PAYPAL_WEBHOOK_ID", "")
+
+    wh_headers = {
+        "paypal-auth-algo": "SHA256withRSA",
+        "paypal-cert-url": "https://api.sandbox.paypal.com/cert",
+        "paypal-transmission-id": "tx_missing_wh_id",
+        "paypal-transmission-sig": "some_sig",
+        "paypal-transmission-time": "2026-10-25T12:00:00Z"
+    }
+    wh_payload = {
+        "id": "WH-LIVE-FAIL-002",
+        "event_type": "PAYMENT.CAPTURE.COMPLETED",
+        "resource_type": "capture",
+        "resource": {"id": "CAP-FAIL-2"}
+    }
+    wh_res = client.post("/api/v1/webhooks/paypal", json=wh_payload, headers=wh_headers)
+    assert wh_res.status_code == 401

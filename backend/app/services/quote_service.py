@@ -35,11 +35,9 @@ class QuoteService:
         # Check if called as (quote_id, amount, sku, expires_at_iso, provided_sig) -> 5 positional args
         if len(args) == 5:
             quote_id, legacy_amount, legacy_sku, expires_at_iso, provided_sig = args
-            exp_variants = [str(expires_at_iso)]
-            if "+00:00" in str(expires_at_iso):
-                exp_variants.append(str(expires_at_iso).replace("+00:00", ""))
-            else:
-                exp_variants.append(f"{expires_at_iso}+00:00")
+            s = str(expires_at_iso)
+            clean = s.replace("Z", "").replace("+00:00", "")
+            exp_variants = list(dict.fromkeys([s, clean, f"{clean}Z", f"{clean}+00:00"]))
 
             for exp in exp_variants:
                 expected_legacy = QuoteService.compute_quote_signature(quote_id, float(legacy_amount), str(legacy_sku), exp)
@@ -62,11 +60,9 @@ class QuoteService:
         if not provided_sig:
             return False
 
-        exp_variants = [str(expires_at_iso)]
-        if "+00:00" in str(expires_at_iso):
-            exp_variants.append(str(expires_at_iso).replace("+00:00", ""))
-        else:
-            exp_variants.append(f"{expires_at_iso}+00:00")
+        s = str(expires_at_iso)
+        clean = s.replace("Z", "").replace("+00:00", "")
+        exp_variants = list(dict.fromkeys([s, clean, f"{clean}Z", f"{clean}+00:00"]))
 
         for exp in exp_variants:
             expected = QuoteService.compute_quote_signature(
@@ -97,13 +93,17 @@ class QuoteService:
         landed_cost, estimated_tax, shipping_cost = PolicyEngine.calculate_landed_cost(product.fixed_price)
         merchant = getattr(product, "brand", None) or "PayPilot Demo Store"
 
+        exp_iso = expires_at.isoformat()
+        if not exp_iso.endswith("Z") and "+" not in exp_iso:
+            exp_iso += "Z"
+
         # Compute cryptographic HMAC signature
         quote_sig = QuoteService.compute_quote_signature(
             quote_id=quote_id,
             sku=product.sku,
             merchant=merchant,
             landed_cost=landed_cost,
-            expires_at_iso=expires_at.isoformat()
+            expires_at_iso=exp_iso
         )
 
         quote = Quote(

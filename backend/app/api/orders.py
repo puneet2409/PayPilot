@@ -18,6 +18,15 @@ from app.security import require_session, require_session_match
 
 router = APIRouter(prefix="/api/v1", tags=["Orders & Audit"])
 
+def _format_utc_iso(dt: datetime) -> str:
+    if not dt:
+        return ""
+    s = dt.isoformat()
+    if not s.endswith("Z") and "+" not in s:
+        s += "Z"
+    return s
+
+
 @router.get("/orders/{order_id}", response_model=OrderDetailResponse)
 def get_order_details(
     order_id: str,
@@ -48,7 +57,7 @@ def get_order_details(
         status=order.status,
         amount=order.amount,
         currency=order.currency,
-        created_at=order.created_at.isoformat(),
+        created_at=_format_utc_iso(order.created_at),
         payment=payment_info
     )
 
@@ -70,7 +79,7 @@ def get_order_audit_timeline(
                 id=e.id,
                 event_type=e.event_type,
                 details=json.loads(e.details_json or "{}"),
-                created_at=e.created_at.isoformat(),
+                created_at=_format_utc_iso(e.created_at),
                 prev_hash=e.prev_hash,
                 entry_hash=e.entry_hash
             )
@@ -93,7 +102,7 @@ def get_session_audit_timeline(
                 id=e.id,
                 event_type=e.event_type,
                 details=json.loads(e.details_json or "{}"),
-                created_at=e.created_at.isoformat(),
+                created_at=_format_utc_iso(e.created_at),
                 prev_hash=e.prev_hash,
                 entry_hash=e.entry_hash
             )
@@ -138,8 +147,8 @@ def get_session_orders(
                 status=o.status,
                 amount=o.amount,
                 currency=o.currency,
-                created_at=o.created_at.isoformat() if o.created_at else "",
-                updated_at=o.updated_at.isoformat() if o.updated_at else None,
+                created_at=_format_utc_iso(o.created_at),
+                updated_at=_format_utc_iso(o.updated_at) if o.updated_at else None,
             )
         )
     return result

@@ -43,7 +43,7 @@ class AuditService:
             details_str = json.dumps(details, sort_keys=True)
 
             # Cryptographic Hash Chaining: fetch latest recorded event with sequence lock
-            latest = db.query(AuditEvent).order_by(AuditEvent.created_at.desc()).first()
+            latest = db.query(AuditEvent).order_by(AuditEvent.created_at.desc(), AuditEvent.id.desc()).first()
             prev_hash = latest.entry_hash if latest and latest.entry_hash else "0" * 64
 
             event_id = f"audit_{uuid.uuid4().hex[:10]}"
@@ -76,4 +76,4 @@ class AuditService:
             query = query.filter(AuditEvent.order_id == order_id)
         elif session_id:
             query = query.filter(AuditEvent.session_id == session_id)
-        return query.order_by(AuditEvent.created_at.asc()).all()
+        return query.order_by(AuditEvent.created_at.asc(), AuditEvent.id.asc()).all()

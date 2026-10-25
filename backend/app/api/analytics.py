@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -8,6 +8,14 @@ from app.models.catalogue import DemoProduct
 from app.security import require_session, require_session_match
 
 router = APIRouter(prefix="/api/v1/analytics", tags=["Analytics & AG Studio"])
+
+def _format_utc_iso(dt: Optional[datetime]) -> str:
+    if not dt:
+        return ""
+    s = dt.isoformat()
+    if not s.endswith("Z") and "+" not in s:
+        s += "Z"
+    return s
 
 @router.get("/sessions/{session_id}/dashboard", response_model=Dict[str, Any])
 def get_dashboard_api_data(
@@ -51,7 +59,7 @@ def get_dashboard_api_data(
         total_issued += o.amount
         total_paid += paid_val
 
-        created_iso = o.created_at.isoformat() if o.created_at else ""
+        created_iso = _format_utc_iso(o.created_at)
         if o.created_at:
             timestamps.append(o.created_at)
 
@@ -74,7 +82,7 @@ def get_dashboard_api_data(
     import json
     transactions_data = []
     for p in payments:
-        created_iso = p.created_at.isoformat() if p.created_at else ""
+        created_iso = _format_utc_iso(p.created_at)
         if p.created_at:
             timestamps.append(p.created_at)
 

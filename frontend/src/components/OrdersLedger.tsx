@@ -262,7 +262,7 @@ export const OrdersLedger: React.FC<OrdersLedgerProps> = ({
       sortable: true,
       cellRenderer: (params: any) => (
         <span className="text-[11px] text-slate-500">
-          {params.value ? new Date(params.value).toLocaleTimeString() : '—'}
+          {params.value ? new Date((params.value.endsWith('Z') || params.value.includes('+')) ? params.value : `${params.value}Z`).toLocaleTimeString() : '—'}
         </span>
       ),
     },

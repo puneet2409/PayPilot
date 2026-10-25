@@ -25,13 +25,12 @@ def _paypal_mode(paypal_order_id: str) -> str:
 async def _complete_paypal_order_creation(db: Session, order: Order, quote: Quote, idemp_key: str) -> None:
     """Create or safely retry the remote order using the same provider key."""
     try:
-        quote_sig = quote.quote_signature or QuoteService.compute_quote_signature(
-            quote_id=quote.id,
-            sku=quote.sku,
-            merchant=quote.merchant or "PayPilot Demo Store",
-            landed_cost=quote.landed_cost or quote.amount,
-            expires_at_iso=quote.expires_at.isoformat()
-        )
+        quote_sig = quote.quote_signature
+        if not quote_sig:
+            order.status = "CANCELLED"
+            order.updated_at = datetime.now(timezone.utc)
+            db.commit()
+            raise HTTPException(status_code=400, detail="Quote cryptographic signature missing; cannot proceed with checkout creation")
         paypal_res = await paypal_client.create_order(
             amount=quote.amount,
             currency=quote.currency,
@@ -117,6 +116,12 @@ async def create_checkout_order(
         raise HTTPException(
             status_code=400,
             detail="Quote is expired, invalid, or already consumed. Please re-evaluate purchase policy."
+        )
+
+    if not quote.quote_signature:
+        raise HTTPException(
+            status_code=400,
+            detail="Quote cryptographic signature missing; please re-evaluate purchase policy."
         )
 
     if not QuoteService.consume_quote(db, quote.id):

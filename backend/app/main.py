@@ -124,6 +124,13 @@ def ensure_schema_migrations():
                         conn.execute(text(f"ALTER TABLE quotes ADD COLUMN {col_name} {col_type};"))
                         conn.commit()
                         logger.info(f"Migrated quotes: added {col_name} column.")
+
+            if "orders" in tables:
+                o_cols = [c["name"] for c in inspector.get_columns("orders")]
+                if "idempotency_key" not in o_cols:
+                    conn.execute(text("ALTER TABLE orders ADD COLUMN idempotency_key VARCHAR;"))
+                    conn.commit()
+                    logger.info("Migrated orders: added idempotency_key column.")
     except Exception as e:
         logger.error(f"Schema migration error: {e}")
         raise

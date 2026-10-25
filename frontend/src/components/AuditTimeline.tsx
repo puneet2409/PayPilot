@@ -278,7 +278,7 @@ export const AuditTimeline: React.FC<AuditTimelineProps> = ({ events }) => {
                       </span>
                     </div>
                     <span className="text-[10px] text-slate-400 font-mono shrink-0">
-                      {new Date(ev.created_at).toLocaleTimeString()}
+                      {new Date((ev.created_at.endsWith('Z') || ev.created_at.includes('+')) ? ev.created_at : `${ev.created_at}Z`).toLocaleTimeString()}
                     </span>
                   </div>
 

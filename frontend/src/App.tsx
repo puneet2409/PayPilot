@@ -223,6 +223,7 @@ export const App: React.FC = () => {
         ...(cand.verified_features || []),
         ...(cand.unverified_features || []),
         JSON.stringify(cand.offers || []),
+        JSON.stringify(cand.attributes || {}),
       ].join(' ').toLowerCase();
       for (const term of activeExcluded) {
         if (candidateText.includes(term.toLowerCase())) {

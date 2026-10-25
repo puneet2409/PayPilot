@@ -116,7 +116,8 @@ class RankingEngine:
                 image_url=item.image_url,
                 demo_sku=item.demo_sku,
                 source=item.source,
-                within_budget=within_budget
+                within_budget=within_budget,
+                attributes=item.attributes
             ))
 
         # Sort by composite score descending

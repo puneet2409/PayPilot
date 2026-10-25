@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Dict, Any
 from app.schemas.discovery import OfferItem
 
 class AgentIntent(BaseModel):
@@ -28,6 +28,7 @@ class RankedCandidate(BaseModel):
     image_url: Optional[str] = None
     demo_sku: Optional[str] = None
     source: str = "channel3"
+    attributes: Dict[str, Any] = Field(default_factory=dict)
 
 class SuggestedAction(BaseModel):
     label: str

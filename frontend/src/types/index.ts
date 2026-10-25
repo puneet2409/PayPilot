@@ -36,6 +36,7 @@ export interface RankedCandidate {
   image_url?: string;
   demo_sku?: string;
   source: string;
+  attributes?: Record<string, any>;
 }
 
 export interface AgentIntent {
