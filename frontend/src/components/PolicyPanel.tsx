@@ -248,10 +248,16 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
               className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border ${
                 policyResult.eligible
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                  : 'bg-rose-50 text-rose-700 border-rose-300'
+                  : policyResult.checks.some(c => c.rule === 'budget_limit' && !c.passed)
+                    ? 'bg-rose-50 text-rose-700 border-rose-300'
+                    : 'bg-amber-50 text-amber-800 border-amber-300'
               }`}
             >
-              {policyResult.eligible ? 'ELIGIBLE' : 'REJECTED'}
+              {policyResult.eligible
+                ? 'ELIGIBLE'
+                : policyResult.checks.some(c => c.rule === 'budget_limit' && !c.passed)
+                  ? 'OVER BUDGET'
+                  : 'SPEC MISMATCH'}
             </span>
           </div>
         </div>
@@ -418,10 +424,14 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
         </div>
       )}
 
-      {/* Rejection message */}
+      {/* Rejection or Policy Notice message */}
       {!policyResult.eligible && policyResult.reason && (
-        <div className="mt-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 font-medium">
-          <strong>Rejection Invariant:</strong> {policyResult.reason}
+        <div className="mt-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 font-medium space-y-1">
+          <div className="flex items-center gap-1.5 font-bold text-amber-800">
+            <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
+            <span>Policy Guardrail Assessment</span>
+          </div>
+          <p className="leading-relaxed text-slate-700">{policyResult.reason}</p>
         </div>
       )}
     </div>

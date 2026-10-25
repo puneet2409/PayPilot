@@ -235,14 +235,20 @@ export const App: React.FC = () => {
 
       const activeReqs = requiredFeaturesOverride ?? requiredFeatures;
       let allReqsPassed = true;
+      const missingReqs: string[] = [];
       for (const req of activeReqs) {
-        const hasFeat = cand.verified_features.some(f => f.toLowerCase().includes(req.toLowerCase()));
+        const reqLower = req.toLowerCase();
+        const hasFeat = cand.verified_features.some(f => f.toLowerCase().includes(reqLower)) ||
+          (reqLower === 'quiet' && (candidateText.includes('silent') || candidateText.includes('quiet') || candidateText.includes('noise')));
         checks.push({
           rule: `feature_req_${req.toLowerCase().replace(/\s+/g, '_')}`,
           passed: hasFeat,
           detail: hasFeat ? `Verified attribute: ${req}` : `Unverified attribute: ${req}`
         });
-        if (!hasFeat) allReqsPassed = false;
+        if (!hasFeat) {
+          allReqsPassed = false;
+          missingReqs.push(req);
+        }
       }
 
       const isEligible = isBudgetPassed && allReqsPassed && !hasExcludedTerm;
@@ -260,18 +266,18 @@ export const App: React.FC = () => {
         merchant: cand.merchant,
         image_url: cand.image_url,
         reason: !isBudgetPassed
-          ? `Landed cost $${landedCost.toFixed(2)} exceeds budget ceiling of $${effectiveBudget.toFixed(2)}`
+          ? `Landed cost $${landedCost.toFixed(2)} (Item: $${itemPrice.toFixed(2)} + Tax: $${estimatedTax.toFixed(2)} + Shipping: $${shipping.toFixed(2)}) exceeds budget ceiling of $${effectiveBudget.toFixed(2)}`
           : hasExcludedTerm
-            ? 'Contains excluded term'
+            ? 'Product contains an excluded condition or term'
             : !allReqsPassed
-              ? 'Missing required feature attributes'
+              ? `Budget Approved ($${landedCost.toFixed(2)} <= $${effectiveBudget.toFixed(2)}), but retailer specifications do not confirm feature: '${missingReqs.join("', '")}'`
               : undefined,
         rejection_reason: !isBudgetPassed
-          ? `Landed cost $${landedCost.toFixed(2)} exceeds budget ceiling of $${effectiveBudget.toFixed(2)}`
+          ? `Landed cost $${landedCost.toFixed(2)} (Item: $${itemPrice.toFixed(2)} + Tax: $${estimatedTax.toFixed(2)} + Shipping: $${shipping.toFixed(2)}) exceeds budget ceiling of $${effectiveBudget.toFixed(2)}`
           : hasExcludedTerm
-            ? 'Contains excluded term'
+            ? 'Product contains an excluded condition or term'
             : !allReqsPassed
-              ? 'Missing required feature attributes'
+              ? `Budget Approved ($${landedCost.toFixed(2)} <= $${effectiveBudget.toFixed(2)}), but retailer specifications do not confirm feature: '${missingReqs.join("', '")}'`
               : undefined,
         policy_version: 'v1.0 (Store Deal Check)',
         landed_cost: landedCost,

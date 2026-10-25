@@ -62,7 +62,7 @@ def seed_initial_demo_catalogue():
                 currency="USD",
                 active=True,
                 attributes_json='{"quiet_clicks": true, "sensor_dpi": 8000, "multipoint_bluetooth": true, "productivity": true, "quiet": true, "wireless": true, "condition": "New"}',
-                image_url="https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=500&q=80"
+                image_url="https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500&q=80"
             ),
             DemoProduct(
                 sku="FLASH-DEMO-01",

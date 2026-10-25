@@ -80,11 +80,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           isOpenMobile ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         } ${
           isCollapsedDesktop
-            ? 'lg:-ml-64 lg:w-0 lg:overflow-hidden lg:border-r-0 lg:opacity-0 pointer-events-none'
-            : 'lg:ml-0 lg:w-64 lg:opacity-100'
+            ? 'lg:w-0 lg:border-r-0 lg:overflow-hidden lg:opacity-0 pointer-events-none'
+            : 'lg:w-64 lg:opacity-100'
         }`}
       >
-        <div className="p-5 flex flex-col flex-1 overflow-y-auto">
+        <div className={`p-5 flex flex-col flex-1 overflow-y-auto ${isCollapsedDesktop ? 'lg:hidden' : ''}`}>
           {/* Logo & Close / Collapse Button */}
           <div className="flex items-center justify-between pb-3">
             <div
@@ -129,16 +129,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          {/* Environment Status Pill */}
-          <div className="mt-1 mb-6 flex items-center bg-slate-100 p-0.5 rounded-full border border-slate-200 w-fit">
-            <span className="px-3.5 py-1 rounded-full bg-[#003087] text-white text-[11px] font-bold shadow-2xs">
-              Sandbox
-            </span>
-            <span className="px-3.5 py-1 text-slate-500 text-[11px] font-semibold">
-              Live
-            </span>
-          </div>
-
           {/* PayPilot Feature Navigation */}
           <nav className="space-y-1">
             {navItems.map((item) => {
@@ -180,7 +170,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Sidebar Footer: OpenAPI Docs & Status */}
-        <div className="p-4 border-t border-slate-100 bg-slate-50/70 space-y-2">
+        <div className={`p-4 border-t border-slate-100 bg-slate-50/70 space-y-2 ${isCollapsedDesktop ? 'lg:hidden' : ''}`}>
           <a
             href={`${import.meta.env.VITE_API_BASE_URL || ''}/docs`}
             target="_blank"
