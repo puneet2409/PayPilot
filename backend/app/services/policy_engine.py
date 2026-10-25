@@ -84,7 +84,6 @@ class PolicyEngine:
                 passed=False,
                 detail=f"Landed cost ${landed_cost:.2f} (Item: ${product.fixed_price:.2f} + Tax: ${estimated_tax:.2f} + Shipping: ${shipping:.2f}) exceeds budget ceiling of ${max_total:.2f}"
             ))
-            return False, checks, product, f"Landed cost ${landed_cost:.2f} exceeds budget limit of ${max_total:.2f}"
         else:
             checks.append(PolicyCheckItem(
                 rule="budget_limit",
@@ -135,18 +134,35 @@ class PolicyEngine:
                 ))
                 return False, checks, product, f"Contains excluded term: {term}"
 
-        # 6. Feature Requirements Check
+# 6. Feature Requirements Check
         FEATURE_SYNONYMS = {
             "productivity": ["productivity", "performance", "work", "office", "magseed", "sensor", "clicks"],
             "quiet": ["quiet", "silent", "quiet_clicks", "noise"],
             "wireless": ["wireless", "bluetooth", "cordless", "rf"],
-            "built_in_microphone": ["microphone", "mic", "voice", "built_in_microphone"],
+            "built_in_microphone": ["microphone", "mic", "voice", "built_in_microphone", "microphones"],
             "active_noise_cancelling": ["noise_cancelling", "cancelling", "anc", "ambient"],
             "multipoint_bluetooth": ["multipoint", "bluetooth", "multi_point"],
         }
+
+        def get_feature_synonyms(norm_name: str) -> List[str]:
+            base = FEATURE_SYNONYMS.get(norm_name, [])
+            extras = []
+            if any(m in norm_name for m in ("mic", "microphone", "voice")):
+                extras.extend(["microphone", "mic", "voice", "built_in_microphone", "microphones", "good mic", "clear mic"])
+            if any(b in norm_name for b in ("bluetooth", "multipoint", "wireless")):
+                extras.extend(["bluetooth", "multipoint", "multi_point", "wireless"])
+            if any(n in norm_name for n in ("noise", "cancelling", "anc")):
+                extras.extend(["noise_cancelling", "cancelling", "anc", "ambient", "active noise cancelling"])
+            if any(q in norm_name for q in ("quiet", "silent")):
+                extras.extend(["quiet", "silent", "quiet_clicks", "noise", "click"])
+            if any(p in norm_name for p in ("productivity", "office", "work")):
+                extras.extend(["productivity", "performance", "work", "office", "magseed", "sensor", "clicks"])
+            return list(set(base + extras))
+
+        unverified_features = []
         for req in required_features:
             norm_req = req.lower().replace("-", "_").replace(" ", "_")
-            synonyms = [req.lower(), norm_req] + FEATURE_SYNONYMS.get(norm_req, [])
+            synonyms = [req.lower(), norm_req] + get_feature_synonyms(norm_req)
             found = False
             for k, v in product_attrs.items():
                 if any(syn in k.lower() for syn in synonyms) and bool(v):
@@ -162,12 +178,12 @@ class PolicyEngine:
                     detail=f"Verified attribute: {req}"
                 ))
             else:
+                unverified_features.append(req)
                 checks.append(PolicyCheckItem(
                     rule=f"feature_req_{norm_req}",
                     passed=False,
-                    detail=f"Unverified attribute: {req}"
+                    detail=f"Unverified attribute: {req} (retailer specifications do not confirm; advisory warning)"
                 ))
-                return False, checks, product, f"Missing required attribute: {req}"
 
         # 7. Mandatory Buyer Approval Gate Check
         checks.append(PolicyCheckItem(
@@ -175,5 +191,11 @@ class PolicyEngine:
             passed=True,
             detail="Explicit human PayPal authorization gate enforced"
         ))
+
+        if landed_cost > max_total:
+            return False, checks, product, f"Landed cost ${landed_cost:.2f} exceeds budget limit of ${max_total:.2f}"
+
+        if unverified_features:
+            return False, checks, product, f"Missing required attribute: {unverified_features[0]}"
 
         return True, checks, product, "All purchase policies passed"

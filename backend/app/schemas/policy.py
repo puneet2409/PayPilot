@@ -18,6 +18,10 @@ class QuoteSummary(BaseModel):
     landed_cost: Optional[float] = None
     merchant: Optional[str] = "PayPilot Demo Store"
     image_url: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    session_id: Optional[str] = None
+    has_warnings: Optional[bool] = False
+    can_proceed: Optional[bool] = True
     quote_signature: Optional[str] = None
 
 class PolicyEvaluateRequest(BaseModel):
@@ -45,3 +49,7 @@ class PolicyEvaluateResponse(BaseModel):
     landed_cost: Optional[float] = None
     merchant: Optional[str] = "PayPilot Demo Store"
     image_url: Optional[str] = None
+    rejection_reason: Optional[str] = None
+    session_id: Optional[str] = None
+    has_warnings: Optional[bool] = False
+    can_proceed: Optional[bool] = True

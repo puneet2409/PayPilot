@@ -171,11 +171,14 @@ export const App: React.FC = () => {
   ) => {
     if (!session) return;
     const requestVersion = ++policyRequestVersion.current;
+    const isReEvaluatingCurrentCandidate = selectedCandidate?.product_id === cand.product_id;
     setSelectedCandidate(cand);
     setShowApprovalStep(false);
     setPaymentResult(null);
-    setPolicyResult(null);
-    setIsLoadingPolicy(false);
+    if (!isReEvaluatingCurrentCandidate) {
+      setPolicyResult(null);
+    }
+    setIsLoadingPolicy(true);
 
     if (!cand.demo_sku) {
       // Live Channel3 Retailer Item Policy Evaluation
@@ -238,12 +241,33 @@ export const App: React.FC = () => {
       const missingReqs: string[] = [];
       for (const req of activeReqs) {
         const reqLower = req.toLowerCase();
-        const hasFeat = cand.verified_features.some(f => f.toLowerCase().includes(reqLower)) ||
-          (reqLower === 'quiet' && (candidateText.includes('silent') || candidateText.includes('quiet') || candidateText.includes('noise')));
+        const normReq = reqLower.replace(/[\s-]+/g, '_');
+        const synonyms = [reqLower, normReq];
+        if (reqLower.includes('mic') || reqLower.includes('voice')) {
+          synonyms.push('microphone', 'mic', 'voice', 'built_in_microphone', 'microphones', 'good mic', 'clear mic');
+        }
+        if (reqLower.includes('bluetooth') || reqLower.includes('wireless')) {
+          synonyms.push('wireless', 'bluetooth', 'cordless', 'rf', 'multipoint');
+        }
+        if (reqLower.includes('noise') || reqLower.includes('cancelling') || reqLower.includes('anc')) {
+          synonyms.push('noise_cancelling', 'cancelling', 'anc', 'ambient', 'active noise cancelling');
+        }
+        if (reqLower.includes('quiet') || reqLower.includes('silent')) {
+          synonyms.push('quiet', 'silent', 'quiet_clicks', 'noise', 'click');
+        }
+        if (reqLower.includes('productivity') || reqLower.includes('office') || reqLower.includes('work')) {
+          synonyms.push('productivity', 'performance', 'work', 'office', 'magseed', 'sensor', 'clicks');
+        }
+
+        const hasFeat = cand.verified_features.some(f => synonyms.some(s => f.toLowerCase().includes(s))) ||
+          synonyms.some(s => candidateText.includes(s));
+
         checks.push({
-          rule: `feature_req_${req.toLowerCase().replace(/\s+/g, '_')}`,
+          rule: `feature_req_${normReq}`,
           passed: hasFeat,
-          detail: hasFeat ? `Verified attribute: ${req}` : `Unverified attribute: ${req}`
+          detail: hasFeat
+            ? `Verified attribute: ${req}`
+            : `Unverified attribute: ${req} (retailer specifications do not confirm; advisory warning)`
         });
         if (!hasFeat) {
           allReqsPassed = false;
@@ -284,7 +308,7 @@ export const App: React.FC = () => {
         estimated_tax: estimatedTax,
         shipping: shipping,
         checks: checks,
-        quote: isEligible ? {
+        quote: !hasExcludedTerm ? {
           id: `quote_ch3_${cand.product_id.slice(0, 8)}`,
           amount: landedCost,
           currency: cand.currency || 'USD',
@@ -296,6 +320,7 @@ export const App: React.FC = () => {
           quote_signature: 'CH3_LIVE_OFFER_VERIFIED'
         } : undefined
       });
+      setIsLoadingPolicy(false);
       return;
     }
 

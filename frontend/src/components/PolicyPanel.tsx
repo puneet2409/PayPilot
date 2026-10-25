@@ -60,7 +60,9 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
   useEffect(() => {
     if (!policyResult?.quote?.expires_at) return;
     const updateTimer = () => {
-      const expiresAt = new Date(policyResult.quote!.expires_at).getTime();
+      const rawIso = policyResult.quote!.expires_at;
+      const normalizedIso = (rawIso.endsWith('Z') || rawIso.includes('+')) ? rawIso : `${rawIso}Z`;
+      const expiresAt = new Date(normalizedIso).getTime();
       const now = Date.now();
       const diff = Math.max(0, Math.floor((expiresAt - now) / 1000));
       setSecondsLeft(diff);
@@ -213,12 +215,17 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
     );
   }
 
+  const hasBudgetBlock = policyResult.checks.some(c => c.rule === 'budget_limit' && !c.passed);
+  const hasSpecMismatch = policyResult.checks.some(c => c.rule.startsWith('feature_req_') && !c.passed);
+
   return (
     <div
       className={`rounded-2xl border p-6 transition-all min-h-[310px] flex flex-col justify-between shadow-xs bg-white ${
         policyResult.eligible
           ? 'border-emerald-300'
-          : 'border-rose-300'
+          : hasBudgetBlock
+            ? 'border-rose-300'
+            : 'border-amber-300'
       }`}
     >
       <div>
@@ -229,13 +236,23 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
                 <ShieldCheck className="w-6 h-6" />
               </div>
             ) : (
-              <div className="p-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200">
+              <div className={`p-2 rounded-xl border ${
+                hasBudgetBlock
+                  ? 'bg-rose-50 text-rose-600 border-rose-200'
+                  : 'bg-amber-50 text-amber-600 border-amber-200'
+              }`}>
                 <ShieldAlert className="w-6 h-6" />
               </div>
             )}
             <div>
               <h4 className="text-base font-bold text-slate-900">
-                {policyResult.eligible ? 'Safe to Buy (Within Budget)' : getRejectionTitle(policyResult.rejection_reason || policyResult.reason)}
+                {policyResult.eligible
+                  ? 'Safe to Buy (Within Budget)'
+                  : hasBudgetBlock
+                    ? 'Spending Alert (Over Budget)'
+                    : hasSpecMismatch
+                      ? 'Specification Advisory (Unverified Feature)'
+                      : getRejectionTitle(policyResult.rejection_reason || policyResult.reason)}
               </h4>
               <span className="text-xs text-slate-500">
                 Automated Spending Guardrails • {policyResult.policy_version}
@@ -248,16 +265,16 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
               className={`px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider border ${
                 policyResult.eligible
                   ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                  : policyResult.checks.some(c => c.rule === 'budget_limit' && !c.passed)
+                  : hasBudgetBlock
                     ? 'bg-rose-50 text-rose-700 border-rose-300'
                     : 'bg-amber-50 text-amber-800 border-amber-300'
               }`}
             >
               {policyResult.eligible
                 ? 'ELIGIBLE'
-                : policyResult.checks.some(c => c.rule === 'budget_limit' && !c.passed)
+                : hasBudgetBlock
                   ? 'OVER BUDGET'
-                  : 'SPEC MISMATCH'}
+                  : 'SPEC WARNING'}
             </span>
           </div>
         </div>
@@ -308,38 +325,55 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
 
         {/* Rules Checklist */}
         <div className="mt-4 space-y-2">
-          {policyResult.checks.map((chk, idx) => (
-            <div
-              key={idx}
-              className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-200/80"
-            >
-              {chk.passed ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              ) : (
-                <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-              )}
-              <div className="flex-1 text-xs">
-                <span className="font-bold text-slate-900">
-                  {formatRuleName(chk.rule)}:
-                </span>{' '}
-                <span className={chk.passed ? 'text-slate-600' : 'text-rose-700 font-semibold'}>
-                  {chk.detail}
-                </span>
+          {policyResult.checks.map((chk, idx) => {
+            const isFeatureCheck = chk.rule.startsWith('feature_req_');
+            const isUnverifiedFeature = isFeatureCheck && !chk.passed;
+
+            return (
+              <div
+                key={idx}
+                className={`flex items-start gap-3 p-3 rounded-xl border ${
+                  isUnverifiedFeature
+                    ? 'bg-amber-50/70 border-amber-200'
+                    : 'bg-slate-50 border-slate-200/80'
+                }`}
+              >
+                {chk.passed ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                ) : isFeatureCheck ? (
+                  <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                ) : (
+                  <XCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1 text-xs">
+                  <span className="font-bold text-slate-900">
+                    {formatRuleName(chk.rule)}:
+                  </span>{' '}
+                  <span className={
+                    chk.passed
+                      ? 'text-slate-600'
+                      : isFeatureCheck
+                        ? 'text-amber-800 font-semibold'
+                        : 'text-rose-700 font-semibold'
+                  }>
+                    {chk.detail}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Quote summary if eligible */}
-      {policyResult.eligible && policyResult.quote && (
+      {/* Quote summary if quote is available */}
+      {policyResult.quote && (
         <div className="mt-5 p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
           {/* Live 10-Minute Countdown Timer & Re-verify button */}
           <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white border border-slate-200 shadow-2xs">
             <div className="flex items-center gap-2">
               <Clock className={`w-4 h-4 ${isQuoteExpired ? 'text-rose-600' : 'text-[#0057FF] animate-pulse'}`} />
               <span className="text-xs font-semibold text-slate-700">
-                {isQuoteExpired ? 'Quote Expired (10-min TTL)' : '10-Minute Quote TTL:'}
+                {isQuoteExpired ? 'Quote Expired (10-min TTL):' : '10-Minute Quote TTL:'}
               </span>
               <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
                 isQuoteExpired ? 'bg-rose-100 text-rose-700' : 'bg-blue-50 text-[#003087]'
@@ -349,7 +383,9 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
             </div>
             {onReEvaluate && (
               <button
+                type="button"
                 onClick={onReEvaluate}
+                disabled={isLoading}
                 className={`text-xs font-bold px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shadow-2xs ${
                   isQuoteExpired
                     ? 'bg-[#0057FF] hover:bg-[#0043CE] text-white animate-pulse'
@@ -357,11 +393,27 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
                 }`}
                 title="Re-verify inventory price & mint fresh 10-minute HMAC quote"
               >
-                <RotateCcw className="w-3 h-3" />
-                <span>Re-Verify & Mint New Quote</span>
+                <RotateCcw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
+                <span>{isLoading ? 'Refreshing...' : 'Re-Verify & Mint New Quote'}</span>
               </button>
             )}
           </div>
+
+          {/* Advisory notice when customer choice override is available */}
+          {!policyResult.eligible && (
+            <div className={`p-3 rounded-lg border text-xs font-medium flex items-center gap-2 ${
+              hasBudgetBlock
+                ? 'bg-amber-50 border-amber-200 text-amber-900'
+                : 'bg-sky-50 border-sky-200 text-sky-900'
+            }`}>
+              <ShieldAlert className={`w-4 h-4 shrink-0 ${hasBudgetBlock ? 'text-amber-600' : 'text-sky-600'}`} />
+              <span>
+                {hasBudgetBlock
+                  ? `Customer Choice Advisory: Landed cost ($${(policyResult.landed_cost ?? policyResult.quote.amount).toFixed(2)}) exceeds target budget ($${policyResult.max_total.toFixed(2)}). You may review and proceed with explicit authorization.`
+                  : 'Customer Choice Advisory: Retailer specifications do not explicitly confirm all requested features. You may proceed if satisfied with product specifications.'}
+              </span>
+            </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div>
@@ -390,18 +442,28 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
             ) : onProceedToCheckout ? (
               isQuoteExpired ? (
                 <button
+                  type="button"
                   onClick={onReEvaluate}
+                  disabled={isLoading}
                   className="px-5 py-2.5 bg-[#0057FF] hover:bg-[#0043CE] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Re-Verify & Mint Quote to Pay</span>
+                  <RotateCcw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+                  <span>{isLoading ? 'Re-Verifying...' : 'Re-Verify & Mint Quote to Pay'}</span>
                 </button>
               ) : (
                 <button
+                  type="button"
                   onClick={onProceedToCheckout}
                   className="px-5 py-2.5 bg-[#FFC439] hover:bg-[#F2BA36] active:bg-[#E5A822] text-[#003087] text-xs font-black rounded-xl shadow-xs transition-all flex items-center gap-1.5"
                 >
-                  <span>Proceed to PayPal Checkout</span>
+                  {!policyResult.eligible && <ShieldAlert className="w-3.5 h-3.5 text-[#003087]" />}
+                  <span>
+                    {policyResult.eligible
+                      ? 'Proceed to PayPal Checkout'
+                      : hasBudgetBlock
+                        ? 'Acknowledge Over-Budget & Pay'
+                        : 'Acknowledge Warning & Pay'}
+                  </span>
                 </button>
               )
             ) : null}
@@ -424,12 +486,12 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
         </div>
       )}
 
-      {/* Rejection or Policy Notice message */}
-      {!policyResult.eligible && policyResult.reason && (
-        <div className="mt-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900 font-medium space-y-1">
-          <div className="flex items-center gap-1.5 font-bold text-amber-800">
-            <ShieldAlert className="w-4 h-4 text-amber-600 shrink-0" />
-            <span>Policy Guardrail Assessment</span>
+      {/* Hard rejection or security blocker notice when no quote is generated */}
+      {!policyResult.quote && policyResult.reason && (
+        <div className="mt-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 font-medium space-y-1">
+          <div className="flex items-center gap-1.5 font-bold text-rose-800">
+            <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+            <span>Policy Security Blocker</span>
           </div>
           <p className="leading-relaxed text-slate-700">{policyResult.reason}</p>
         </div>

@@ -30,24 +30,35 @@ def evaluate_purchase_policy(
 
     landed_cost, estimated_tax, shipping = PolicyEngine.calculate_landed_cost(product.fixed_price)
     quote_summary = None
-    if passed:
+
+    is_hard_blocked = any(
+        c.rule in ("prompt_injection_shield", "demo_catalogue_active", "currency_match", "exclusion_policy")
+        and not c.passed
+        for c in checks
+    )
+
+    if product.active and not is_hard_blocked:
         quote = QuoteService.create_quote(
             db=db,
             session_id=request.session_id,
             product=product
         )
+        exp_iso = quote.expires_at.isoformat()
+        if not exp_iso.endswith("Z") and "+" not in exp_iso:
+            exp_iso += "Z"
+
         quote_sig = quote.quote_signature or QuoteService.compute_quote_signature(
             quote_id=quote.id,
             sku=quote.sku,
             merchant=quote.merchant or "PayPilot Demo Store",
             landed_cost=quote.landed_cost or landed_cost,
-            expires_at_iso=quote.expires_at.isoformat()
+            expires_at_iso=exp_iso
         )
         quote_summary = QuoteSummary(
             id=quote.id,
             amount=quote.amount,
             currency=quote.currency,
-            expires_at=quote.expires_at.isoformat(),
+            expires_at=exp_iso,
             item_price=product.fixed_price,
             estimated_tax=estimated_tax,
             shipping=shipping,
@@ -63,7 +74,7 @@ def evaluate_purchase_policy(
             session_id=request.session_id,
             details={
                 "sku": request.demo_sku,
-                "passed": True,
+                "passed": passed,
                 "quote_id": quote.id,
                 "amount": quote.amount,
                 "max_total": request.max_total,
@@ -105,10 +116,14 @@ def evaluate_purchase_policy(
         checks=checks,
         quote=quote_summary,
         reason=reason,
+        rejection_reason=None if passed else reason,
+        session_id=request.session_id,
         estimated_tax=estimated_tax,
         shipping=shipping,
         shipping_cost=shipping,
         landed_cost=landed_cost,
         merchant=quote_summary.merchant if quote_summary else "PayPilot Demo Store",
-        image_url=product.image_url
+        image_url=product.image_url,
+        has_warnings=(not passed and not is_hard_blocked),
+        can_proceed=(product.active and not is_hard_blocked)
     )

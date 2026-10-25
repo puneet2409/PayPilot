@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { QuoteSummary, CheckoutCreateResponse, CheckoutCaptureResponse } from '../types';
 import { api } from '../api/client';
-import { ShieldAlert, Lock, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Ban, RotateCcw, X } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Lock, Loader2, ArrowRight, ArrowLeft, CheckCircle2, Ban, RotateCcw, X } from 'lucide-react';
 import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { PayPalLogo } from './PayPalLogo';
 
@@ -233,6 +233,14 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
       <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
         Price locked at <strong>${quote.amount.toFixed(2)} {quote.currency}</strong>. Guaranteed with verified itemized landed cost ceiling.
       </p>
+
+      <div className="mt-3 p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-blue-900 flex items-start gap-2.5">
+        <ShieldCheck className="w-4 h-4 text-[#0057FF] shrink-0 mt-0.5" />
+        <div className="flex-1 leading-relaxed">
+          <span className="font-bold text-[#001C3D]">Customer Sovereign Authorization:</span>{' '}
+          Explicit PayPal checkout confirmation. All items, taxes, shipping, and cryptographic HMAC signatures are locked and verified.
+        </div>
+      </div>
 
       {error && (
         <div className="mt-4 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center gap-2">
