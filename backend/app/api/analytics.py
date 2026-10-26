@@ -138,11 +138,11 @@ def get_dashboard_api_data(
     # Temporal Bounds Calculation (Section 2.4)
     now = datetime.now(timezone.utc)
     if timestamps:
-        start_date = min(timestamps).isoformat()
-        end_date = max(timestamps).isoformat()
+        start_date = _format_utc_iso(min(timestamps))
+        end_date = _format_utc_iso(max(timestamps))
     else:
-        start_date = datetime(now.year, 1, 1, tzinfo=timezone.utc).isoformat()
-        end_date = now.isoformat()
+        start_date = _format_utc_iso(datetime(now.year, 1, 1, tzinfo=timezone.utc))
+        end_date = _format_utc_iso(now)
 
     return {
         "description": "PayPal Financial Analytics Data Model - Enterprise Invoicing, Orders, and Customer Metrics",

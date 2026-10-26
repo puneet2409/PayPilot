@@ -88,7 +88,7 @@ class RankingEngine:
             budget_note = (
                 ""
                 if within_budget
-                else f" Exceeds the ${budget:.2f} ceiling — the policy engine will refuse to issue a quote."
+                else f" Exceeds the ${budget:.2f} target budget — policy engine requires explicit authorization to purchase."
             )
             price_source = "PayPilot demo-store price" if item.source == "demo_catalogue" else "Retailer offer"
             explanation = (

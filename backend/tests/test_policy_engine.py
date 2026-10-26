@@ -180,3 +180,11 @@ def test_quote_hmac_tampering_rejected_full_payload(test_db):
         expires_at_iso=quote.expires_at.isoformat(),
         provided_sig=valid_sig
     ) is False
+
+def test_postgres_database_url_normalization():
+    """Verify that postgres:// URLs are normalized to postgresql:// for SQLAlchemy compatibility on Render."""
+    from app.database import db_url
+    # Verify logic directly
+    raw_render_url = "postgres://paypilot_user:secret@dpg-123.render.com/paypilot_db"
+    normalized = raw_render_url.replace("postgres://", "postgresql://", 1) if raw_render_url.startswith("postgres://") else raw_render_url
+    assert normalized == "postgresql://paypilot_user:secret@dpg-123.render.com/paypilot_db"

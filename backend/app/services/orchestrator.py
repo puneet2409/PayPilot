@@ -2,9 +2,8 @@ import re
 import asyncio
 import json
 import logging
-from typing import Optional
-from app.config import settings
 from typing import Optional, Dict, Any, List
+from app.config import settings
 from app.schemas.agent import AgentTurnRequest, AgentTurnResponse, AgentIntent, SuggestedAction
 from app.integrations.channel3 import channel3_client
 from app.services.ranking import RankingEngine
