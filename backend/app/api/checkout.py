@@ -149,7 +149,7 @@ async def create_checkout_order(
     return CheckoutCreateResponse(
         order_id=local_order_id,
         paypal_order_id=order.paypal_order_id,
-        status="AWAITING_APPROVAL",
+        status=order.status,
         amount=quote.amount,
         currency=quote.currency,
         paypal_mode=_paypal_mode(order.paypal_order_id),
@@ -355,7 +355,7 @@ async def capture_checkout_order(
     payment = Payment(
         id=f"pay_{uuid.uuid4().hex[:10]}",
         order_id=order.id,
-        provider="simulated" if order.paypal_order_id.startswith("SANDBOX_ORDER_") else "paypal_sandbox",
+        provider="simulated" if (order.paypal_order_id and order.paypal_order_id.startswith("SANDBOX_ORDER_")) else "paypal_sandbox",
         capture_id=capture_id,
         status="COMPLETED",
         captured_amount=order.amount,

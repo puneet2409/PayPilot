@@ -1,3 +1,4 @@
+import asyncio
 import httpx
 import json
 import logging
@@ -15,7 +16,8 @@ class PayPalClient:
     def __init__(self):
         self.client_id = settings.PAYPAL_CLIENT_ID
         self.client_secret = settings.PAYPAL_CLIENT_SECRET
-        self.base_url = settings.PAYPAL_BASE_URL
+        self.base_url = settings.effective_paypal_base_url
+        self._token_lock = asyncio.Lock()
         self._access_token: Optional[str] = None
         self._token_expires_at: Optional[datetime] = None
 
@@ -41,7 +43,12 @@ class PayPalClient:
             self._token_expires_at = datetime.now(timezone.utc) + timedelta(hours=8)
             return self._access_token
 
-        auth = (self.client_id, self.client_secret)
+        async with self._token_lock:
+            # Re-check under lock
+            if self._access_token and self._token_expires_at:
+                if datetime.now(timezone.utc) < self._token_expires_at - timedelta(seconds=60):
+                    return self._access_token
+            auth = (self.client_id, self.client_secret)
         headers = {
             "Accept": "application/json",
             "Accept-Language": "en_US",

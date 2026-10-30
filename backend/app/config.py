@@ -29,4 +29,11 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-2.0-flash"
 
+
+    @property
+    def effective_paypal_base_url(self) -> str:
+        if self.PAYPAL_ENV.lower() in ("live", "production") and self.PAYPAL_BASE_URL == "https://api-m.sandbox.paypal.com":
+            return "https://api-m.paypal.com"
+        return self.PAYPAL_BASE_URL
+
 settings = Settings()

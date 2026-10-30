@@ -41,8 +41,7 @@ class QuoteService:
 
             for exp in exp_variants:
                 expected_legacy = QuoteService.compute_quote_signature(quote_id, float(legacy_amount), str(legacy_sku), exp)
-                if hmac.compare_digest(expected_legacy.encode("utf-8"), str(provided_sig).encode("utf-8")) or \
-                   hmac.compare_digest(expected_legacy[:32].encode("utf-8"), str(provided_sig).encode("utf-8")):
+                if hmac.compare_digest(expected_legacy.encode("utf-8"), str(provided_sig).encode("utf-8")):
                     return True
             return False
 
@@ -72,8 +71,7 @@ class QuoteService:
                 landed_cost=float(landed_cost),
                 expires_at_iso=exp
             )
-            if hmac.compare_digest(expected.encode("utf-8"), str(provided_sig).encode("utf-8")) or \
-               hmac.compare_digest(expected[:32].encode("utf-8"), str(provided_sig).encode("utf-8")):
+            if hmac.compare_digest(expected.encode("utf-8"), str(provided_sig).encode("utf-8")):
                 return True
         return False
 

@@ -93,6 +93,16 @@ export const OrdersLedger: React.FC<OrdersLedgerProps> = ({
 
   const handleExportCSV = () => {
     if (orders.length === 0) return;
+    const sanitize = (val: unknown) => {
+      const str = String(val ?? '');
+      const escaped = str.replace(/"/g, '""');
+      // Guard against CSV formula injection (=, +, -, @)
+      if (/^[=+\-@]/.test(escaped)) {
+        return `"\t${escaped}"`;
+      }
+      return `"${escaped}"`;
+    };
+
     const headers = [
       'Order ID',
       'Quote ID',
@@ -106,27 +116,27 @@ export const OrdersLedger: React.FC<OrdersLedgerProps> = ({
       'Created At'
     ];
     const rows = orders.map((o) => [
-      `"${o.order_id}"`,
-      `"${o.quote_id}"`,
-      `"${o.sku}"`,
-      `"${(o.item_title || '').replace(/"/g, '""')}"`,
-      o.amount.toFixed(2),
-      o.currency,
-      o.status,
-      `"${o.paypal_order_id || ''}"`,
-      `"${o.capture_id || ''}"`,
-      `"${o.created_at}"`
+      sanitize(o.order_id),
+      sanitize(o.quote_id),
+      sanitize(o.sku),
+      sanitize(o.item_title || ''),
+      sanitize(o.amount.toFixed(2)),
+      sanitize(o.currency),
+      sanitize(o.status),
+      sanitize(o.paypal_order_id || ''),
+      sanitize(o.capture_id || ''),
+      sanitize(o.created_at)
     ]);
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [headers.join(','), ...rows.map((e) => e.join(','))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', `paypilot-ledger-${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const handleCopyConfig = () => {

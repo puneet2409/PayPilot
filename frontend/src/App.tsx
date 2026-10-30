@@ -129,7 +129,6 @@ export const App: React.FC = () => {
   const handleSendMessage = async (message: string, budget?: number) => {
     if (!session) return;
     policyRequestVersion.current += 1;
-    setIsLoadingPolicy(false);
     if (budget !== undefined) setCurrentBudget(budget);
 
     setIsLoadingSearch(true);
@@ -254,14 +253,15 @@ export const App: React.FC = () => {
           synonyms.push('noise_cancelling', 'cancelling', 'anc', 'ambient', 'active noise cancelling');
         }
         if (reqLower.includes('quiet') || reqLower.includes('silent')) {
-          synonyms.push('quiet', 'silent', 'quiet_clicks', 'noise', 'click');
+          synonyms.push('quiet', 'silent', 'quiet_clicks', 'silent clicks', 'reduced click');
         }
         if (reqLower.includes('productivity') || reqLower.includes('office') || reqLower.includes('work')) {
           synonyms.push('productivity', 'performance', 'work', 'office', 'magseed', 'sensor', 'clicks');
         }
 
         const hasFeat = cand.verified_features.some(f => synonyms.some(s => f.toLowerCase().includes(s))) ||
-          synonyms.some(s => candidateText.includes(s));
+          cand.unverified_features.some(f => synonyms.some(s => f.toLowerCase().includes(s))) ||
+          synonyms.some(s => cand.title.toLowerCase().includes(s) || (cand.brand && cand.brand.toLowerCase().includes(s)));
 
         checks.push({
           rule: `feature_req_${normReq}`,

@@ -104,19 +104,16 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
     setIsProcessing(true);
     setError(null);
     try {
-      await api.cancelOrder(createdOrder.order_id);
+      if (onCancelOrder) {
+        await onCancelOrder(createdOrder.order_id);
+      } else {
+        await api.cancelOrder(createdOrder.order_id);
+      }
     } catch {
       // Even if order state already shifted, reflect cancelled in UI
     } finally {
       setUserCancelled(true);
       setCreatedOrder((prev) => (prev ? { ...prev, status: 'CANCELLED' } : null));
-      if (onCancelOrder && createdOrder) {
-        try {
-          await onCancelOrder(createdOrder.order_id);
-        } catch {
-          // ignore
-        }
-      }
       setIsProcessing(false);
     }
   };
@@ -388,7 +385,8 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
                     }
                   }}
                   onError={(err) => {
-                    setError(`PayPal error: ${err}`);
+                    const message = err instanceof Error ? err.message : typeof err === 'string' ? err : 'PayPal checkout error';
+                    setError(`PayPal error: ${message}`);
                   }}
                 />
               </PayPalScriptProvider>
@@ -418,7 +416,7 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
                 ) : (
                   <>
                     <span className="italic font-black text-base tracking-tighter">PayPal</span>
-                    <span>Approve &amp; Pay ${quote.amount.toFixed(2)}</span>
+                    <span>Approve & Pay ${quote.amount.toFixed(2)}</span>
                   </>
                 )}
               </button>
@@ -441,7 +439,7 @@ export const ApprovalPanel: React.FC<ApprovalPanelProps> = ({
               ) : (
                 <Ban className="w-3.5 h-3.5 text-rose-500" />
               )}
-              <span>Cancel This Order &amp; Return</span>
+              <span>Cancel This Order & Return</span>
             </button>
           </div>
 

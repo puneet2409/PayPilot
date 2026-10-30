@@ -153,12 +153,14 @@ app = FastAPI(
 )
 
 # CORS configuration
-allowed_origins = [
-    settings.FRONTEND_ORIGIN,
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:3000",
-]
+allowed_origins = [settings.FRONTEND_ORIGIN]
+if settings.APP_ENV != "production":
+    allowed_origins.extend([
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+    ])
+allowed_origins = list(dict.fromkeys(allowed_origins))
 
 app.add_middleware(
     CORSMiddleware,

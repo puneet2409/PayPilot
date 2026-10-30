@@ -8,9 +8,9 @@ class Order(Base):
     id = Column(String, primary_key=True, index=True)
     quote_id = Column(String, index=True, nullable=False)
     session_id = Column(String, index=True, nullable=False)
-    sku = Column(String, nullable=False)
+    sku = Column(String, index=True, nullable=False)
     paypal_order_id = Column(String, index=True, nullable=True)
-    status = Column(String, default="QUOTED", nullable=False)
+    status = Column(String, default="QUOTED", index=True, nullable=False)
     # Status transitions: QUOTED -> AWAITING_APPROVAL -> APPROVED -> CAPTURE_PENDING -> PAID | CANCELLED | FAILED
     amount = Column(Float, nullable=False)
     currency = Column(String, default="USD", nullable=False)

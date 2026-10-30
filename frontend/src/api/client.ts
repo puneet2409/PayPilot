@@ -44,7 +44,17 @@ async function fetchWithAuth(url: string, options: RequestInit = {}): Promise<Re
     const updatedUrl = url.replace(/sessions\/sess_[a-f0-9]+/, `sessions/${session.session_id}`);
     let updatedBody = options.body;
     if (typeof updatedBody === 'string' && oldSessionId) {
-      updatedBody = updatedBody.replace(new RegExp(oldSessionId, 'g'), session.session_id);
+      try {
+        const parsed = JSON.parse(updatedBody);
+        if (parsed.session_id === oldSessionId) {
+          parsed.session_id = session.session_id;
+          updatedBody = JSON.stringify(parsed);
+        }
+      } catch {
+        // Fallback for non-JSON strings: only replace exact session_id token
+        updatedBody = updatedBody.replace(`"session_id":"${oldSessionId}"`, `"session_id":"${session.session_id}"`)
+                                 .replace(`"session_id": "${oldSessionId}"`, `"session_id": "${session.session_id}"`);
+      }
     }
     res = await fetch(updatedUrl, { ...options, headers, body: updatedBody, signal });
   }

@@ -13,4 +13,4 @@ class AuditEvent(Base):
     details_json = Column(Text, nullable=False, default="{}")
     prev_hash = Column(String, nullable=True, default="GENESIS_HASH")
     entry_hash = Column(String, nullable=False, default="GENESIS_HASH")
-    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)

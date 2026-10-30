@@ -3,6 +3,7 @@ services:
   - type: web
     name: paypilot-backend
     env: python
+    pythonVersion: "3.12.7"
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
@@ -38,6 +39,7 @@ services:
   - type: web
     name: paypilot-frontend
     env: static
+    nodeVersion: "22.x"
     rootDir: frontend
     buildCommand: npm ci && npm run build
     staticPublishPath: dist

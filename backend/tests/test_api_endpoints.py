@@ -555,6 +555,31 @@ def test_pre_capture_tampered_quote_rejected(client, db_session):
     assert "signature verification failed" in cap_res.json()["detail"].lower()
 
 
+def test_pre_capture_truncated_signature_rejected(client, db_session):
+    """Verify that a truncated HMAC prefix signature is strictly rejected."""
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": client.test_session_id,
+        "demo_sku": "HEADSET-DEMO-01",
+        "max_total": 100.0
+    })
+    quote_id = eval_res.json()["quote"]["id"]
+
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": client.test_session_id
+    })
+    order_id = create_res.json()["order_id"]
+
+    from app.models.quote import Quote
+    quote = db_session.query(Quote).filter(Quote.id == quote_id).first()
+    quote.quote_signature = quote.quote_signature[:32]
+    db_session.commit()
+
+    cap_res = client.post(f"/api/v1/checkout/{order_id}/capture", json={})
+    assert cap_res.status_code == 400
+    assert "signature verification failed" in cap_res.json()["detail"].lower()
+
+
 def test_pre_capture_expired_quote_rejected(client, db_session):
     """Verify that if a quote expires between order creation and buyer capture, capture is blocked."""
     eval_res = client.post("/api/v1/policies/evaluate", json={
