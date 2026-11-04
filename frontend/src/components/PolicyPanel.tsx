@@ -70,7 +70,7 @@ export const PolicyPanel: React.FC<PolicyPanelProps> = ({
     updateTimer();
     const interval = setInterval(updateTimer, 1000);
     return () => clearInterval(interval);
-  }, [policyResult?.quote?.expires_at]);
+  }, [policyResult?.quote?.expires_at, policyResult?.quote?.id]);
 
   const isQuoteExpired = Boolean(policyResult?.quote && secondsLeft <= 0);
   const minutes = Math.floor(secondsLeft / 60);

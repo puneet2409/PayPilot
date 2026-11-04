@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./paypilot.db"
     FRONTEND_ORIGIN: str = "http://localhost:5173"
     SESSION_SIGNING_SECRET: str = ""
+    SESSION_TTL_SECONDS: int = 43200  # 12 hours
 
     # PayPal Configuration
     PAYPAL_ENV: str = "sandbox"

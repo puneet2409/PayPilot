@@ -236,8 +236,9 @@ class Channel3Client:
                         live_slots = max(0, limit - len(demo_results))
                         final_res = live_results[:live_slots] + demo_results
                     if len(self._cache) >= 200:
-                        oldest_k = next(iter(self._cache))
-                        del self._cache[oldest_k]
+                        oldest_k = next(iter(self._cache), None)
+                        if oldest_k:
+                            self._cache.pop(oldest_k, None)
                     self._cache[cache_key] = (time.time(), final_res)
                     return final_res
                 else:
@@ -381,7 +382,18 @@ class Channel3Client:
             score = sum(1 for t in q_tokens if t in text) if q_tokens else 1
             if q_tokens and score < min_score:
                 continue
-            offers = [OfferItem(**o) for o in item["offers"]]
+            now_iso = datetime.now(timezone.utc).isoformat()
+            offers = [
+                OfferItem(
+                    merchant=o.get("merchant", "PayPilot Demo Store"),
+                    price=o["price"],
+                    currency=o.get("currency", "USD"),
+                    availability=o.get("availability", "InStock"),
+                    observed_at=now_iso,
+                    buy_url=o.get("buy_url")
+                )
+                for o in item["offers"]
+            ]
             # Filter by max_price if specified
             if max_price is not None:
                 min_price = min(o.price for o in offers) if offers else 0

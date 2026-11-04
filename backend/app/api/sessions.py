@@ -1,3 +1,4 @@
+from app.config import settings
 import time
 
 from fastapi import APIRouter
@@ -12,7 +13,7 @@ router = APIRouter(prefix="/api/v1/sessions", tags=["Sessions"])
 def create_session():
     """Create an anonymous, isolated session with a signed bearer credential."""
     session_id = new_session_id()
-    expires_at = int(time.time()) + 60 * 60 * 12
+    expires_at = int(time.time()) + settings.SESSION_TTL_SECONDS
     return SessionCreateResponse(
         session_id=session_id,
         access_token=issue_session_token(session_id, expires_at),

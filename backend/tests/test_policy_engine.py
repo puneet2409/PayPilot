@@ -188,3 +188,30 @@ def test_postgres_database_url_normalization():
     raw_render_url = "postgres://paypilot_user:secret@dpg-123.render.com/paypilot_db"
     normalized = raw_render_url.replace("postgres://", "postgresql://", 1) if raw_render_url.startswith("postgres://") else raw_render_url
     assert normalized == "postgresql://paypilot_user:secret@dpg-123.render.com/paypilot_db"
+
+
+
+def test_policy_quiet_synonym_no_false_positive_on_noise(test_db):
+    """Verify that mentioning 'noise' in product description does not falsely satisfy the 'quiet' feature requirement."""
+    from app.models.catalogue import DemoProduct
+    p_noisy = DemoProduct(
+        sku="NOISY-HEADSET-01",
+        title="High Noise Headset with Loud Acoustic Output",
+        brand="Acoustic",
+        category="wireless headset",
+        fixed_price=45.00,
+        currency="USD",
+        active=True,
+        attributes_json='{"condition": "New"}'
+    )
+    test_db.add(p_noisy)
+    test_db.commit()
+
+    passed, checks, product, reason = PolicyEngine.evaluate(
+        db=test_db,
+        demo_sku="NOISY-HEADSET-01",
+        max_total=100.00,
+        required_features=["quiet"]
+    )
+    assert passed is False
+    assert any(c.rule == "feature_req_quiet" and not c.passed for c in checks)

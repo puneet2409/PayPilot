@@ -397,6 +397,7 @@ export const App: React.FC = () => {
         onToggleCollapseDesktop={() => setIsSidebarCollapsed((prev) => !prev)}
         auditCount={auditEvents.length}
         ordersCount={orders.length}
+        isPayPalConfigured={isPayPalConfigured}
       />
 
       {/* Main Content Area */}
@@ -550,7 +551,7 @@ export const App: React.FC = () => {
                   type="button"
                   onClick={async () => {
                     setCurrentView('shop');
-                    if (policyResult?.eligible && policyResult.quote) {
+                    if (policyResult?.eligible && policyResult.quote && !policyResult.is_external_retailer) {
                       setShowApprovalStep(true);
                     } else {
                       await handleSendMessage('Headset under $100', 100);

@@ -842,3 +842,49 @@ def test_paypal_webhook_live_credentials_missing_webhook_id_rejected(client, mon
     }
     wh_res = client.post("/api/v1/webhooks/paypal", json=wh_payload, headers=wh_headers)
     assert wh_res.status_code == 401
+
+
+
+def test_paypal_webhook_duplicate_delivery_idempotent(client, db_session):
+    """Verify that duplicate capture webhooks for an already-paid order return already_reconciled."""
+    eval_res = client.post("/api/v1/policies/evaluate", json={
+        "session_id": client.test_session_id,
+        "demo_sku": "HEADSET-DEMO-01",
+        "max_total": 100.0
+    })
+    quote_id = eval_res.json()["quote"]["id"]
+    landed_cost = eval_res.json()["quote"]["amount"]
+
+    create_res = client.post("/api/v1/checkout/create", json={
+        "quote_id": quote_id,
+        "session_id": client.test_session_id
+    })
+    paypal_order_id = create_res.json()["paypal_order_id"]
+
+    wh_headers = {
+        "paypal-auth-algo": "SHA256withRSA",
+        "paypal-cert-url": "https://api.sandbox.paypal.com/cert",
+        "paypal-transmission-id": "tx_idem_001",
+        "paypal-transmission-sig": "simulated_webhook_sig",
+        "paypal-transmission-time": "2026-10-25T12:00:00Z"
+    }
+    wh_payload = {
+        "id": "WH-IDEM-001",
+        "event_type": "PAYMENT.CAPTURE.COMPLETED",
+        "resource_type": "capture",
+        "resource": {
+            "id": "CAP-IDEM-001",
+            "amount": {"value": f"{landed_cost:.2f}", "currency_code": "USD"},
+            "supplementary_data": {
+                "related_ids": {"order_id": paypal_order_id}
+            }
+        }
+    }
+    res1 = client.post("/api/v1/webhooks/paypal", json=wh_payload, headers=wh_headers)
+    assert res1.status_code == 200
+    assert res1.json()["status"] == "received"
+
+    # Second delivery of same event
+    res2 = client.post("/api/v1/webhooks/paypal", json=wh_payload, headers=wh_headers)
+    assert res2.status_code == 200
+    assert res2.json()["status"] == "already_reconciled"

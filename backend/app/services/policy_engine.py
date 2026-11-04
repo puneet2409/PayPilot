@@ -134,10 +134,10 @@ class PolicyEngine:
                 ))
                 return False, checks, product, f"Contains excluded term: {term}"
 
-# 6. Feature Requirements Check
+        # 6. Feature Requirements Check
         FEATURE_SYNONYMS = {
             "productivity": ["productivity", "performance", "work", "office", "magseed", "sensor", "clicks"],
-            "quiet": ["quiet", "silent", "quiet_clicks", "noise"],
+            "quiet": ["quiet", "silent", "quiet_clicks", "silent clicks", "reduced click"],
             "wireless": ["wireless", "bluetooth", "cordless", "rf"],
             "built_in_microphone": ["microphone", "mic", "voice", "built_in_microphone", "microphones"],
             "active_noise_cancelling": ["noise_cancelling", "cancelling", "anc", "ambient"],
@@ -154,7 +154,7 @@ class PolicyEngine:
             if any(n in norm_name for n in ("noise", "cancelling", "anc")):
                 extras.extend(["noise_cancelling", "cancelling", "anc", "ambient", "active noise cancelling"])
             if any(q in norm_name for q in ("quiet", "silent")):
-                extras.extend(["quiet", "silent", "quiet_clicks", "noise", "click"])
+                extras.extend(["quiet", "silent", "quiet_clicks", "silent clicks", "reduced click"])
             if any(p in norm_name for p in ("productivity", "office", "work")):
                 extras.extend(["productivity", "performance", "work", "office", "magseed", "sensor", "clicks"])
             return list(set(base + extras))

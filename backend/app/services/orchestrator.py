@@ -69,8 +69,9 @@ class AgentOrchestrator:
         # engine is the component that enforces the spending ceiling.
         query = intent.category or request.message
         if len(self._session_context) >= 200:
-            oldest_sess = next(iter(self._session_context))
-            del self._session_context[oldest_sess]
+            oldest_sess = next(iter(self._session_context), None)
+            if oldest_sess:
+                self._session_context.pop(oldest_sess, None)
         self._session_context[session_id] = {
             "query": query,
             "category": intent.category,

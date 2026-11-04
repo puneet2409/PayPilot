@@ -18,6 +18,15 @@ from app.security import require_session, require_session_match
 
 router = APIRouter(prefix="/api/v1", tags=["Orders & Audit"])
 
+
+def _safe_json_loads(val: str | None) -> dict:
+    if not val:
+        return {}
+    try:
+        return json.loads(val)
+    except Exception:
+        return {}
+
 def _format_utc_iso(dt: datetime) -> str:
     if not dt:
         return ""
@@ -78,7 +87,7 @@ def get_order_audit_timeline(
             AuditTimelineEvent(
                 id=e.id,
                 event_type=e.event_type,
-                details=json.loads(e.details_json or "{}"),
+                details=_safe_json_loads(e.details_json),
                 created_at=_format_utc_iso(e.created_at),
                 prev_hash=e.prev_hash,
                 entry_hash=e.entry_hash
@@ -101,7 +110,7 @@ def get_session_audit_timeline(
             AuditTimelineEvent(
                 id=e.id,
                 event_type=e.event_type,
-                details=json.loads(e.details_json or "{}"),
+                details=_safe_json_loads(e.details_json),
                 created_at=_format_utc_iso(e.created_at),
                 prev_hash=e.prev_hash,
                 entry_hash=e.entry_hash

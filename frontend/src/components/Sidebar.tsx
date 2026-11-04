@@ -22,6 +22,7 @@ interface SidebarProps {
   onToggleCollapseDesktop: () => void;
   auditCount?: number;
   ordersCount?: number;
+  isPayPalConfigured?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -33,6 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onToggleCollapseDesktop,
   auditCount = 0,
   ordersCount = 0,
+  isPayPalConfigured = false,
 }) => {
   const navItems: { id: NavView; label: string; icon: React.ReactNode; badge?: string | number }[] = [
     {
@@ -181,8 +183,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <span>OpenAPI 3.1 Spec</span>
           </a>
           <div className="flex items-center gap-2 pt-1 border-t border-slate-200/60 text-[11px] text-slate-500 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>PayPal Orders v2 Connected</span>
+            <span className={`w-2 h-2 rounded-full ${isPayPalConfigured ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+            <span>{isPayPalConfigured ? 'PayPal Orders v2 Connected' : 'PayPal Simulated Mode'}</span>
           </div>
         </div>
       </aside>

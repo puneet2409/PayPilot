@@ -201,8 +201,16 @@ async def handle_paypal_webhook(
         if quote and quote.status == "ACTIVE":
             quote.status = "CONSUMED"
 
-        # Check existing payment record
+        # Idempotent duplicate check: return immediately if order is already PAID with recorded payment
         existing_pmt = db.query(Payment).filter(Payment.order_id == order.id).first()
+        if order.status == "PAID" and existing_pmt and existing_pmt.capture_id == capture_id:
+            logger.info(f"[PAYPAL WEBHOOK] Idempotent duplicate delivery acknowledged for order {order.id}")
+            return {
+                "status": "already_reconciled",
+                "event_id": event_id,
+                "matched_order_id": order.id
+            }
+
         if not existing_pmt and capture_id:
             payment = Payment(
                 id=f"pay_wh_{capture_id}",
