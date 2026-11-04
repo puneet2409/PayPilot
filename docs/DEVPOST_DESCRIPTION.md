@@ -79,13 +79,13 @@ PayPilot introduces a **four-stage consent-gated pipeline** where AI advises, bu
 1. **No Autonomous Spending:** AI assists and negotiates; code enforces policy; the human clicks PayPal Approve.
 2. **Honest Architecture:** We clearly distinguish between external market comparison offers (via Channel3) and purchasable demonstration inventory.
 3. **Resilience & Fallbacks:** If external API keys are not supplied during initial setup, PayPilot gracefully falls back to deterministic rule-based parsing and sandbox simulation without crashing.
-4. **Comprehensive Test Suite:** 22/22 unit and integration tests passing in CI (`pytest`), with isolated SQLite test databases and TypeScript compilation (`tsc -b && vite build`).
+4. **Comprehensive Test Suite:** 45/45 backend unit/integration tests (`pytest`) and 7/7 frontend tests (`vitest`) passing in CI, with clean production build (`tsc -b && vite build`).
 
 ---
 
 ## 6. Demo Video & Submission Links
 
-- **Repository:** *[GitHub Public URL]*
+- **Repository:** https://github.com/puneet2409/PayPilot
 - **Hosted Demo:** *[Render / Cloud Hosted Demo URL]*
 - **Demo Video (YouTube, < 3 Minutes):** *[YouTube Video Link]*
 - **Interactive OpenAPI 3.1 Swagger Docs:** `http://localhost:8000/docs`
