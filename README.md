@@ -57,6 +57,42 @@ PayPilot separates **discovery reasoning** from **financial execution**. Even if
 
 ---
 
+## 👩‍⚖️ Quickstart for Judges & Reviewers (Run in 60 Seconds with Zero Configuration)
+
+Judges can test PayPilot locally in less than 2 minutes without needing any third-party API keys. PayPilot includes **built-in zero-config fallbacks**:
+* **AI Intent Parser:** Deterministic fallback parser turns natural language queries into structured briefs if `GEMINI_API_KEY` is omitted.
+* **Catalog Discovery:** Built-in multi-retailer discovery cache with real-world products and offers if `CHANNEL3_API_KEY` is omitted.
+* **Payment Flow:** Fully functional simulated PayPal checkout flow if live PayPal sandbox credentials are not provided.
+
+### ⚡ Quick Run Instructions:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/puneet2409/PayPilot.git
+cd PayPilot
+
+# 2. Start Backend (Terminal 1)
+cd backend
+python -m venv venv
+# Windows: .\venv\Scripts\activate | Linux/macOS: source venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --port 8000
+
+# 3. Start Frontend (Terminal 2)
+cd ../frontend
+npm install
+npm run dev
+```
+Open **`http://localhost:5173`** in your browser.
+
+### 🎯 4 Interactive Scenarios to Test at `http://localhost:5173`:
+1. **AI Discovery & Policy Pass:** Type `"Find a wireless headset under $100"`. Click on the Anker Space Q45 card to inspect the deterministic landed-cost breakdown ($89.99 + 8.25% Tax + Free Shipping = $97.41) and live 10-minute HMAC quote TTL.
+2. **Consent-First PayPal Checkout:** Click `"Select for PayPal Checkout"` → `"Approve & Pay"` to experience the sovereign buyer authorization gate.
+3. **Pre-Capture Price Spike Void:** Click header button `"2. Test Guardrail: Price Spike Void"` to see PayPilot's pre-capture guardian intercept an unauthorized merchant price spike and auto-void the order.
+4. **CFO / Merchant Ledger:** Switch to the `"Financial Analytics (AG Studio)"` tab to inspect the real-time AG Grid payments ledger with fee breakdowns and CSV export.
+
+---
+
 ## 🚀 Quickstart Guide
 
 Hackathon walkthrough, submission checklist, and draft project description: [demo script and checklist](docs/DEMO_SCRIPT.md), [Devpost copy](docs/DEVPOST_DESCRIPTION.md), and [API contracts](docs/API_CONTRACTS.md).
@@ -168,3 +204,4 @@ frontend/src/__tests__/paypilot.test.ts
 ## ⚖️ Disclosure & License
 * All transactions are processed strictly in **PayPal Sandbox**. No real funds are moved.
 * Released under the [MIT License](LICENSE).
+
